@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { DeckCard } from "@/components/deck-card";
-import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/database.types";
 
 type Deck = Database["public"]["Tables"]["decks"]["Row"];
@@ -15,18 +14,13 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-
     async function fetchDecks() {
-      const { data, error } = await supabase
-        .from("decks")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        setError(error.message);
+      const res = await fetch("/api/decks");
+      if (!res.ok) {
+        const { error } = await res.json();
+        setError(error ?? "Failed to load decks");
       } else {
-        setDecks(data ?? []);
+        setDecks(await res.json());
       }
       setLoading(false);
     }

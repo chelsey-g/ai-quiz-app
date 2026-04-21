@@ -88,7 +88,7 @@ function collectChangedMarkdownFiles(payload: GitHubPushPayload): string[] {
   const seen = new Set<string>();
   for (const commit of payload.commits) {
     for (const file of [...commit.added, ...commit.modified]) {
-      if (file.endsWith(".md")) seen.add(file);
+      if (file.startsWith("notes/") && file.endsWith(".md")) seen.add(file);
     }
   }
   return Array.from(seen);

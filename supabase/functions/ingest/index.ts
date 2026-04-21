@@ -94,45 +94,52 @@ function collectChangedMarkdownFiles(payload: GitHubPushPayload): string[] {
   return Array.from(seen);
 }
 
-// ─── AI generation with Claude → OpenAI fallback ─────────────────────────────
+// ─── AI generation — cheapest model first ────────────────────────────────────
 
 const SYSTEM_PROMPT =
   "You are a study content generator. Given a Markdown note about software engineering, " +
   "extract key concepts and generate flashcards for active recall practice. " +
   "Generate 5–15 cards depending on content depth. If the note has no learnable concepts, return an empty cards array.";
 
+// Ordered cheapest → most capable. Skipped if the provider key isn't set.
+const MODEL_PRIORITY = [
+  { provider: "openai" as const, model: "gpt-4o-mini" },
+  { provider: "anthropic" as const, model: "claude-haiku-4-5-20251001" },
+  { provider: "anthropic" as const, model: "claude-sonnet-4-6" },
+  { provider: "openai" as const, model: "gpt-4o" },
+];
+
 async function generateCards(
   content: string,
   filePath: string,
   anthropicKey: string,
   openaiKey: string | undefined
-): Promise<{ deck: GeneratedDeck; provider: string }> {
-  const prompt = `File: ${filePath}\n\n${content}`;
+): Promise<{ deck: GeneratedDeck; provider: string; model: string }> {
+  const anthropic = createAnthropic({ apiKey: anthropicKey });
+  const openai = openaiKey ? createOpenAI({ apiKey: openaiKey }) : null;
 
-  try {
-    const { object } = await generateObject({
-      model: createAnthropic({ apiKey: anthropicKey })("claude-sonnet-4-6"),
-      schema: DeckSchema,
-      system: SYSTEM_PROMPT,
-      prompt,
-    });
-    return { deck: object, provider: "claude" };
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.warn(`Claude failed (${reason}) — falling back to OpenAI`);
+  const errors: string[] = [];
 
-    if (!openaiKey) {
-      throw new Error(`Claude failed and OPENAI_API_KEY is not set. Claude error: ${reason}`);
+  for (const { provider, model } of MODEL_PRIORITY) {
+    const client = provider === "anthropic" ? anthropic : openai;
+    if (!client) continue;
+
+    try {
+      const { object } = await generateObject({
+        model: client(model),
+        schema: DeckSchema,
+        system: SYSTEM_PROMPT,
+        prompt: `File: ${filePath}\n\n${content}`,
+      });
+      return { deck: object, provider, model };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      errors.push(`${provider}/${model}: ${reason}`);
+      console.warn(`Model failed, trying next. ${provider}/${model}: ${reason}`);
     }
-
-    const { object } = await generateObject({
-      model: createOpenAI({ apiKey: openaiKey })("gpt-4o"),
-      schema: DeckSchema,
-      system: SYSTEM_PROMPT,
-      prompt,
-    });
-    return { deck: object, provider: "openai" };
   }
+
+  throw new Error(`All models failed:\n${errors.join("\n")}`);
 }
 
 // ─── Supabase upsert ──────────────────────────────────────────────────────────
@@ -247,6 +254,7 @@ Deno.serve(async (req) => {
     file: string;
     status: "ok" | "error";
     provider?: string;
+    model?: string;
     cardCount?: number;
     error?: string;
   }> = [];
@@ -262,7 +270,7 @@ Deno.serve(async (req) => {
         githubToken
       );
 
-      const { deck, provider } = await generateCards(rawContent, filePath, anthropicKey, openaiKey);
+      const { deck, provider, model } = await generateCards(rawContent, filePath, anthropicKey, openaiKey);
 
       const { cardCount } = await upsertDeck(supabase, {
         userId: null,
@@ -273,8 +281,8 @@ Deno.serve(async (req) => {
         deck,
       });
 
-      console.log(`Done [${provider}]: ${filePath} — ${cardCount} cards`);
-      results.push({ file: filePath, status: "ok", provider, cardCount });
+      console.log(`Done [${provider}/${model}]: ${filePath} — ${cardCount} cards`);
+      results.push({ file: filePath, status: "ok", provider, model, cardCount });
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       console.error(`Failed: ${filePath} — ${error}`);

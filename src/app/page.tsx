@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { DeckCard } from "@/components/deck-card";
-import type { Database } from "@/lib/database.types";
-
-type Deck = Database["public"]["Tables"]["decks"]["Row"];
+import { DeckCard, type DeckWithStats } from "@/components/deck-card";
 
 export default function HomePage() {
-  const [decks, setDecks] = useState<Deck[]>([]);
+  const [decks, setDecks] = useState<DeckWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

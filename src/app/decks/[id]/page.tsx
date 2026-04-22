@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ export default function DeckPage() {
   const [flipped, setFlipped] = useState(false);
   const [known, setKnown] = useState<Set<string>>(new Set());
   const [unknown, setUnknown] = useState<Set<string>>(new Set());
+  const [startedAt, setStartedAt] = useState<string | null>(null);
+  const sessionSavedRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -66,10 +68,12 @@ export default function DeckPage() {
   }
 
   function restart() {
+    sessionSavedRef.current = false;
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
     setUnknown(new Set());
+    setStartedAt(new Date().toISOString());
     setStudyState("studying");
   }
 
@@ -83,6 +87,20 @@ export default function DeckPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [studyState, flipped, markKnown, markUnknown]);
+
+  useEffect(() => {
+    if (studyState !== "done" || !deck || !startedAt || sessionSavedRef.current) return;
+    sessionSavedRef.current = true;
+    const score = cards.length > 0 ? Math.round((known.size / cards.length) * 100) : 0;
+    const results = cards
+      .filter((c) => known.has(c.id) || unknown.has(c.id))
+      .map((c) => ({ cardId: c.id, correct: known.has(c.id) }));
+    fetch("/api/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deckId: deck.id, score, startedAt, results }),
+    });
+  }, [studyState, deck, startedAt, known, unknown, cards]);
 
   if (loading) {
     return (
@@ -126,7 +144,7 @@ export default function DeckPage() {
         <p className="mt-3 text-sm text-muted-foreground">
           {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
         </p>
-        <Button className="mt-8" onClick={() => setStudyState("studying")} disabled={cards.length === 0}>
+        <Button className="mt-8" onClick={() => { setStartedAt(new Date().toISOString()); setStudyState("studying"); }} disabled={cards.length === 0}>
           Start studying
         </Button>
       </div>

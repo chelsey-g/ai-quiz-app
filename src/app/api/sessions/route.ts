@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { NextRequest } from "next/server";
+import { sm2, qualityFromCorrect } from "@/lib/sm2";
 
 function serviceClient() {
   return createClient<Database>(
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     const cardIds = results.map((r) => r.cardId);
     const { data: existingCards, error: fetchError } = await supabase
       .from("cards")
-      .select("id, times_seen, times_correct")
+      .select("id, times_seen, times_correct, repetitions, ease_factor, interval_days")
       .in("id", cardIds);
 
     if (!fetchError && existingCards) {
@@ -50,12 +51,17 @@ export async function POST(req: NextRequest) {
         results.map(({ cardId, correct }) => {
           const card = cardMap.get(cardId);
           if (!card) return Promise.resolve();
+          const scheduling = sm2(card, qualityFromCorrect(correct));
           return supabase
             .from("cards")
             .update({
               times_seen: card.times_seen + 1,
               times_correct: card.times_correct + (correct ? 1 : 0),
               last_seen_at: now,
+              repetitions: scheduling.repetitions,
+              ease_factor: scheduling.ease_factor,
+              interval_days: scheduling.interval_days,
+              next_review_at: scheduling.next_review_at,
             })
             .eq("id", cardId);
         })

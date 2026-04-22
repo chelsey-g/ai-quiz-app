@@ -11,12 +11,35 @@ type Card = Database["public"]["Tables"]["cards"]["Row"];
 
 type StudyState = "idle" | "studying" | "done";
 
+function isDue(card: Card): boolean {
+  if (!card.next_review_at) return true;
+  return new Date(card.next_review_at) <= new Date();
+}
+
+function nextDueDate(cards: Card[]): Date | null {
+  const upcoming = cards
+    .filter((c) => c.next_review_at && !isDue(c))
+    .map((c) => new Date(c.next_review_at!));
+  if (upcoming.length === 0) return null;
+  return upcoming.reduce((min, d) => (d < min ? d : min));
+}
+
+function formatRelativeDate(date: Date): string {
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 1) return "tomorrow";
+  if (diffDays <= 7) return `in ${diffDays} days`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export default function DeckPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [deck, setDeck] = useState<Deck | null>(null);
-  const [cards, setCards] = useState<Card[]>([]);
+  const [allCards, setAllCards] = useState<Card[]>([]);
+  const [dueCards, setDueCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,31 +58,34 @@ export default function DeckPage() {
         const { error } = await res.json();
         setError(error ?? "Deck not found");
       } else {
-        const { deck, cards } = await res.json();
+        const { deck, cards } = await res.json() as { deck: Deck; cards: Card[] };
         setDeck(deck);
-        setCards(cards);
+        setAllCards(cards);
+        setDueCards(cards.filter(isDue));
       }
       setLoading(false);
     }
     load();
   }, [id]);
 
-  const currentCard = cards[currentIndex];
+  // The active study queue is the due cards
+  const studyQueue = dueCards;
+  const currentCard = studyQueue[currentIndex];
 
   const markKnown = useCallback(() => {
     setKnown((prev) => new Set([...prev, currentCard.id]));
     setUnknown((prev) => { const s = new Set(prev); s.delete(currentCard.id); return s; });
     advance();
-  }, [currentCard, cards]);
+  }, [currentCard, studyQueue]);
 
   const markUnknown = useCallback(() => {
     setUnknown((prev) => new Set([...prev, currentCard.id]));
     setKnown((prev) => { const s = new Set(prev); s.delete(currentCard.id); return s; });
     advance();
-  }, [currentCard, cards]);
+  }, [currentCard, studyQueue]);
 
   function advance() {
-    if (currentIndex + 1 >= cards.length) {
+    if (currentIndex + 1 >= studyQueue.length) {
       setStudyState("done");
     } else {
       setCurrentIndex((i) => i + 1);
@@ -67,7 +93,7 @@ export default function DeckPage() {
     }
   }
 
-  function restart() {
+  function startStudy() {
     sessionSavedRef.current = false;
     setCurrentIndex(0);
     setFlipped(false);
@@ -91,8 +117,8 @@ export default function DeckPage() {
   useEffect(() => {
     if (studyState !== "done" || !deck || !startedAt || sessionSavedRef.current) return;
     sessionSavedRef.current = true;
-    const score = cards.length > 0 ? Math.round((known.size / cards.length) * 100) : 0;
-    const results = cards
+    const score = studyQueue.length > 0 ? Math.round((known.size / studyQueue.length) * 100) : 0;
+    const results = studyQueue
       .filter((c) => known.has(c.id) || unknown.has(c.id))
       .map((c) => ({ cardId: c.id, correct: known.has(c.id) }));
     fetch("/api/sessions", {
@@ -100,7 +126,7 @@ export default function DeckPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deckId: deck.id, score, startedAt, results }),
     });
-  }, [studyState, deck, startedAt, known, unknown, cards]);
+  }, [studyState, deck, startedAt, known, unknown, studyQueue]);
 
   if (loading) {
     return (
@@ -125,6 +151,9 @@ export default function DeckPage() {
 
   // ── Idle — deck overview ──────────────────────────────────────────────────
   if (studyState === "idle") {
+    const hasDue = dueCards.length > 0;
+    const next = nextDueDate(allCards);
+
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <button
@@ -144,9 +173,25 @@ export default function DeckPage() {
         <p className="mt-3 text-sm text-muted-foreground">
           {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
         </p>
-        <Button className="mt-8" onClick={() => { setStartedAt(new Date().toISOString()); setStudyState("studying"); }} disabled={cards.length === 0}>
-          Start studying
-        </Button>
+
+        {hasDue ? (
+          <div className="mt-8">
+            <Button onClick={startStudy}>
+              Study now · {dueCards.length} due
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-8 rounded-xl border border-border bg-card px-6 py-5">
+            <p className="font-medium">Nothing due right now</p>
+            {next ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Next card due {formatRelativeDate(next)}
+              </p>
+            ) : allCards.length === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">No cards in this deck yet.</p>
+            ) : null}
+          </div>
+        )}
       </div>
     );
   }
@@ -155,7 +200,7 @@ export default function DeckPage() {
   if (studyState === "done") {
     const knownCount = known.size;
     const unknownCount = unknown.size;
-    const pct = Math.round((knownCount / cards.length) * 100);
+    const pct = studyQueue.length > 0 ? Math.round((knownCount / studyQueue.length) * 100) : 0;
 
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -176,7 +221,6 @@ export default function DeckPage() {
         <p className="mt-4 text-sm text-muted-foreground">{pct}% correct this session</p>
 
         <div className="mt-8 flex gap-3">
-          <Button onClick={restart}>Study again</Button>
           <Button variant="outline" onClick={() => router.push("/")}>
             Back to decks
           </Button>
@@ -196,7 +240,7 @@ export default function DeckPage() {
           ← {deck.title}
         </button>
         <span className="text-sm text-muted-foreground">
-          {currentIndex + 1} / {cards.length}
+          {currentIndex + 1} / {studyQueue.length}
         </span>
       </div>
 
@@ -204,7 +248,7 @@ export default function DeckPage() {
       <div className="mb-6 h-1 w-full rounded-full bg-border">
         <div
           className="h-1 rounded-full bg-foreground transition-all duration-300"
-          style={{ width: `${((currentIndex) / cards.length) * 100}%` }}
+          style={{ width: `${((currentIndex) / studyQueue.length) * 100}%` }}
         />
       </div>
 

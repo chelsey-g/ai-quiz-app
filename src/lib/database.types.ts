@@ -45,9 +45,13 @@ export type Database = {
           card_type: string
           created_at: string
           deck_id: string
+          ease_factor: number
           front: string
           id: string
+          interval_days: number
           last_seen_at: string | null
+          next_review_at: string | null
+          repetitions: number
           times_correct: number
           times_seen: number
         }
@@ -56,9 +60,13 @@ export type Database = {
           card_type?: string
           created_at?: string
           deck_id: string
+          ease_factor?: number
           front: string
           id?: string
+          interval_days?: number
           last_seen_at?: string | null
+          next_review_at?: string | null
+          repetitions?: number
           times_correct?: number
           times_seen?: number
         }
@@ -67,9 +75,13 @@ export type Database = {
           card_type?: string
           created_at?: string
           deck_id?: string
+          ease_factor?: number
           front?: string
           id?: string
+          interval_days?: number
           last_seen_at?: string | null
+          next_review_at?: string | null
+          repetitions?: number
           times_correct?: number
           times_seen?: number
         }

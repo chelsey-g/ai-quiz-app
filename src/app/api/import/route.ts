@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { generateCards } from "@/lib/ai/generate-cards";
 import type { Database } from "@/lib/database.types";
 
-function createServiceClient() {
-  return createClient<Database>(
+function serviceClient() {
+  return createServiceClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
@@ -16,6 +17,15 @@ interface ImportFile {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const files: ImportFile[] = body.files;
 
@@ -23,7 +33,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "No files provided" }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
+  // Service client for writes (bypasses RLS so we can explicitly set user_id)
+  const db = serviceClient();
   const results: Array<{
     file: string;
     status: "ok" | "error";
@@ -38,11 +49,11 @@ export async function POST(request: NextRequest) {
     try {
       const { deck, provider, model } = await generateCards(file.content, file.name);
 
-      const { data: note, error: noteError } = await supabase
+      const { data: note, error: noteError } = await db
         .from("notes")
         .upsert(
           {
-            user_id: null,
+            user_id: user.id,
             title: deck.title,
             source_path: `direct-import/${file.name}`,
             raw_content: file.content,
@@ -56,13 +67,13 @@ export async function POST(request: NextRequest) {
 
       if (noteError) throw new Error(`Note upsert failed: ${noteError.message}`);
 
-      await supabase.from("decks").delete().eq("note_id", note.id);
+      await db.from("decks").delete().eq("note_id", note.id);
 
-      const { data: newDeck, error: deckError } = await supabase
+      const { data: newDeck, error: deckError } = await db
         .from("decks")
         .insert({
           note_id: note.id,
-          user_id: null,
+          user_id: user.id,
           title: deck.title,
           topic_tags: deck.topic_tags,
         })
@@ -72,7 +83,7 @@ export async function POST(request: NextRequest) {
       if (deckError) throw new Error(`Deck insert failed: ${deckError.message}`);
 
       if (deck.cards.length > 0) {
-        const { error: cardsError } = await supabase.from("cards").insert(
+        const { error: cardsError } = await db.from("cards").insert(
           deck.cards.map((card) => ({
             deck_id: newDeck.id,
             front: card.front,

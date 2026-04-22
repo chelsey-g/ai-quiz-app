@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { buttonVariants } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/app/auth/actions";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -15,11 +17,16 @@ export const metadata: Metadata = {
   description: "AI-powered study decks from your notes",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
       <body className="min-h-full flex flex-col bg-background text-foreground">
@@ -32,27 +39,47 @@ export default function RootLayout({
               >
                 Quizly
               </Link>
-              <nav className="flex items-center gap-1">
-                <Link
-                  href="/"
-                  className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Decks
-                </Link>
-                <Link
-                  href="/import"
-                  className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Import
-                </Link>
-              </nav>
+              {user && (
+                <nav className="flex items-center gap-1">
+                  <Link
+                    href="/"
+                    className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Decks
+                  </Link>
+                  <Link
+                    href="/import"
+                    className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Import
+                  </Link>
+                </nav>
+              )}
             </div>
-            <Link
-              href="/import"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              Import
-            </Link>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
+                  <span className="hidden text-xs text-muted-foreground sm:block">
+                    {user.email}
+                  </span>
+                  <form action={signOut}>
+                    <button
+                      type="submit"
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      Sign out
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  Sign in
+                </Link>
+              )}
+            </div>
           </div>
         </header>
         <main className="flex-1">{children}</main>

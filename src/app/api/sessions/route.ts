@@ -1,16 +1,26 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { NextRequest } from "next/server";
 import { sm2, qualityFromCorrect } from "@/lib/sm2";
 
 function serviceClient() {
-  return createClient<Database>(
+  return createServiceClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = (await req.json()) as {
     deckId: string;
     score: number;
@@ -24,10 +34,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const supabase = serviceClient();
+  const db = serviceClient();
   const now = new Date().toISOString();
 
-  const { error: sessionError } = await supabase.from("sessions").insert({
+  const { error: sessionError } = await db.from("sessions").insert({
+    user_id: user.id,
     deck_id: deckId,
     score,
     started_at: startedAt,
@@ -40,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   if (results.length > 0) {
     const cardIds = results.map((r) => r.cardId);
-    const { data: existingCards, error: fetchError } = await supabase
+    const { data: existingCards, error: fetchError } = await db
       .from("cards")
       .select("id, times_seen, times_correct, repetitions, ease_factor, interval_days")
       .in("id", cardIds);
@@ -52,7 +63,7 @@ export async function POST(req: NextRequest) {
           const card = cardMap.get(cardId);
           if (!card) return Promise.resolve();
           const scheduling = sm2(card, qualityFromCorrect(correct));
-          return supabase
+          return db
             .from("cards")
             .update({
               times_seen: card.times_seen + 1,

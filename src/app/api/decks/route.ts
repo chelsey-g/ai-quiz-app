@@ -1,15 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { data, error } = await supabase
     .from("decks")
     .select("*, cards(times_seen, times_correct)")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) {

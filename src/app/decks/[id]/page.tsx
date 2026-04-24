@@ -595,6 +595,69 @@ export default function DeckPage() {
           )}
         </>
       )}
+
+      {/* Flashcard — multiple choice mode */}
+      {currentCardMode === "multiple-choice" && (
+        <>
+          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+            <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
+              Question
+            </p>
+            <p className="text-lg font-medium leading-relaxed text-foreground text-center">
+              {currentCard.front}
+            </p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-2">
+            {(mcOptions[currentCard.id] ?? []).map((option, idx) => {
+              const isCorrect = option === currentCard.back;
+              const isSelected = selectedMcOption === option;
+              const revealed = selectedMcOption !== null;
+
+              let buttonClass =
+                "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors focus:outline-none";
+
+              if (!revealed) {
+                buttonClass +=
+                  " border-border text-foreground hover:border-primary/50 hover:bg-muted/50";
+              } else if (isCorrect) {
+                buttonClass += " border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400";
+              } else if (isSelected) {
+                buttonClass += " border-destructive/50 bg-destructive/10 text-destructive";
+              } else {
+                buttonClass += " border-border/40 text-muted-foreground opacity-50";
+              }
+
+              return (
+                <button
+                  key={idx}
+                  disabled={revealed}
+                  className={buttonClass}
+                  onClick={() => {
+                    if (revealed) return;
+                    setSelectedMcOption(option);
+                    if (isCorrect) {
+                      setTimeout(() => markKnown(), 700);
+                    } else {
+                      setTimeout(() => markUnknown(), 700);
+                    }
+                  }}
+                >
+                  <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">
+                    {idx + 1}.
+                  </span>
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
+            1 · 2 · 3 · 4 to select
+          </p>
+        </>
+      )}
+
       {modeModal}
     </div>
   );

@@ -5,9 +5,32 @@
 
 ## Overview
 
-Three Claude Code project agents form a self-contained development pipeline for the Quizly app. The user kicks off the Architect with a feature idea; the Architect designs it and automatically spawns the Engineer or UI Designer (or both) to implement it. No user involvement is needed after the initial kick-off.
+Four Claude Code project agents form a self-contained development pipeline for the Quizly app. The user kicks off the Product Manager with loose direction; it decides what to build, notifies the user, then hands off automatically through Architect → Engineer/UI Designer. No further user involvement is needed after the initial kick-off.
+
+```
+User kicks off Product Manager with loose direction (e.g. "focus on engagement")
+    │
+    ▼
+Product Manager
+  reads project state → picks one feature idea → sends push notification
+    │
+    ▼
+Architect
+  brainstorms → writes spec → writes plan → tags assigned-to
+    │                    │
+    ▼                    ▼
+Engineer            UI Designer
+executes plan       executes plan
+commits code        commits UI code
+```
 
 ## Agents
+
+### Product Manager
+**File:** `.claude/agents/product-manager.md`
+**Role:** Feature ideation and pipeline entry point.
+
+Takes loose direction from the user (a theme, focus area, or constraint), reads the current project state (CLAUDE.md, existing specs/plans, recent git commits), and picks the single highest-value feature to build next. Sends a push notification to the user with the idea, then spawns the Architect automatically.
 
 ### Architect
 **File:** `.claude/agents/architect.md`
@@ -83,9 +106,10 @@ The Architect uses these rules to decide assignment:
 ```
 .claude/
   agents/
-    architect.md      # Design + planning agent
-    engineer.md       # Backend/logic implementation agent
-    ui-designer.md    # Frontend/UI implementation agent
+    product-manager.md  # Feature ideation + pipeline entry point
+    architect.md        # Design + planning agent
+    engineer.md         # Backend/logic implementation agent
+    ui-designer.md      # Frontend/UI implementation agent
 
 docs/superpowers/
   specs/              # Design specs (written by Architect)

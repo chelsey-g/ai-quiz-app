@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, Syne } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 
-const inter = Inter({
-  variable: "--font-sans",
+const dmSans = DM_Sans({
+  variable: "--font-body",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "700"],
+});
+
+const syne = Syne({
+  variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
 });
@@ -28,38 +35,54 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
+    <html lang="en" className={`${dmSans.variable} ${syne.variable} h-full antialiased dark`}>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
+        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl">
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
             <div className="flex items-center gap-8">
-              <Link
-                href="/"
-                className="text-sm font-semibold tracking-tight text-foreground"
-              >
-                Quizly
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md border border-primary/25 bg-primary/12 transition-all duration-300 group-hover:bg-primary/20 group-hover:border-primary/40 group-hover:shadow-[0_0_10px_oklch(0.77_0.195_68_/_0.20)]">
+                  <svg
+                    className="text-primary w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path d="M10 1.5C10 1.5 10.9 7.2 13.8 9.5C16.4 11.6 20 11 20 11C20 11 16.4 10.4 13.8 12.5C10.9 14.8 10 20 10 20C10 20 9.1 14.8 6.2 12.5C3.6 10.4 0 11 0 11C0 11 3.6 11.6 6.2 9.5C9.1 7.2 10 1.5 10 1.5Z" />
+                  </svg>
+                </div>
+                <span className="font-heading text-sm font-bold tracking-tight text-foreground">
+                  Quizly
+                </span>
               </Link>
               {user && (
-                <nav className="flex items-center gap-1">
+                <nav className="flex items-center gap-0.5">
                   <Link
                     href="/"
-                    className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground/80 transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
                   >
                     Decks
                   </Link>
                   <Link
+                    href="/generate"
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground/80 transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
+                  >
+                    Generate
+                  </Link>
+                  <Link
                     href="/import"
-                    className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground/80 transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
                   >
                     Import
                   </Link>
                 </nav>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {user ? (
                 <>
-                  <span className="hidden text-xs text-muted-foreground sm:block">
+                  <span className="hidden text-xs text-muted-foreground/45 sm:block">
                     {user.email}
                   </span>
                   <form action={signOut}>

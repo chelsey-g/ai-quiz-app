@@ -4,6 +4,12 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Database } from "@/lib/database.types";
 
 type Deck = Database["public"]["Tables"]["decks"]["Row"];
@@ -202,6 +208,60 @@ export default function DeckPage() {
     );
   }
 
+  // ── Mode selection modal ──────────────────────────────────────────────────
+  const modeModal = (
+    <Dialog open={showModeModal} onOpenChange={setShowModeModal}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-base font-semibold">
+            How do you want to answer?
+          </DialogTitle>
+        </DialogHeader>
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          {(
+            [
+              {
+                mode: "flip" as AnswerMode,
+                label: "Flip card",
+                description: "Reveal & self-assess",
+              },
+              {
+                mode: "type" as AnswerMode,
+                label: "Type answer",
+                description: "Write it out",
+              },
+              {
+                mode: "multiple-choice" as AnswerMode,
+                label: "Multiple choice",
+                description: "Pick from 4 options",
+                disabled: allCards.length < 4,
+              },
+              {
+                mode: "random" as AnswerMode,
+                label: "Random",
+                description: "Mix it up",
+              },
+            ] as Array<{ mode: AnswerMode; label: string; description: string; disabled?: boolean }>
+          ).map(({ mode, label, description, disabled }) => (
+            <button
+              key={mode}
+              disabled={disabled}
+              onClick={() => !disabled && startStudy(mode)}
+              className={`rounded-xl border p-4 text-left transition-colors ${
+                disabled
+                  ? "cursor-not-allowed border-border/40 opacity-40"
+                  : "border-border hover:border-primary/50 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              }`}
+            >
+              <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
+            </button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // ── Idle — deck overview ──────────────────────────────────────────────────
   if (studyState === "idle") {
     const hasDue = dueCards.length > 0;
@@ -291,6 +351,7 @@ export default function DeckPage() {
             </div>
           </div>
         )}
+        {modeModal}
       </div>
     );
   }
@@ -350,6 +411,7 @@ export default function DeckPage() {
             Retest all
           </Button>
         </div>
+        {modeModal}
       </div>
     );
   }
@@ -456,6 +518,7 @@ export default function DeckPage() {
       <p className="mt-4 text-center text-[10px] text-muted-foreground/30 tracking-wide">
         space to flip · ← still learning · → knew it
       </p>
+      {modeModal}
     </div>
   );
 }

@@ -105,6 +105,9 @@ export default function DeckPage() {
   }, [currentCard, studyQueue]);
 
   function advance() {
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setSelectedMcOption(null);
     if (currentIndex + 1 >= studyQueue.length) {
       setStudyState("done");
     } else {
@@ -113,14 +116,43 @@ export default function DeckPage() {
     }
   }
 
-  function startStudy(mode: StudyMode = "due") {
-    setStudyMode(mode);
+  function startStudy(mode: AnswerMode = answerMode) {
     sessionSavedRef.current = false;
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
     setUnknown(new Set());
     setStartedAt(new Date().toISOString());
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setSelectedMcOption(null);
+    setAnswerMode(mode);
+    setShowModeModal(false);
+
+    const fixedModes: ResolvedMode[] = ["flip", "type", "multiple-choice"];
+    const resolvedModes: Record<string, ResolvedMode> = {};
+    const resolvedMcOptions: Record<string, string[]> = {};
+
+    studyQueue.forEach((card) => {
+      let cardMode: ResolvedMode =
+        mode === "random"
+          ? fixedModes[Math.floor(Math.random() * fixedModes.length)]
+          : (mode as ResolvedMode);
+
+      // Fall back to flip if not enough cards for MC distractors
+      if (cardMode === "multiple-choice" && allCards.length < 4) {
+        cardMode = "flip";
+      }
+
+      resolvedModes[card.id] = cardMode;
+
+      if (cardMode === "multiple-choice") {
+        resolvedMcOptions[card.id] = generateMcOptions(allCards, card);
+      }
+    });
+
+    setCardModes(resolvedModes);
+    setMcOptions(resolvedMcOptions);
     setStudyState("studying");
   }
 
@@ -221,14 +253,14 @@ export default function DeckPage() {
                     {dueCards.length} {dueCards.length === 1 ? "card" : "cards"} due now
                   </p>
                 </div>
-                <Button onClick={() => startStudy("due")} size="lg">
+                <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg">
                   Start session
                 </Button>
               </div>
             </div>
             {allCards.length > dueCards.length && (
               <button
-                onClick={() => startStudy("all")}
+                onClick={() => { setStudyMode("all"); setShowModeModal(true); }}
                 className="w-full text-center text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
               >
                 Retest all {allCards.length} cards
@@ -251,7 +283,7 @@ export default function DeckPage() {
                   ) : null}
                 </div>
                 {allCards.length > 0 && (
-                  <Button variant="outline" onClick={() => startStudy("all")}>
+                  <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
                     Retest all
                   </Button>
                 )}
@@ -310,11 +342,11 @@ export default function DeckPage() {
             Back to decks
           </Button>
           {unknownCount > 0 && (
-            <Button variant="outline" onClick={() => startStudy(studyMode)}>
+            <Button variant="outline" onClick={() => setShowModeModal(true)}>
               Study again
             </Button>
           )}
-          <Button onClick={() => startStudy("all")}>
+          <Button onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
             Retest all
           </Button>
         </div>

@@ -1,6 +1,6 @@
 ---
 assigned-to: both
-status: ready
+status: in-progress
 context: "The deck ID is already selected from the Supabase insert (newDeck.id) — it just needs to be added to the result payload and rendered. Keep the existing card layout intact."
 ---
 

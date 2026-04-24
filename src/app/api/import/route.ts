@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     file: string;
     status: "ok" | "error";
     title?: string;
+    deckId?: string;
     cardCount?: number;
     provider?: string;
     model?: string;
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
         file: file.name,
         status: "ok",
         title: deck.title,
+        deckId: newDeck.id,
         cardCount: deck.cards.length,
         provider,
         model,

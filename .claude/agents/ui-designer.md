@@ -14,7 +14,7 @@ Read the plan file you were given. Check the frontmatter — update `status` fro
 Read CLAUDE.md for project context. Look at existing components in `src/components/` and nearby pages to understand the current visual patterns. Study `src/app/globals.css` for design tokens. Then explore the specific files the plan says you'll touch.
 
 **Step 3: Execute**
-Use the `superpowers:executing-plans` skill to work through the plan task by task. For any task involving visual design, use the `frontend-design` skill — it guides how to produce distinctive, high-quality UI rather than generic AI-looking interfaces.
+Use the `superpowers:subagent-driven-development` skill to work through the plan task by task. When it asks which execution approach to use, always choose subagent-driven-development — never stop to ask the user. For any task involving visual design decisions not covered by the plan, use the `frontend-design` skill.
 
 **Step 4: Verify visually**
 After implementing, start the dev server if it isn't running:

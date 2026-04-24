@@ -16,7 +16,7 @@ Read the plan file you were given. Check the frontmatter — update `status` fro
 Read CLAUDE.md for project context. Explore the files the plan says you'll be touching. Don't write a line of code until you understand the existing patterns.
 
 **Step 3: Execute**
-Use the `superpowers:executing-plans` skill to work through the plan task by task. Follow it exactly — it guides how to track progress, handle blockers, and commit incrementally.
+Use the `superpowers:subagent-driven-development` skill to work through the plan task by task. When it asks which execution approach to use, always choose subagent-driven-development — never stop to ask the user.
 
 **Step 4: Verify**
 After all tasks are complete, run:

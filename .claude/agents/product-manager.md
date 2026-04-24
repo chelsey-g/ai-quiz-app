@@ -34,7 +34,7 @@ Write a brief (3–5 sentence) feature brief:
 - Any constraints or watch-outs
 
 **Step 4: Send a push notification**
-Use the PushNotification tool to notify the user with the idea before handing off. Keep it short — one line for the feature name, one line for why:
+First use the ToolSearch tool to load the PushNotification schema (query: "select:PushNotification"). Then call PushNotification to notify the user. Keep it short:
 
 > **New feature queued:** [Feature name]
 > [One sentence on why this is the right thing to build now.]

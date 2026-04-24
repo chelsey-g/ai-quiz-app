@@ -41,11 +41,11 @@ Use the PushNotification tool to notify the user with the idea before handing of
 > Handing off to Architect.
 
 **Step 5: Spawn the Architect**
-Use the Agent tool to spawn the architect agent, passing the feature brief as the prompt:
+Use the Agent tool (subagent_type: general-purpose) with this prompt:
 
-> "Here is a feature brief to design and plan:
-> [paste the full feature brief]
-> Read the codebase for context, then run the full brainstorming → writing-plans workflow and hand off to the appropriate implementation agent when done."
+> "You are the Architect agent for the Quizly project. Before doing anything else, read your full instructions from `.claude/agents/architect.md`. Then act on this feature brief:
+>
+> [paste the full feature brief]"
 
 ## What Makes a Good Feature Idea
 

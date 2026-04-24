@@ -35,11 +35,11 @@ Use this logic to choose `assigned-to`:
 - `both` — features that need a new page/component AND a new API route or data layer
 
 **Step 5: Spawn the implementing agent(s)**
-Use the Agent tool to spawn the appropriate agent, passing this as the prompt:
+Use the Agent tool (subagent_type: general-purpose) with this prompt:
 
-> "Pick up and execute this implementation plan: docs/superpowers/plans/YYYY-MM-DD-<topic>.md. Read the plan frontmatter for context."
+> "You are the [Engineer | UI Designer] agent for the Quizly project. Before doing anything else, read your full instructions from `.claude/agents/[engineer | ui-designer].md`. Then pick up and execute this implementation plan: `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`. Read the plan frontmatter for context."
 
-If `assigned-to: both`, spawn Engineer and UI Designer in parallel in the same message.
+If `assigned-to: both`, send a single message with two Agent tool calls in parallel — one for Engineer, one for UI Designer.
 
 ## Rules
 

@@ -168,14 +168,50 @@ export default function DeckPage() {
 
   useEffect(() => {
     if (studyState !== "studying") return;
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === " " || e.key === "Enter") { e.preventDefault(); setFlipped((f) => !f); }
-      if (e.key === "ArrowRight" && flipped) markKnown();
-      if (e.key === "ArrowLeft" && flipped) markUnknown();
+      if (currentCardMode === "flip") {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          setFlipped((f) => !f);
+        }
+        if (e.key === "ArrowRight" && flipped) markKnown();
+        if (e.key === "ArrowLeft" && flipped) markUnknown();
+      }
+
+      if (currentCardMode === "type" && answerSubmitted) {
+        if (e.key === "ArrowRight") markKnown();
+        if (e.key === "ArrowLeft") markUnknown();
+      }
+
+      if (currentCardMode === "multiple-choice" && selectedMcOption === null) {
+        const options = mcOptions[currentCard?.id ?? ""] ?? [];
+        const idx = ["1", "2", "3", "4"].indexOf(e.key);
+        if (idx !== -1 && options[idx]) {
+          const option = options[idx];
+          setSelectedMcOption(option);
+          if (option === currentCard.back) {
+            setTimeout(() => markKnown(), 700);
+          } else {
+            setTimeout(() => markUnknown(), 700);
+          }
+        }
+      }
     }
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [studyState, flipped, markKnown, markUnknown]);
+  }, [
+    studyState,
+    flipped,
+    markKnown,
+    markUnknown,
+    currentCardMode,
+    answerSubmitted,
+    selectedMcOption,
+    mcOptions,
+    currentCard,
+  ]);
 
   useEffect(() => {
     if (studyState !== "done" || !deck || !startedAt || sessionSavedRef.current) return;

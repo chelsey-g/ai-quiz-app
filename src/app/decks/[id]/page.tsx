@@ -97,6 +97,10 @@ export default function DeckPage() {
 
   const studyQueue = studyMode === "all" ? allCards : dueCards;
   const currentCard = studyQueue[currentIndex];
+  const currentCardMode: ResolvedMode =
+    studyState === "studying" && currentCard
+      ? (cardModes[currentCard.id] ?? "flip")
+      : "flip";
 
   const markKnown = useCallback(() => {
     setKnown((prev) => new Set([...prev, currentCard.id]));
@@ -446,78 +450,151 @@ export default function DeckPage() {
         />
       </div>
 
-      {/* Flashcard */}
-      <div
-        className="relative cursor-pointer select-none"
-        style={{ perspective: "1200px" }}
-        onClick={() => setFlipped((f) => !f)}
-      >
-        <div
-          className="relative h-80 w-full transition-transform duration-500"
-          style={{
-            transformStyle: "preserve-3d",
-            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-          }}
-        >
-          {/* Front */}
+      {/* Flashcard — flip mode */}
+      {currentCardMode === "flip" && (
+        <>
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-border/50 bg-card px-8 text-center"
-            style={{ backfaceVisibility: "hidden" }}
+            className="relative cursor-pointer select-none"
+            style={{ perspective: "1200px" }}
+            onClick={() => setFlipped((f) => !f)}
           >
-            <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-primary/6 to-transparent pointer-events-none" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-            <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.18em] text-primary/55">
+            <div
+              className="relative h-72 w-full transition-transform duration-500"
+              style={{
+                transformStyle: "preserve-3d",
+                transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+              }}
+            >
+              {/* Front */}
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-8 text-center"
+                style={{ backfaceVisibility: "hidden" }}
+              >
+                <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
+                  Question
+                </p>
+                <p className="text-lg font-medium leading-relaxed text-foreground">
+                  {currentCard.front}
+                </p>
+                <p className="mt-8 text-[10px] text-muted-foreground/50">
+                  tap or press space to reveal
+                </p>
+              </div>
+              {/* Back */}
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-primary/20 bg-card px-8 text-center"
+                style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+              >
+                <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
+                  Answer
+                </p>
+                <p className="text-lg leading-relaxed text-foreground">{currentCard.back}</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`mt-5 flex gap-3 transition-all duration-300 ${
+              flipped ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 pointer-events-none"
+            }`}
+          >
+            <Button
+              variant="outline"
+              className="flex-1 border-border text-muted-foreground hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
+              onClick={markUnknown}
+            >
+              Still learning
+              <span className="ml-1.5 text-[10px] opacity-40">←</span>
+            </Button>
+            <Button className="flex-1" onClick={markKnown}>
+              Knew it
+              <span className="ml-1.5 text-[10px] opacity-60">→</span>
+            </Button>
+          </div>
+
+          <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
+            space to flip · ← still learning · → knew it
+          </p>
+        </>
+      )}
+
+      {/* Flashcard — type mode */}
+      {currentCardMode === "type" && (
+        <>
+          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+            <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>
-            <p className="text-xl font-medium leading-relaxed text-foreground">
+            <p className="text-lg font-medium leading-relaxed text-foreground text-center">
               {currentCard.front}
             </p>
-            <p className="mt-10 text-[10px] text-muted-foreground/35 tracking-wide">
-              tap or press space to reveal
-            </p>
+
+            {!answerSubmitted ? (
+              <div className="mt-6">
+                <textarea
+                  autoFocus
+                  value={typedAnswer}
+                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (typedAnswer.trim()) setAnswerSubmitted(true);
+                    }
+                  }}
+                  placeholder="Type your answer…"
+                  rows={3}
+                  className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <Button
+                  className="mt-3 w-full"
+                  disabled={!typedAnswer.trim()}
+                  onClick={() => setAnswerSubmitted(true)}
+                >
+                  Submit
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-3">
+                <div className="rounded-xl bg-muted/40 px-4 py-3">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    Your answer
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
+                </div>
+                <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
+                    Correct answer
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">{currentCard.back}</p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Back */}
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-primary/25 bg-card px-8 text-center"
-            style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-          >
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-primary/4 to-transparent pointer-events-none" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-            <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.18em] text-primary/55">
-              Answer
-            </p>
-            <p className="text-xl leading-relaxed text-foreground">
-              {currentCard.back}
-            </p>
-          </div>
-        </div>
-      </div>
+          {answerSubmitted && (
+            <div className="mt-5 flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 border-border text-muted-foreground hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
+                onClick={markUnknown}
+              >
+                Still learning
+                <span className="ml-1.5 text-[10px] opacity-40">←</span>
+              </Button>
+              <Button className="flex-1" onClick={markKnown}>
+                Knew it
+                <span className="ml-1.5 text-[10px] opacity-60">→</span>
+              </Button>
+            </div>
+          )}
 
-      {/* Actions */}
-      <div
-        className={`mt-5 flex gap-3 transition-all duration-300 ${
-          flipped ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1.5 pointer-events-none"
-        }`}
-      >
-        <Button
-          variant="outline"
-          className="flex-1 rounded-xl border-border/50 text-muted-foreground hover:border-rose-500/30 hover:bg-rose-500/5 hover:text-rose-400"
-          onClick={markUnknown}
-        >
-          Still learning
-          <kbd className="ml-2 text-[10px] opacity-35 font-sans not-italic">←</kbd>
-        </Button>
-        <Button className="flex-1 rounded-xl" onClick={markKnown}>
-          Knew it
-          <kbd className="ml-2 text-[10px] opacity-55 font-sans not-italic">→</kbd>
-        </Button>
-      </div>
-
-      <p className="mt-4 text-center text-[10px] text-muted-foreground/30 tracking-wide">
-        space to flip · ← still learning · → knew it
-      </p>
+          {answerSubmitted && (
+            <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
+              ← still learning · → knew it
+            </p>
+          )}
+        </>
+      )}
       {modeModal}
     </div>
   );

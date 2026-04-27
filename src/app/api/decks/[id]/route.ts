@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getDeckById } from "@/lib/services/decks";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -16,16 +17,12 @@ export async function GET(
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [{ data: deck, error: deckError }, { data: cards, error: cardsError }] =
-    await Promise.all([
-      supabase.from("decks").select("*").eq("id", id).eq("user_id", user.id).single(),
-      supabase.from("cards").select("*").eq("deck_id", id).order("created_at"),
-    ]);
-
-  if (deckError) {
-    const status = deckError.code === "PGRST116" ? 404 : 500;
-    return Response.json({ error: deckError.message }, { status });
+  try {
+    const { deck, cards } = await getDeckById(id, user.id);
+    return Response.json({ deck, cards });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const status = (err as Error & { status?: number }).status ?? 500;
+    return Response.json({ error: message }, { status });
   }
-
-  return Response.json({ deck, cards: cards ?? [] });
 }

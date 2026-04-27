@@ -13,6 +13,12 @@ const TOPIC_SYSTEM_PROMPT =
   "for active recall practice covering the most important concepts, APIs, patterns, and gotchas. " +
   "Generate 10–15 cards. Every card must be self-contained — do not reference other cards.";
 
+const NOTES_SYSTEM_PROMPT =
+  "You are a study content generator. Given notes on any subject, extract the key concepts, " +
+  "facts, and ideas and generate flashcards for active recall practice. Generate 8–15 cards " +
+  "depending on content depth. If an optional title is provided, use it as the deck title; " +
+  "otherwise, infer a clear, specific title from the content. Every card must be self-contained.";
+
 // Ordered cheapest → most capable. Each entry skipped if its key isn't set.
 const MODEL_PRIORITY = [
   { provider: "openai" as const, model: "gpt-4o-mini" },
@@ -24,7 +30,7 @@ const MODEL_PRIORITY = [
 export async function generateCards(
   content: string,
   filePath: string,
-  mode: "file" | "topic" = "file"
+  mode: "file" | "topic" | "notes" = "file"
 ): Promise<{ deck: GeneratedDeck; provider: string; model: string }> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -32,11 +38,19 @@ export async function generateCards(
   const anthropic = anthropicKey ? createAnthropic({ apiKey: anthropicKey }) : null;
   const openai = openaiKey ? createOpenAI({ apiKey: openaiKey }) : null;
 
-  const systemPrompt = mode === "topic" ? TOPIC_SYSTEM_PROMPT : FILE_SYSTEM_PROMPT;
+  const systemPrompt =
+    mode === "topic"
+      ? TOPIC_SYSTEM_PROMPT
+      : mode === "notes"
+        ? NOTES_SYSTEM_PROMPT
+        : FILE_SYSTEM_PROMPT;
+
   const userPrompt =
     mode === "topic"
       ? `Topic: ${content}`
-      : `File: ${filePath}\n\n${content}`;
+      : mode === "notes"
+        ? (filePath ? `Title: ${filePath}\n\n` : "") + `Notes:\n${content}`
+        : `File: ${filePath}\n\n${content}`;
 
   const errors: string[] = [];
 

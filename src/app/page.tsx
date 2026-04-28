@@ -48,11 +48,97 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
   );
 }
 
-function SectionHeading({ title }: { title: string }) {
+function JumpBackInCard({
+  deck,
+  dueCount,
+}: {
+  deck: DeckWithStats;
+  dueCount: number;
+}) {
   return (
-    <h2 className="font-heading mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-      {title}
-    </h2>
+    <Link href={`/decks/${deck.id}`} className="block group mb-8">
+      <div
+        className="relative overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-0.5"
+        style={{
+          borderColor: "oklch(0.65 0.18 265 / 0.35)",
+          boxShadow: "0 0 0 0 transparent",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow =
+            "0 16px 40px -12px oklch(0.65 0.18 265 / 0.18)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 0 0 transparent";
+        }}
+      >
+        {/* Blue-violet top accent line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[oklch(0.65_0.18_265/_0.7)] to-transparent transition-all duration-300 group-hover:via-[oklch(0.65_0.18_265/_1)]" />
+
+        <div className="flex items-center gap-5 px-6 py-5">
+          {/* Icon */}
+          <div
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-105"
+            style={{
+              borderColor: "oklch(0.65 0.18 265 / 0.3)",
+              background: "oklch(0.65 0.18 265 / 0.1)",
+            }}
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.75}
+              style={{ color: "oklch(0.65 0.18 265)" }}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+              />
+            </svg>
+          </div>
+
+          {/* Text */}
+          <div className="min-w-0 flex-1">
+            <p
+              className="font-heading text-[10px] font-semibold uppercase tracking-[0.15em] mb-0.5"
+              style={{ color: "oklch(0.65 0.18 265 / 0.8)" }}
+            >
+              Jump back in
+            </p>
+            <h3 className="font-heading text-sm font-semibold text-foreground truncate">
+              {deck.title}
+            </h3>
+            {deck.topic_tags.length > 0 && (
+              <p className="mt-0.5 text-xs text-muted-foreground/55 truncate">
+                {deck.topic_tags.slice(0, 3).join(" · ")}
+              </p>
+            )}
+          </div>
+
+          {/* Right side — due badge + arrow */}
+          <div className="flex flex-none items-center gap-3">
+            {dueCount > 0 && (
+              <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-semibold text-amber-400">
+                {dueCount} due
+              </span>
+            )}
+            <svg
+              className="h-4 w-4 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-muted-foreground/70"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -95,18 +181,33 @@ export default function HomePage() {
     fetchAll();
   }, []);
 
-  // Derived data (only computed when not loading)
-  const deckMap = new Map(decks.map((d) => [d.id, d]));
+  // Derived: jump-back-in deck — most recently studied that still has content
+  const jumpDeck =
+    stats && decks.length > 0
+      ? (stats.recentDeckIds
+          .map((id) => decks.find((d) => d.id === id))
+          .find((d): d is DeckWithStats => d !== undefined) ?? null)
+      : null;
 
-  const recentDecks =
-    stats?.recentDeckIds
-      .map((id) => deckMap.get(id))
-      .filter((d): d is DeckWithStats => d !== undefined)
-      .slice(0, 3) ?? [];
-
-  const dueDecks = stats
-    ? decks.filter((d) => (stats.dueCounts[d.id] ?? 0) > 0)
-    : [];
+  // Unified sorted deck list:
+  // 1. Decks with dueCount > 0 — sorted desc by due count
+  // 2. Recently studied decks (no due cards)
+  // 3. Everything else
+  const sortedDecks = stats
+    ? (() => {
+        const recentSet = new Set(stats.recentDeckIds);
+        const withDue = decks
+          .filter((d) => (stats.dueCounts[d.id] ?? 0) > 0)
+          .sort((a, b) => (stats.dueCounts[b.id] ?? 0) - (stats.dueCounts[a.id] ?? 0));
+        const recentNoDue = decks.filter(
+          (d) => recentSet.has(d.id) && (stats.dueCounts[d.id] ?? 0) === 0,
+        );
+        const dueIds = new Set(withDue.map((d) => d.id));
+        const recentNoDueIds = new Set(recentNoDue.map((d) => d.id));
+        const rest = decks.filter((d) => !dueIds.has(d.id) && !recentNoDueIds.has(d.id));
+        return [...withDue, ...recentNoDue, ...rest];
+      })()
+    : decks;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
@@ -126,7 +227,11 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Link
               href="/quiz/quick"
-              className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
+              style={{
+                borderColor: "oklch(0.65 0.18 265 / 0.35)",
+                color: "oklch(0.65 0.18 265 / 0.85)",
+              }}
             >
               Quick Quiz
             </Link>
@@ -145,6 +250,7 @@ export default function HomePage() {
               <div key={i} className="h-20 rounded-xl border border-border/40 bg-card/60 animate-pulse" />
             ))}
           </div>
+          <div className="h-20 rounded-2xl border border-border/40 bg-card/60 animate-pulse" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
@@ -189,49 +295,26 @@ export default function HomePage() {
 
       {/* Main content — only when loaded with data */}
       {!loading && !error && decks.length > 0 && stats && (
-        <div className="space-y-10">
+        <div>
           {/* Stats banner */}
           <StatBanner stats={stats} />
 
-          {/* Continue studying */}
-          {recentDecks.length > 0 && (
-            <section>
-              <SectionHeading title="Continue studying" />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {recentDecks.map((deck, i) => (
-                  <div key={deck.id} className="animate-card-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <DeckCard deck={deck} dueCount={stats.dueCounts[deck.id] ?? 0} />
-                  </div>
-                ))}
-              </div>
-            </section>
+          {/* Jump back in — hero CTA if recently studied */}
+          {jumpDeck && (
+            <JumpBackInCard
+              deck={jumpDeck}
+              dueCount={stats.dueCounts[jumpDeck.id] ?? 0}
+            />
           )}
 
-          {/* Due today */}
-          {dueDecks.length > 0 && (
-            <section>
-              <SectionHeading title="Due today" />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {dueDecks.map((deck, i) => (
-                  <div key={deck.id} className="animate-card-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <DeckCard deck={deck} dueCount={stats.dueCounts[deck.id] ?? 0} />
-                  </div>
-                ))}
+          {/* Unified deck grid */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedDecks.map((deck, i) => (
+              <div key={deck.id} className="animate-card-in" style={{ animationDelay: `${i * 50}ms` }}>
+                <DeckCard deck={deck} dueCount={stats.dueCounts[deck.id] ?? 0} />
               </div>
-            </section>
-          )}
-
-          {/* All decks */}
-          <section>
-            <SectionHeading title="All decks" />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {decks.map((deck, i) => (
-                <div key={deck.id} className="animate-card-in" style={{ animationDelay: `${i * 50}ms` }}>
-                  <DeckCard deck={deck} dueCount={stats.dueCounts[deck.id] ?? 0} />
-                </div>
-              ))}
-            </div>
-          </section>
+            ))}
+          </div>
         </div>
       )}
     </div>

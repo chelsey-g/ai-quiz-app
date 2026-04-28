@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/app/auth/actions";
 import type { User } from "@supabase/supabase-js";
@@ -43,6 +46,8 @@ const NAV_LINKS = [
 ] as const;
 
 export function AppSidebar({ user }: { user: User }) {
+  const pathname = usePathname();
+
   return (
     <aside className="flex h-screen w-56 flex-none flex-col border-r border-border/50 bg-card/40 px-3 py-4">
       {/* Logo */}
@@ -62,16 +67,33 @@ export function AppSidebar({ user }: { user: User }) {
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 flex-1">
-        {NAV_LINKS.map(({ href, label, icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/80 transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
-          >
-            {icon}
-            {label}
-          </Link>
-        ))}
+        {NAV_LINKS.map(({ href, label, icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={
+                isActive
+                  ? "flex items-center gap-3 rounded-lg py-2 pr-3 text-sm font-medium transition-all duration-150"
+                  : "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/80 transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
+              }
+              style={
+                isActive
+                  ? {
+                      background: "oklch(0.65 0.18 265 / 0.12)",
+                      color: "oklch(0.65 0.18 265)",
+                      borderLeft: "2px solid oklch(0.65 0.18 265 / 0.7)",
+                      paddingLeft: "10px",
+                    }
+                  : undefined
+              }
+            >
+              {icon}
+              {label}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* User info + sign out */}

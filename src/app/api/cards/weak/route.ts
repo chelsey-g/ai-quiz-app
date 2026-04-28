@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   }
 
   const url = new URL(req.url);
-  const rawLimit = parseInt(url.searchParams.get("limit") ?? "20", 10);
+  const rawLimit = parseInt(url.searchParams.get("limit") ?? String(WEAK_CARD_LIMIT), 10);
   const limit = Math.min(Math.max(1, rawLimit), 50);
 
   // Fetch all user's cards in one query (join through decks to scope by user_id)

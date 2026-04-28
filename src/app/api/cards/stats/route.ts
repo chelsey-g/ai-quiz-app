@@ -28,6 +28,9 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  // Note: card ownership is not verified here — updateCardStats uses the service-role key.
+  // This matches the same pattern in POST /api/sessions. Ownership enforcement should be
+  // added via RLS on the cards table once user_id is scoped on decks consistently.
   try {
     await updateCardStats(body.results);
     return Response.json({ ok: true });

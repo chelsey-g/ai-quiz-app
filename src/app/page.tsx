@@ -330,10 +330,10 @@ export default function HomePage() {
 
       {/* Empty state */}
       {!loading && !error && decks.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-28 text-center">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-primary/25 bg-primary/10">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-28 text-center animate-fade-up">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 shadow-[0_0_24px_oklch(0.77_0.195_68_/_0.10)]">
             <svg
-              className="h-5 w-5 text-primary"
+              className="h-6 w-6 text-primary"
               fill="currentColor"
               viewBox="0 0 20 20"
               aria-hidden="true"
@@ -341,13 +341,32 @@ export default function HomePage() {
               <path d="M10 1.5C10 1.5 10.9 7.2 13.8 9.5C16.4 11.6 20 11 20 11C20 11 16.4 10.4 13.8 12.5C10.9 14.8 10 20 10 20C10 20 9.1 14.8 6.2 12.5C3.6 10.4 0 11 0 11C0 11 3.6 11.6 6.2 9.5C9.1 7.2 10 1.5 10 1.5Z" />
             </svg>
           </div>
-          <h2 className="font-heading text-base font-semibold text-foreground">No decks yet</h2>
-          <p className="mt-2 max-w-xs text-sm text-muted-foreground/70">
-            Import your Markdown notes to generate AI-powered study decks.
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">
+            Start learning something new
+          </h2>
+          <p className="mt-2.5 max-w-sm text-sm text-muted-foreground/70">
+            Generate flashcards from a topic, paste your notes, or import a Markdown file.
           </p>
-          <Link href="/import" className={buttonVariants({ size: "sm" }) + " mt-6"}>
-            Import notes
-          </Link>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/generate"
+              className={buttonVariants({ size: "sm" })}
+            >
+              Generate from topic
+            </Link>
+            <Link
+              href="/notes"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Paste notes
+            </Link>
+            <Link
+              href="/import"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Import file
+            </Link>
+          </div>
         </div>
       )}
 

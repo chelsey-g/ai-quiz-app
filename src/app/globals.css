@@ -84,6 +84,9 @@
   --sidebar-accent-foreground: oklch(0.12 0.010 60);
   --sidebar-border: oklch(0.88 0.010 75);
   --sidebar-ring: oklch(0.57 0.22 62);
+  /* Body background texture — light mode */
+  --body-gradient-top: oklch(0.88 0.030 68 / 0.45);
+  --body-dot-color: oklch(0.82 0.015 75 / 0.55);
 }
 
 .dark {
@@ -119,6 +122,9 @@
   --sidebar-accent-foreground: oklch(0.93 0.018 80);
   --sidebar-border: oklch(0.225 0.011 65);
   --sidebar-ring: oklch(0.77 0.195 68);
+  /* Body background texture — dark mode */
+  --body-gradient-top: oklch(0.18 0.032 68 / 0.55);
+  --body-dot-color: oklch(0.20 0.009 65 / 0.42);
 }
 
 @layer base {
@@ -128,8 +134,8 @@
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(ellipse 110% 45% at 50% -5%, oklch(0.18 0.032 68 / 0.55) 0%, transparent 65%),
-      radial-gradient(oklch(0.20 0.009 65 / 0.42) 1px, transparent 1px);
+      radial-gradient(ellipse 110% 45% at 50% -5%, var(--body-gradient-top) 0%, transparent 65%),
+      radial-gradient(var(--body-dot-color) 1px, transparent 1px);
     background-size: 100% 100%, 26px 26px;
     background-attachment: fixed;
   }

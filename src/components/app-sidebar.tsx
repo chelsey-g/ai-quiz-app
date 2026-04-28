@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/app/auth/actions";
 import type { User } from "@supabase/supabase-js";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
   {
@@ -99,14 +100,17 @@ export function AppSidebar({ user }: { user: User }) {
       {/* User info + sign out */}
       <div className="border-t border-border/40 pt-3 mt-3">
         <p className="truncate px-3 text-[11px] text-muted-foreground/50 mb-2">{user.email}</p>
-        <form action={signOut}>
-          <button
-            type="submit"
-            className={buttonVariants({ variant: "outline", size: "sm" }) + " w-full text-xs"}
-          >
-            Sign out
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <form action={signOut} className="flex-1">
+            <button
+              type="submit"
+              className={buttonVariants({ variant: "outline", size: "sm" }) + " w-full text-xs"}
+            >
+              Sign out
+            </button>
+          </form>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

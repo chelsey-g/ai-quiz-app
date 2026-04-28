@@ -12,7 +12,22 @@ type DashboardStats = {
   cardsDueToday: number;
   recentDeckIds: string[];
   dueCounts: Record<string, number>;
+  streakDays: number;
+  streakStatus: "active" | "at_risk" | "none";
 };
+
+function FlameIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12 2C12 2 13.5 8 17 10.5C20 12.7 24 12 24 12C24 12 20 11.3 17 13.5C13.5 16 12 22 12 22C12 22 10.5 16 7 13.5C4 11.3 0 12 0 12C0 12 4 12.7 7 10.5C10.5 8 12 2 12 2Z" />
+    </svg>
+  );
+}
 
 function StatBanner({ stats }: { stats: DashboardStats }) {
   const accuracy =
@@ -20,8 +35,32 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
       ? Math.round((stats.totalCorrect / stats.totalSeen) * 100)
       : null;
 
+  const streakValue =
+    stats.streakStatus === "none" || stats.streakDays === 0
+      ? "—"
+      : `${stats.streakDays}`;
+
+  const streakLabel =
+    stats.streakStatus === "none" || stats.streakDays === 0
+      ? null
+      : stats.streakDays === 1
+      ? "day"
+      : "days";
+
+  const streakColor =
+    stats.streakStatus === "active"
+      ? "text-primary"
+      : stats.streakStatus === "at_risk"
+      ? "text-amber-400"
+      : "text-foreground";
+
+  const streakSubtext =
+    stats.streakStatus === "at_risk" ? (
+      <p className="mt-0.5 text-[10px] text-amber-400/80">at risk</p>
+    ) : null;
+
   return (
-    <div className="mb-8 grid grid-cols-3 gap-3">
+    <div className="mb-8 grid grid-cols-4 gap-3">
       <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Total cards</p>
         <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
@@ -43,6 +82,25 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
         >
           {stats.cardsDueToday}
         </p>
+      </div>
+      <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Streak</p>
+        <div className="mt-1 flex items-baseline gap-1">
+          <FlameIcon
+            className={`h-5 w-5 flex-none ${streakColor} ${
+              stats.streakStatus === "at_risk" ? "animate-pulse" : ""
+            }`}
+          />
+          <p className={`font-heading text-2xl font-bold tabular-nums ${streakColor}`}>
+            {streakValue}
+          </p>
+          {streakLabel && (
+            <span className={`font-heading text-sm font-medium ${streakColor} opacity-70`}>
+              {streakLabel}
+            </span>
+          )}
+        </div>
+        {streakSubtext}
       </div>
     </div>
   );
@@ -245,8 +303,8 @@ export default function HomePage() {
       {/* Loading skeletons */}
       {loading && (
         <div className="space-y-8">
-          <div className="grid grid-cols-3 gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+          <div className="grid grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-20 rounded-xl border border-border/40 bg-card/60 animate-pulse" />
             ))}
           </div>

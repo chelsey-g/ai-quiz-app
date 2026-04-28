@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeStreak } from "@/lib/streak";
+import type { StreakStatus } from "@/lib/streak";
 
 export type DashboardStats = {
   totalCards: number;
@@ -7,11 +9,14 @@ export type DashboardStats = {
   cardsDueToday: number;
   recentDeckIds: string[];
   dueCounts: Record<string, number>;
+  streakDays: number;
+  streakStatus: StreakStatus;
 };
 
 /**
  * Returns global study stats for the given user. Mirrors the logic in
- * GET /api/dashboard — deck IDs, card aggregates, due counts, and recent sessions.
+ * GET /api/dashboard — deck IDs, card aggregates, due counts, recent sessions,
+ * and current study streak.
  */
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const supabase = await createClient();
@@ -35,29 +40,42 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       cardsDueToday: 0,
       recentDeckIds: [],
       dueCounts: {},
+      streakDays: 0,
+      streakStatus: "none",
     };
   }
 
-  const [{ data: cards, error: cardsError }, { data: sessions, error: sessionsError }] =
-    await Promise.all([
-      supabase
-        .from("cards")
-        .select("deck_id, times_seen, times_correct, next_review_at")
-        .in("deck_id", deckIds),
-      supabase
-        .from("sessions")
-        .select("deck_id, completed_at")
-        .eq("user_id", userId)
-        .not("completed_at", "is", null)
-        .order("completed_at", { ascending: false })
-        .limit(20),
-    ]);
+  const [
+    { data: cards, error: cardsError },
+    { data: recentSessions, error: recentSessionsError },
+    { data: allSessionDates, error: allSessionDatesError },
+  ] = await Promise.all([
+    supabase
+      .from("cards")
+      .select("deck_id, times_seen, times_correct, next_review_at")
+      .in("deck_id", deckIds),
+    supabase
+      .from("sessions")
+      .select("deck_id, completed_at")
+      .eq("user_id", userId)
+      .not("completed_at", "is", null)
+      .order("completed_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("sessions")
+      .select("completed_at")
+      .eq("user_id", userId)
+      .not("completed_at", "is", null),
+  ]);
 
   if (cardsError) {
     throw new Error(cardsError.message);
   }
-  if (sessionsError) {
-    throw new Error(sessionsError.message);
+  if (recentSessionsError) {
+    throw new Error(recentSessionsError.message);
+  }
+  if (allSessionDatesError) {
+    throw new Error(allSessionDatesError.message);
   }
 
   const now = new Date().toISOString();
@@ -81,12 +99,18 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 
   const seen = new Set<string>();
   const recentDeckIds: string[] = [];
-  for (const s of sessions ?? []) {
+  for (const s of recentSessions ?? []) {
     if (!seen.has(s.deck_id) && recentDeckIds.length < 5) {
       seen.add(s.deck_id);
       recentDeckIds.push(s.deck_id);
     }
   }
+
+  const completedAts = (allSessionDates ?? [])
+    .map((s) => s.completed_at)
+    .filter((ts): ts is string => ts !== null);
+
+  const { streakDays, streakStatus } = computeStreak(completedAts);
 
   return {
     totalCards,
@@ -95,5 +119,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     cardsDueToday,
     recentDeckIds,
     dueCounts,
+    streakDays,
+    streakStatus,
   };
 }

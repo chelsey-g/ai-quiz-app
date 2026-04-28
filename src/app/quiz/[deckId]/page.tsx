@@ -230,8 +230,34 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      <div className="flex min-h-screen flex-col">
+        {/* Top bar skeleton */}
+        <div className="border-b border-border bg-background/80">
+          <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
+            <div className="h-3 w-16 animate-pulse rounded bg-muted/40" />
+            <div className="flex items-center gap-3">
+              <div className="h-1.5 w-32 animate-pulse rounded-full bg-muted/40" />
+              <div className="h-3 w-10 animate-pulse rounded bg-muted/40" />
+            </div>
+          </div>
+        </div>
+        {/* Question card skeleton */}
+        <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
+          <div className="rounded-2xl border border-border/40 bg-card/60 px-8 py-8 animate-pulse">
+            <div className="mx-auto mb-5 h-2.5 w-20 rounded bg-muted/40" />
+            <div className="mx-auto h-5 w-3/4 rounded bg-muted/40" />
+            <div className="mx-auto mt-2 h-5 w-1/2 rounded bg-muted/40" />
+          </div>
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-12 animate-pulse rounded-xl border border-border/40 bg-card/60"
+                style={{ animationDelay: `${i * 60}ms` }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

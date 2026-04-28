@@ -97,6 +97,13 @@ export default function QuizPage() {
       });
   }, [id]);
 
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
   // ── Session save ──────────────────────────────────────────────────────────
 
   async function saveQuizSession(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {

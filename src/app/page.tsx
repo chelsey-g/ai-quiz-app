@@ -123,9 +123,17 @@ export default function HomePage() {
           )}
         </div>
         {!loading && !error && decks.length > 0 && (
-          <Link href="/import" className={buttonVariants({ size: "sm" })}>
-            Import notes
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/quiz/quick"
+              className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+            >
+              Quick Quiz
+            </Link>
+            <Link href="/import" className={buttonVariants({ size: "sm" })}>
+              Import notes
+            </Link>
+          </div>
         )}
       </div>
 

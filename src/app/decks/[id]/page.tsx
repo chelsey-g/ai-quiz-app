@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -353,9 +354,17 @@ export default function DeckPage() {
                     {dueCards.length} {dueCards.length === 1 ? "card" : "cards"} due now
                   </p>
                 </div>
-                <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg">
-                  Start session
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg">
+                    Start session
+                  </Button>
+                  <Link
+                    href={`/quiz/${id}`}
+                    className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                  >
+                    Take a quiz
+                  </Link>
+                </div>
               </div>
             </div>
             {allCards.length > dueCards.length && (
@@ -383,9 +392,17 @@ export default function DeckPage() {
                   ) : null}
                 </div>
                 {allCards.length > 0 && (
-                  <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
-                    Retest all
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
+                      Retest all
+                    </Button>
+                    <Link
+                      href={`/quiz/${id}`}
+                      className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                    >
+                      Take a quiz
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

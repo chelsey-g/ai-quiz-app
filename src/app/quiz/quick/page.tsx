@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Database } from "@/lib/database.types";
+import { useWrongAnswerExplanations } from "@/hooks/use-wrong-answer-explanations";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 
@@ -63,6 +64,10 @@ export default function QuickQuizPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
+
+  const { explanations, explanationsLoading } = useWrongAnswerExplanations(
+    phase === "results" ? answers : []
+  );
 
   useEffect(() => {
     fetch("/api/cards/weak")
@@ -462,11 +467,29 @@ export default function QuickQuizPage() {
                 <div className="flex-1">
                   <p className="font-medium text-foreground">{answer.card.front}</p>
                   {!answer.correct && (
-                    <div className="mt-1.5 space-y-1">
+                    <div className="mt-1.5 space-y-2">
                       <p className="text-destructive/80">Your answer: {answer.userAnswer}</p>
                       <p className="text-green-600 dark:text-green-400">
                         Correct: {answer.card.back}
                       </p>
+                      <div className="mt-2 rounded-lg bg-muted/40 px-3 py-2">
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60">
+                          Why
+                        </p>
+                        {explanations[answer.cardId] ? (
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            {explanations[answer.cardId]}
+                            {explanationsLoading && !explanations[answer.cardId]?.endsWith(" ") && (
+                              <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-muted-foreground/40 align-middle" />
+                            )}
+                          </p>
+                        ) : explanationsLoading ? (
+                          <div className="space-y-1.5">
+                            <div className="h-2.5 w-full animate-pulse rounded bg-muted-foreground/20" />
+                            <div className="h-2.5 w-4/5 animate-pulse rounded bg-muted-foreground/20" />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   )}
                 </div>

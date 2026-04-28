@@ -472,12 +472,45 @@ export default function QuizPage() {
 
   // ── Results phase ─────────────────────────────────────────────────────────
 
+  function getScoreFeedback(pct: number): { headline: string; subtext: string; headlineClass: string } {
+    if (pct >= 90) {
+      return {
+        headline: "Excellent!",
+        subtext: "You've got this material down.",
+        headlineClass: "text-primary",
+      };
+    } else if (pct >= 70) {
+      return {
+        headline: "Good work!",
+        subtext: "Keep at it — a few more sessions and you'll nail it.",
+        headlineClass: "text-foreground",
+      };
+    } else {
+      return {
+        headline: "Keep practicing",
+        subtext: "Check the explanations below to understand what tripped you up.",
+        headlineClass: "text-muted-foreground",
+      };
+    }
+  }
+
   const resultsPhase = phase === "results" && (
     <div className="mx-auto max-w-2xl px-6 py-10">
       {/* Score header */}
       <div className="mb-8 text-center">
         <p className="font-heading text-6xl font-bold text-primary">{scorePercent}%</p>
-        <p className="mt-2 text-sm text-muted-foreground">
+        {(() => {
+          const feedback = getScoreFeedback(scorePercent);
+          return (
+            <>
+              <p className={`font-heading mt-3 text-lg font-bold ${feedback.headlineClass}`}>
+                {feedback.headline}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground/70">{feedback.subtext}</p>
+            </>
+          );
+        })()}
+        <p className="mt-3 text-sm text-muted-foreground">
           {correctCount}/{answers.length} correct · {formatElapsed(elapsed)}
         </p>
       </div>

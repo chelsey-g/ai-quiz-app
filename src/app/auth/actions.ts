@@ -36,7 +36,7 @@ export async function signUp(formData: FormData) {
   const password = formData.get("password") as string;
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { emailRedirectTo: getEmailRedirectTo() },
@@ -44,6 +44,10 @@ export async function signUp(formData: FormData) {
 
   if (error) {
     redirect(`/auth/signup?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data.session) {
+    redirect("/");
   }
 
   redirect(`/auth/signup?message=${encodeURIComponent("Check your email to confirm your account.")}`);

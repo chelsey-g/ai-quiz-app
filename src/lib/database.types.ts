@@ -52,6 +52,7 @@ export type Database = {
           last_seen_at: string | null
           next_review_at: string | null
           repetitions: number
+          tags: string[]
           times_correct: number
           times_seen: number
         }
@@ -67,6 +68,7 @@ export type Database = {
           last_seen_at?: string | null
           next_review_at?: string | null
           repetitions?: number
+          tags?: string[]
           times_correct?: number
           times_seen?: number
         }
@@ -82,6 +84,7 @@ export type Database = {
           last_seen_at?: string | null
           next_review_at?: string | null
           repetitions?: number
+          tags?: string[]
           times_correct?: number
           times_seen?: number
         }
@@ -100,7 +103,7 @@ export type Database = {
           card_count: number
           created_at: string
           id: string
-          note_id: string
+          note_id: string | null
           title: string
           topic_tags: string[]
           user_id: string | null
@@ -109,7 +112,7 @@ export type Database = {
           card_count?: number
           created_at?: string
           id?: string
-          note_id: string
+          note_id?: string | null
           title: string
           topic_tags?: string[]
           user_id?: string | null

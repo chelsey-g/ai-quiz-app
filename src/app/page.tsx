@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DeckCard, type DeckWithStats } from "@/components/deck-card";
+import { useRouter } from "next/navigation";
 
 type DashboardStats = {
   totalCards: number;
@@ -200,11 +207,82 @@ function JumpBackInCard({
   );
 }
 
+function NewDeckDialog({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: (deckId: string) => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setTitle("");
+      setErr(null);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [open]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setSaving(true);
+    setErr(null);
+    const res = await fetch("/api/decks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: title.trim() }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setErr(data.error ?? "Failed to create deck");
+      return;
+    }
+    const deck = await res.json();
+    onCreated(deck.id);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-base font-semibold">New deck</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="mt-3 space-y-4">
+          <input
+            ref={inputRef}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Deck title"
+            className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          {err && <p className="text-xs text-destructive">{err}</p>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+            <Button type="submit" size="sm" disabled={!title.trim() || saving}>
+              {saving ? "Creating…" : "Create"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function HomePage() {
+  const router = useRouter();
   const [decks, setDecks] = useState<DeckWithStats[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNewDeck, setShowNewDeck] = useState(false);
 
   useEffect(() => {
     async function fetchAll() {
@@ -295,14 +373,18 @@ export default function HomePage() {
             </Link>
             <Link
               href="/import"
-              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
-              style={{
-                borderColor: "oklch(0.77 0.195 68 / 0.35)",
-                color: "oklch(0.77 0.195 68 / 0.85)",
-              }}
+              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:opacity-90"
+              style={{ background: "oklch(0.77 0.195 68)", color: "oklch(0.15 0.05 68)" }}
             >
               Import notes
             </Link>
+            <button
+              onClick={() => setShowNewDeck(true)}
+              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
+              style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+            >
+              + New deck
+            </button>
           </div>
         )}
       </div>
@@ -355,9 +437,15 @@ export default function HomePage() {
             Generate flashcards from a topic, paste your notes, or import a Markdown file.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setShowNewDeck(true)}
+              className={buttonVariants({ size: "sm" })}
+            >
+              + New deck
+            </button>
             <Link
               href="/generate"
-              className={buttonVariants({ size: "sm" })}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Generate from topic
             </Link>
@@ -376,6 +464,15 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      <NewDeckDialog
+        open={showNewDeck}
+        onClose={() => setShowNewDeck(false)}
+        onCreated={(id) => {
+          setShowNewDeck(false);
+          router.push(`/decks/${id}`);
+        }}
+      />
 
       {/* Main content — only when loaded with data */}
       {!loading && !error && decks.length > 0 && stats && (

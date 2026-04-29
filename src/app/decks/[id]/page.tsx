@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useId } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
     .filter((c) => c.id !== targetCard.id)
     .map((c) => c.back)
     .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
+    .slice(0, Math.min(3, allCards.length - 1));
   return [...distractors, targetCard.back].sort(() => Math.random() - 0.5);
 }
 
@@ -62,6 +62,16 @@ export default function DeckPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [cardFront, setCardFront] = useState("");
+  const [cardBack, setCardBack] = useState("");
+  const [cardTags, setCardTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [addingCard, setAddingCard] = useState(false);
+  const [addCardError, setAddCardError] = useState<string | null>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
   const [studyState, setStudyState] = useState<StudyState>("idle");
   const [studyMode, setStudyMode] = useState<StudyMode>("due");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -70,6 +80,10 @@ export default function DeckPage() {
   const [unknown, setUnknown] = useState<Set<string>>(new Set());
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const sessionSavedRef = useRef(false);
+  const [cardHistory, setCardHistory] = useState<{ index: number; wasKnown: boolean | null }[]>([]);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const [showModeModal, setShowModeModal] = useState(false);
   const [answerMode, setAnswerMode] = useState<AnswerMode>("flip");
@@ -96,7 +110,19 @@ export default function DeckPage() {
     load();
   }, [id]);
 
-  const studyQueue = studyMode === "all" ? allCards : dueCards;
+  const cardLevelTags = [...new Set(allCards.flatMap((c) => (c as Card & { tags?: string[] }).tags ?? []))];
+  const allTags = [...new Set([...(deck?.topic_tags ?? []), ...cardLevelTags])];
+  const tagFilteredCards = activeTag
+    ? (() => {
+        const byCardTag = allCards.filter((c) => ((c as Card & { tags?: string[] }).tags ?? []).includes(activeTag));
+        return byCardTag.length > 0 ? byCardTag : allCards;
+      })()
+    : allCards;
+  const isDeckLevelTag = activeTag !== null && !cardLevelTags.includes(activeTag);
+  const tagFilteredDue = activeTag && !isDeckLevelTag
+    ? dueCards.filter((c) => ((c as Card & { tags?: string[] }).tags ?? []).includes(activeTag))
+    : dueCards;
+  const studyQueue = studyMode === "all" ? tagFilteredCards : tagFilteredDue;
   const currentCard = studyQueue[currentIndex];
   const currentCardMode: ResolvedMode =
     studyState === "studying" && currentCard
@@ -104,16 +130,35 @@ export default function DeckPage() {
       : "flip";
 
   const markKnown = useCallback(() => {
+    setCardHistory((h) => [...h, { index: currentIndex, wasKnown: true }]);
     setKnown((prev) => new Set([...prev, currentCard.id]));
     setUnknown((prev) => { const s = new Set(prev); s.delete(currentCard.id); return s; });
     advance();
-  }, [currentCard, studyQueue]);
+  }, [currentCard, currentIndex, studyQueue]);
 
   const markUnknown = useCallback(() => {
+    setCardHistory((h) => [...h, { index: currentIndex, wasKnown: false }]);
     setUnknown((prev) => new Set([...prev, currentCard.id]));
     setKnown((prev) => { const s = new Set(prev); s.delete(currentCard.id); return s; });
     advance();
-  }, [currentCard, studyQueue]);
+  }, [currentCard, currentIndex, studyQueue]);
+
+  function goBack() {
+    if (cardHistory.length === 0) return;
+    const last = cardHistory[cardHistory.length - 1];
+    const prevCard = studyQueue[last.index];
+    if (prevCard) {
+      if (last.wasKnown === true) setKnown((prev) => { const s = new Set(prev); s.delete(prevCard.id); return s; });
+      if (last.wasKnown === false) setUnknown((prev) => { const s = new Set(prev); s.delete(prevCard.id); return s; });
+    }
+    setCardHistory((h) => h.slice(0, -1));
+    setCurrentIndex(last.index);
+    setFlipped(false);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setSelectedMcOption(null);
+    if (studyState === "done") setStudyState("studying");
+  }
 
   function advance() {
     setTypedAnswer("");
@@ -133,6 +178,7 @@ export default function DeckPage() {
     setFlipped(false);
     setKnown(new Set());
     setUnknown(new Set());
+    setCardHistory([]);
     setStartedAt(new Date().toISOString());
     setTypedAnswer("");
     setAnswerSubmitted(false);
@@ -151,14 +197,14 @@ export default function DeckPage() {
           : (mode as ResolvedMode);
 
       // Fall back to flip if not enough cards for MC distractors
-      if (cardMode === "multiple-choice" && allCards.length < 4) {
+      if (cardMode === "multiple-choice" && tagFilteredCards.length < 2) {
         cardMode = "flip";
       }
 
       resolvedModes[card.id] = cardMode;
 
       if (cardMode === "multiple-choice") {
-        resolvedMcOptions[card.id] = generateMcOptions(allCards, card);
+        resolvedMcOptions[card.id] = generateMcOptions(tagFilteredCards, card);
       }
     });
 
@@ -166,6 +212,60 @@ export default function DeckPage() {
     setMcOptions(resolvedMcOptions);
     setStudyState("studying");
   }
+
+  async function handleAddCard(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cardFront.trim() || !cardBack.trim() || !deck) return;
+    setAddingCard(true);
+    setAddCardError(null);
+    const res = await fetch(`/api/decks/${deck.id}/cards`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ front: cardFront.trim(), back: cardBack.trim(), tags: cardTags }),
+    });
+    setAddingCard(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setAddCardError(data.error ?? "Failed to add card");
+      return;
+    }
+    const newCard = await res.json();
+    setAllCards((prev) => [...prev, newCard]);
+    setDueCards((prev) => [...prev, newCard]);
+    setDeck((prev) => prev ? { ...prev, card_count: prev.card_count + 1 } : prev);
+    setCardFront("");
+    setCardBack("");
+    setCardTags([]);
+    setTagInput("");
+    setShowAddCard(false);
+  }
+
+  function addTag(tag: string) {
+    const t = tag.trim();
+    if (t && !cardTags.includes(t)) setCardTags((prev) => [...prev, t]);
+    setTagInput("");
+    setShowSuggestions(false);
+    tagInputRef.current?.focus();
+  }
+
+  function removeTag(tag: string) {
+    setCardTags((prev) => prev.filter((t) => t !== tag));
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput);
+    } else if (e.key === "Backspace" && !tagInput && cardTags.length > 0) {
+      setCardTags((prev) => prev.slice(0, -1));
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  }
+
+  const tagSuggestions = allTags.filter(
+    (t) => !cardTags.includes(t) && t.toLowerCase().includes(tagInput.toLowerCase())
+  );
 
   useEffect(() => {
     if (studyState !== "studying") return;
@@ -185,16 +285,16 @@ export default function DeckPage() {
         if (e.key === "ArrowLeft") markUnknown();
       }
 
-      if (currentCardMode === "multiple-choice" && selectedMcOption === null) {
+      if (currentCardMode === "multiple-choice") {
         const options = mcOptions[currentCard?.id ?? ""] ?? [];
-        const idx = ["1", "2", "3", "4"].indexOf(e.key);
-        if (idx !== -1 && options[idx]) {
-          const option = options[idx];
-          setSelectedMcOption(option);
-          if (option === currentCard.back) {
-            setTimeout(() => markKnown(), 700);
-          } else {
-            setTimeout(() => markUnknown(), 700);
+        if (selectedMcOption === null) {
+          const idx = ["1", "2", "3", "4"].indexOf(e.key);
+          if (idx !== -1 && options[idx]) {
+            setSelectedMcOption(options[idx]);
+          }
+        } else {
+          if (e.key === "Enter" || e.key === "ArrowRight") {
+            selectedMcOption === currentCard.back ? markKnown() : markUnknown();
           }
         }
       }
@@ -274,8 +374,8 @@ export default function DeckPage() {
               {
                 mode: "multiple-choice" as AnswerMode,
                 label: "Multiple choice",
-                description: "Pick from 4 options",
-                disabled: allCards.length < 4,
+                description: "Pick from options",
+                disabled: tagFilteredCards.length < 2,
               },
               {
                 mode: "random" as AnswerMode,
@@ -324,22 +424,52 @@ export default function DeckPage() {
           <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
             {deck.title}
           </h1>
-          {deck.topic_tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {deck.topic_tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/70"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
           <p className="mt-3 text-sm text-muted-foreground/60">
             {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
           </p>
         </div>
+
+        {/* Tag filters */}
+        {allTags.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTag(null)}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={activeTag === null
+                ? { border: "1px solid oklch(0.77 0.195 68 / 0.6)", background: "oklch(0.77 0.195 68 / 0.12)", color: "oklch(0.77 0.195 68)" }
+                : { border: "1px solid oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.75)" }}
+            >
+              All
+            </button>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+                className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                style={activeTag === tag
+                  ? { border: "1px solid oklch(0.77 0.195 68 / 0.6)", background: "oklch(0.77 0.195 68 / 0.12)", color: "oklch(0.77 0.195 68)" }
+                  : { border: "1px solid oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.75)" }}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Cards for selected tag */}
+        {activeTag && (
+          <div className="mb-6 space-y-2">
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: "oklch(0.77 0.195 68 / 0.65)" }}>
+              {isDeckLevelTag ? `All ${tagFilteredCards.length} cards` : `${tagFilteredCards.length} ${tagFilteredCards.length === 1 ? "card" : "cards"}`} · {activeTag}
+            </p>
+            {tagFilteredCards.map((card) => (
+              <div key={card.id} className="rounded-xl border bg-card px-4 py-3" style={{ borderColor: "oklch(0.77 0.195 68 / 0.2)" }}>
+                <p className="text-sm font-medium text-foreground">{card.front}</p>
+                <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {hasDue ? (
           <div className="space-y-3">
@@ -351,28 +481,30 @@ export default function DeckPage() {
                     Ready to study
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground/70">
-                    {dueCards.length} {dueCards.length === 1 ? "card" : "cards"} due now
+                    {tagFilteredDue.length} {tagFilteredDue.length === 1 ? "card" : "cards"} due
+                    {activeTag ? ` · ${activeTag}` : " now"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg">
+                  <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg" disabled={tagFilteredDue.length === 0}>
                     Start session
                   </Button>
                   <Link
                     href={`/quiz/${id}`}
-                    className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                    className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
                   >
                     Take a quiz
                   </Link>
                 </div>
               </div>
             </div>
-            {allCards.length > dueCards.length && (
+            {tagFilteredCards.length > tagFilteredDue.length && (
               <button
                 onClick={() => { setStudyMode("all"); setShowModeModal(true); }}
-                className="w-full text-center text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                className="w-full rounded-xl py-2.5 text-center text-xs font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
+                style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
               >
-                Retest all {allCards.length} cards
+                Retest all {tagFilteredCards.length} cards{activeTag ? ` · ${activeTag}` : ""}
               </button>
             )}
           </div>
@@ -382,23 +514,27 @@ export default function DeckPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-heading font-semibold text-foreground">All caught up</p>
+                  <p className="font-heading font-semibold text-foreground">
+                    {activeTag ? `All caught up · ${activeTag}` : "All caught up"}
+                  </p>
                   {next ? (
                     <p className="mt-1 text-sm text-muted-foreground/70">
                       Next card due {formatRelativeDate(next)}
                     </p>
-                  ) : allCards.length === 0 ? (
-                    <p className="mt-1 text-sm text-muted-foreground/70">No cards in this deck yet.</p>
+                  ) : tagFilteredCards.length === 0 ? (
+                    <p className="mt-1 text-sm text-muted-foreground/70">
+                      {activeTag ? `No cards tagged "${activeTag}".` : "No cards in this deck yet."}
+                    </p>
                   ) : null}
                 </div>
-                {allCards.length > 0 && (
+                {tagFilteredCards.length > 0 && (
                   <div className="flex items-center gap-3">
                     <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
                       Retest all
                     </Button>
                     <Link
                       href={`/quiz/${id}`}
-                      className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                      className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
                     >
                       Take a quiz
                     </Link>
@@ -408,6 +544,109 @@ export default function DeckPage() {
             </div>
           </div>
         )}
+        {/* Add card section */}
+        <div className="mt-8">
+          {!showAddCard ? (
+            <button
+              onClick={() => { setShowAddCard(true); setAddCardError(null); }}
+              className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium transition-colors hover:bg-[oklch(0.77_0.195_68_/_0.08)]"
+              style={{ border: "1px solid oklch(0.77 0.195 68 / 0.4)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add card
+            </button>
+          ) : (
+            <form onSubmit={handleAddCard} className="space-y-3 rounded-2xl border border-border/50 bg-card p-5">
+              <p className="font-heading text-sm font-semibold text-foreground">Add a card</p>
+              <textarea
+                autoFocus
+                value={cardFront}
+                onChange={(e) => setCardFront(e.target.value)}
+                placeholder="Front (question)"
+                rows={2}
+                className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <textarea
+                value={cardBack}
+                onChange={(e) => setCardBack(e.target.value)}
+                placeholder="Back (answer)"
+                rows={2}
+                className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+
+              {/* Tag input */}
+              <div className="relative">
+                <div
+                  className="flex min-h-[40px] flex-wrap items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2 focus-within:ring-2 focus-within:ring-primary/40 cursor-text"
+                  onClick={() => tagInputRef.current?.focus()}
+                >
+                  {cardTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2.5 py-0.5 text-[11px] text-foreground/80"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeTag(tag); }}
+                        className="ml-0.5 text-muted-foreground/50 hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    ref={tagInputRef}
+                    value={tagInput}
+                    onChange={(e) => { setTagInput(e.target.value); setShowSuggestions(true); }}
+                    onKeyDown={handleTagKeyDown}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    placeholder={cardTags.length === 0 ? "Add labels (e.g. Chapter 1)" : ""}
+                    className="min-w-[120px] flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                  />
+                </div>
+                {showSuggestions && (tagSuggestions.length > 0 || tagInput.trim()) && (
+                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                    {tagSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onMouseDown={() => addTag(s)}
+                        className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted/50"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                    {tagInput.trim() && !cardTags.includes(tagInput.trim()) && !allTags.includes(tagInput.trim()) && (
+                      <button
+                        type="button"
+                        onMouseDown={() => addTag(tagInput)}
+                        className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted/50"
+                      >
+                        <span className="text-muted-foreground/60">Create </span>
+                        &ldquo;{tagInput.trim()}&rdquo;
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {addCardError && <p className="text-xs text-destructive">{addCardError}</p>}
+              <div className="flex items-center gap-2">
+                <Button type="submit" size="sm" disabled={!cardFront.trim() || !cardBack.trim() || addingCard}>
+                  {addingCard ? "Saving…" : "Save card"}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setShowAddCard(false); setCardFront(""); setCardBack(""); setCardTags([]); setTagInput(""); }}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+
         {modeModal}
       </div>
     );
@@ -459,6 +698,11 @@ export default function DeckPage() {
           <Button variant="outline" onClick={() => router.push("/")}>
             Back to decks
           </Button>
+          {cardHistory.length > 0 && (
+            <Button variant="outline" onClick={goBack}>
+              ↩ Undo last
+            </Button>
+          )}
           {unknownCount > 0 && (
             <Button variant="outline" onClick={() => setShowModeModal(true)}>
               Study again
@@ -478,17 +722,52 @@ export default function DeckPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
+      {/* Exit confirmation */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <h2 className="font-heading text-base font-semibold text-foreground">Exit session?</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground/70">
+              You&apos;ve rated {cardHistory.length} {cardHistory.length === 1 ? "card" : "cards"}. Progress won&apos;t be saved if you exit now.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowExitConfirm(false)}>
+                Keep going
+              </Button>
+              <Button variant="outline" className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/5" onClick={() => { setShowExitConfirm(false); setStudyState("idle"); setCurrentIndex(0); setFlipped(false); setCardHistory([]); }}>
+                Exit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header row */}
       <div className="mb-5 flex items-center justify-between">
-        <button
-          onClick={() => { setStudyState("idle"); setCurrentIndex(0); setFlipped(false); }}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground/60 transition-colors hover:text-foreground"
-        >
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          {deck.title}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => cardHistory.length > 0 ? setShowExitConfirm(true) : (setStudyState("idle"), setCurrentIndex(0), setFlipped(false))}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground/60 transition-colors hover:text-foreground"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {deck.title}
+          </button>
+          {cardHistory.length > 0 && (
+            <button
+              onClick={goBack}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
+              style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+              title="Undo last rating"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              </svg>
+              Undo
+            </button>
+          )}
+        </div>
         <span className="font-heading text-sm font-semibold tabular-nums text-foreground">
           {currentIndex + 1}
           <span className="text-muted-foreground/50 font-normal"> / {studyQueue.length}</span>
@@ -689,11 +968,6 @@ export default function DeckPage() {
                   onClick={() => {
                     if (revealed) return;
                     setSelectedMcOption(option);
-                    if (isCorrect) {
-                      setTimeout(() => markKnown(), 700);
-                    } else {
-                      setTimeout(() => markUnknown(), 700);
-                    }
                   }}
                 >
                   <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">
@@ -705,8 +979,20 @@ export default function DeckPage() {
             })}
           </div>
 
+          {selectedMcOption && (
+            <div className="mt-5 flex gap-3">
+              <Button
+                className="flex-1"
+                onClick={() => selectedMcOption === currentCard.back ? markKnown() : markUnknown()}
+              >
+                Continue
+                <span className="ml-1.5 text-[10px] opacity-60">→</span>
+              </Button>
+            </div>
+          )}
+
           <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
-            1 · 2 · 3 · 4 to select
+            {selectedMcOption ? "enter or → to continue" : "1 · 2 · 3 · 4 to select"}
           </p>
         </>
       )}

@@ -75,6 +75,9 @@ export default function QuizPage() {
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modePickedRef = useRef(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Per-question state
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -102,10 +105,11 @@ export default function QuizPage() {
       });
   }, [id]);
 
-  // Clean up timer on unmount
+  // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     };
   }, []);
 
@@ -134,6 +138,7 @@ export default function QuizPage() {
   }
 
   function startQuiz(mode: QuizMode) {
+    modePickedRef.current = true;
     const resolvedModes: Record<string, ResolvedMode> = {};
     const resolvedMcOptions: Record<string, string[]> = {};
     const fixedModes: ResolvedMode[] = ["multiple-choice", "type"];
@@ -168,27 +173,49 @@ export default function QuizPage() {
     card: Card,
     correct: boolean,
     userAnswer: string,
+    currentAnswers: AnswerRecord[],
+  ): AnswerRecord[] {
+    const newAnswers = [...currentAnswers, { cardId: card.id, correct, userAnswer, card }];
+    setAnswers(newAnswers);
+    return newAnswers;
+  }
+
+  function advanceToNext(
     currentQuizCards: Card[],
     currentAnswers: AnswerRecord[],
     currentStartedAt: string | null,
   ) {
-    const newAnswers = [...currentAnswers, { cardId: card.id, correct, userAnswer, card }];
-    setAnswers(newAnswers);
     const isLast = currentIndex + 1 >= currentQuizCards.length;
-    setTimeout(() => {
-      if (isLast) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        if (currentStartedAt) {
-          saveQuizSession(newAnswers, currentStartedAt);
-        }
-        setPhase("results");
-      } else {
-        setCurrentIndex((i) => i + 1);
-        setTypedAnswer("");
-        setAnswerSubmitted(false);
-        setSelectedOption(null);
-      }
-    }, correct ? 700 : 1500);
+    if (isLast) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (currentStartedAt) saveQuizSession(currentAnswers, currentStartedAt);
+      setPhase("results");
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setTypedAnswer("");
+      setAnswerSubmitted(false);
+      setSelectedOption(null);
+    }
+  }
+
+  function goBack() {
+    if (advanceTimerRef.current) { clearTimeout(advanceTimerRef.current); advanceTimerRef.current = null; }
+    if (answers.length === 0 && currentIndex === 0) return;
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    const newAnswers = answers.slice(0, -1);
+    setAnswers(newAnswers);
+    setCurrentIndex(prevIndex);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setSelectedOption(null);
+    if (phase === "results") setPhase("quiz");
+  }
+
+  function exitQuiz() {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setShowExitConfirm(false);
+    router.push(`/decks/${id}`);
   }
 
   function retryMissed() {
@@ -272,7 +299,7 @@ export default function QuizPage() {
 
   // ── Derived state ─────────────────────────────────────────────────────────
 
-  const canMultipleChoice = allCards.length >= 4;
+  const canMultipleChoice = allCards.length >= 2;
   const currentCard = quizCards[currentIndex];
   const currentCardMode: ResolvedMode = currentCard
     ? (cardModes[currentCard.id] ?? "type")
@@ -285,7 +312,7 @@ export default function QuizPage() {
   // ── Mode selection modal ──────────────────────────────────────────────────
 
   const modeModal = (
-    <Dialog open={phase === "mode-select"} onOpenChange={() => router.push(`/decks/${id}`)}>
+    <Dialog open={phase === "mode-select"} onOpenChange={() => { if (!modePickedRef.current) router.push(`/decks/${id}`); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-heading text-base font-semibold">
@@ -340,13 +367,55 @@ export default function QuizPage() {
 
   const quizPhase = phase === "quiz" && currentCard && (
     <div className="flex min-h-screen flex-col">
+      {/* Exit confirmation */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <h2 className="font-heading text-base font-semibold text-foreground">Exit quiz?</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground/70">
+              You&apos;ve answered {answers.length} of {quizCards.length} questions. Progress won&apos;t be saved.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowExitConfirm(false)}>
+                Keep going
+              </Button>
+              <Button variant="outline" className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/5" onClick={exitQuiz}>
+                Exit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
-          <span className="text-xs text-muted-foreground">
-            {answers.length + 1} / {quizCards.length}
-          </span>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => answers.length > 0 ? setShowExitConfirm(true) : exitQuiz()}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-destructive/5"
+              style={{ border: "1px solid oklch(0.55 0.2 27 / 0.5)", color: "oklch(0.55 0.2 27 / 0.9)" }}
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Exit
+            </button>
+            {(answers.length > 0 || currentIndex > 0) && (
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
+                style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Undo
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">{answers.length + 1} / {quizCards.length}</span>
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary transition-all duration-300"
@@ -396,7 +465,7 @@ export default function QuizPage() {
                     onClick={() => {
                       if (revealed) return;
                       setSelectedOption(option);
-                      recordAnswer(currentCard, isCorrect, option, quizCards, answers, startedAt);
+                      recordAnswer(currentCard, isCorrect, option, answers);
                     }}
                   >
                     <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">
@@ -407,6 +476,13 @@ export default function QuizPage() {
                 );
               })}
             </div>
+            {selectedOption && (
+              <div className="mt-4">
+                <Button className="w-full" onClick={() => advanceToNext(quizCards, answers, startedAt)}>
+                  Continue →
+                </Button>
+              </div>
+            )}
           </>
         )}
 
@@ -429,7 +505,7 @@ export default function QuizPage() {
                       e.preventDefault();
                       setAnswerSubmitted(true);
                       const correct = gradeTypeAnswer(typedAnswer, currentCard.back);
-                      recordAnswer(currentCard, correct, typedAnswer, quizCards, answers, startedAt);
+                      recordAnswer(currentCard, correct, typedAnswer, answers);
                     }
                   }}
                   placeholder="Type your answer…"
@@ -442,7 +518,7 @@ export default function QuizPage() {
                   onClick={() => {
                     setAnswerSubmitted(true);
                     const correct = gradeTypeAnswer(typedAnswer, currentCard.back);
-                    recordAnswer(currentCard, correct, typedAnswer, quizCards, answers, startedAt);
+                    recordAnswer(currentCard, correct, typedAnswer, answers);
                   }}
                 >
                   Submit
@@ -450,18 +526,23 @@ export default function QuizPage() {
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className="rounded-xl bg-muted/40 px-4 py-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                <div className={`rounded-xl px-4 py-3 ${gradeTypeAnswer(typedAnswer, currentCard.back) ? "border border-green-500/30 bg-green-500/5" : "border border-destructive/30 bg-destructive/5"}`}>
+                  <p className={`text-[10px] font-medium uppercase tracking-[0.12em] ${gradeTypeAnswer(typedAnswer, currentCard.back) ? "text-green-600 dark:text-green-400" : "text-destructive/80"}`}>
                     Your answer
                   </p>
                   <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
                 </div>
-                <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
-                    Correct answer
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">{currentCard.back}</p>
-                </div>
+                {!gradeTypeAnswer(typedAnswer, currentCard.back) && (
+                  <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-green-600 dark:text-green-400">
+                      Correct answer
+                    </p>
+                    <p className="mt-1 text-sm text-foreground">{currentCard.back}</p>
+                  </div>
+                )}
+                <Button className="w-full" onClick={() => advanceToNext(quizCards, answers, startedAt)}>
+                  Continue →
+                </Button>
               </div>
             )}
           </div>
@@ -522,6 +603,9 @@ export default function QuizPage() {
             Retry missed
           </Button>
         )}
+        <Button variant="outline" className="flex-1" onClick={goBack}>
+          ↩ Undo last
+        </Button>
         <Button
           variant="outline"
           className="flex-1"

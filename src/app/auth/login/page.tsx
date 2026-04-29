@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { signIn, sendMagicLink } from "@/app/auth/actions";
+import { signIn } from "@/app/auth/actions";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function LoginPage({
@@ -77,37 +77,6 @@ export default async function LoginPage({
             </button>
           </form>
 
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border/50" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-3 text-muted-foreground/50">or continue with</span>
-            </div>
-          </div>
-
-          <form action={sendMagicLink} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="magic-email" className="text-xs font-medium text-foreground/70">
-                Email (magic link)
-              </label>
-              <input
-                id="magic-email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                className="w-full rounded-xl border border-input/70 bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring/70 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              className={buttonVariants({ variant: "outline", className: "w-full" })}
-            >
-              Send magic link
-            </button>
-          </form>
         </div>
 
         <p className="mt-5 text-center text-sm text-muted-foreground/60">

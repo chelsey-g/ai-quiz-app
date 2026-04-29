@@ -29,6 +29,7 @@ export async function POST(
   const body = await req.json();
   const front = typeof body.front === "string" ? body.front.trim() : null;
   const back = typeof body.back === "string" ? body.back.trim() : null;
+  const tags = Array.isArray(body.tags) ? (body.tags as unknown[]).filter((t): t is string => typeof t === "string") : [];
 
   if (!front || !back) {
     return Response.json({ error: "front and back are required" }, { status: 400 });
@@ -36,7 +37,7 @@ export async function POST(
 
   const { data: card, error: insertError } = await supabase
     .from("cards")
-    .insert({ deck_id: deckId, front, back, card_type: "basic" })
+    .insert({ deck_id: deckId, front, back, card_type: "basic", tags })
     .select()
     .single();
 

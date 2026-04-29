@@ -38,8 +38,8 @@ export default async function LoginPage({
           )}
 
           {message && (
-            <div className="mb-5 rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
-              <p className="text-sm text-foreground">{message}</p>
+            <div className="mb-5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 shadow-[0_0_0_1px_oklch(0.77_0.195_68_/_0.2)_inset]">
+              <p className="text-sm font-medium text-foreground">{message}</p>
             </div>
           )}
 

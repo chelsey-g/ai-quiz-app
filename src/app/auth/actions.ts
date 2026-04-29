@@ -3,6 +3,20 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+function getEmailRedirectTo() {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configuredSiteUrl && !configuredSiteUrl.includes("localhost")) {
+    return `${configuredSiteUrl.replace(/\/$/, "")}/auth/callback`;
+  }
+
+  const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL ?? process.env.VERCEL_URL;
+  if (vercelUrl) {
+    return `https://${vercelUrl.replace(/\/$/, "")}/auth/callback`;
+  }
+
+  return `${(configuredSiteUrl ?? "http://localhost:3001").replace(/\/$/, "")}/auth/callback`;
+}
+
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -25,7 +39,7 @@ export async function signUp(formData: FormData) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback` },
+    options: { emailRedirectTo: getEmailRedirectTo() },
   });
 
   if (error) {
@@ -41,7 +55,7 @@ export async function sendMagicLink(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback` },
+    options: { emailRedirectTo: getEmailRedirectTo() },
   });
 
   if (error) {

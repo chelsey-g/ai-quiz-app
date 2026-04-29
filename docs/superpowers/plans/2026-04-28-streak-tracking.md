@@ -1,6 +1,6 @@
 ---
 assigned-to: both
-status: ready
+status: in-progress
 context: "computeStreak is a pure utility in src/lib/streak.ts (engineer task); StatBanner expands from 3→4 cols with a flame SVG tile (ui-designer task). The engineer must land Task 1–4 first before the UI task touches page.tsx, since the DashboardStats type needs streakDays/streakStatus."
 ---
 
@@ -479,7 +479,7 @@ cd /Users/chelseygowac/ai-quiz-app && git add src/lib/services/dashboard.ts && g
 **Files:**
 - Modify: `src/app/page.tsx`
 
-- [ ] **Step 1: Update the local `DashboardStats` type in `page.tsx`**
+- [x] **Step 1: Update the local `DashboardStats` type in `page.tsx`**
 
 At the top of `src/app/page.tsx`, find the local type definition:
 
@@ -509,7 +509,7 @@ type DashboardStats = {
 };
 ```
 
-- [ ] **Step 2: Replace the `StatBanner` component**
+- [x] **Step 2: Replace the `StatBanner` component**
 
 Find the existing `StatBanner` function in `src/app/page.tsx`:
 
@@ -643,7 +643,7 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
 }
 ```
 
-- [ ] **Step 3: Also update the loading skeleton in `page.tsx` to show 4 skeleton tiles**
+- [x] **Step 3: Also update the loading skeleton in `page.tsx` to show 4 skeleton tiles**
 
 Find the skeleton block inside the `{loading && (...)}` section:
 
@@ -665,7 +665,7 @@ Replace it with:
 </div>
 ```
 
-- [ ] **Step 4: Verify TypeScript compiles**
+- [x] **Step 4: Verify TypeScript compiles**
 
 ```bash
 cd /Users/chelseygowac/ai-quiz-app && npx tsc --noEmit
@@ -673,7 +673,7 @@ cd /Users/chelseygowac/ai-quiz-app && npx tsc --noEmit
 
 Expected: No errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /Users/chelseygowac/ai-quiz-app && git add src/app/page.tsx && git commit -m "feat: add streak tile to dashboard StatBanner"

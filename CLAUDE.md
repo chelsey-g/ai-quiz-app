@@ -2,7 +2,7 @@
 
 # Quizly — AI Quiz App
 
-An AI-powered study app that transforms notes into interactive flashcard decks.
+Quizly is an AI-powered study platform where users can either enter a topic to instantly generate flashcards and quizzes, or import their own material (notes, PDFs, YouTube links, or URLs) — with adaptive difficulty, wrong-answer explanations, and collaborative deck sharing for multiple users.
 
 ## Tech Stack
 
@@ -46,13 +46,12 @@ supabase/
 
 ## AI Pipeline
 
-Cards are generated via `src/lib/ai/generate-cards.ts`. Models are tried cheapest-first:
 
-```
-gpt-4o-mini ($0.15) → claude-haiku ($0.80) → claude-sonnet ($3.00) → gpt-4o ($2.50)
-```
+Cards and quizzes are generated via src/lib/ai/generate-cards.ts using a cost-optimized pipeline — free models are tried first, falling back to paid only when needed.
 
-`generateObject` + Zod schema validates the response — never parses raw JSON.
+gemini-2.0-flash (free) → llama-3.3-70b via Groq (free) → gpt-4o-mini ($0.15) → claude-haiku ($0.80) → claude-sonnet ($3.00) → gpt-4o ($2.50)
+
+`generateObject` + Zod schema validates all responses — raw JSON is never parsed directly. Pipeline applies to all generation types: topic-based, note imports, PDFs, YouTube transcripts, and URLs.
 
 ## Database Schema
 

@@ -25,11 +25,14 @@ function accuracyPct(seen: number, correct: number): number | null {
 export function DeckCard({
   deck,
   dueCount = 0,
+  accuracyPercent,
 }: {
   deck: DeckWithStats;
   dueCount?: number;
+  accuracyPercent?: number;
 }) {
-  const pct = accuracyPct(deck.total_seen, deck.total_correct);
+  // Use the explicitly-passed accuracyPercent if provided, otherwise derive from deck stats
+  const pct = accuracyPercent !== undefined ? accuracyPercent : accuracyPct(deck.total_seen, deck.total_correct);
   const hasActivity = pct !== null;
 
   return (
@@ -45,36 +48,39 @@ export function DeckCard({
         />
 
         <div className="p-5">
-          <h3 className="font-heading text-sm font-semibold leading-snug text-foreground line-clamp-2">
+          {/* Title — most prominent element */}
+          <h3 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
             {deck.title}
           </h3>
 
+          {/* Tags — secondary */}
           {deck.topic_tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
               {deck.topic_tags.slice(0, 3).map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/75"
+                  className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/65"
                 >
                   {tag}
                 </span>
               ))}
               {deck.topic_tags.length > 3 && (
-                <span className="self-center text-[10px] text-muted-foreground/45">
+                <span className="self-center text-[10px] text-muted-foreground/40">
                   +{deck.topic_tags.length - 3}
                 </span>
               )}
             </div>
           )}
 
+          {/* Stats — tertiary */}
           <div className="mt-4 space-y-3">
             {hasActivity && (
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground/55">
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50">
                     Accuracy
                   </span>
-                  <span className="font-heading text-xs font-semibold tabular-nums text-foreground">
+                  <span className="font-heading text-xs font-semibold tabular-nums text-foreground/80">
                     {pct}%
                   </span>
                 </div>
@@ -88,7 +94,7 @@ export function DeckCard({
             )}
 
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-xs text-muted-foreground/65">
+              <span className="flex items-center gap-2 text-xs text-muted-foreground/55">
                 {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
                 {deck.unattempted_count > 0 && (
                   <span className="rounded-full bg-primary/14 px-1.5 py-0.5 text-[10px] font-medium text-primary">
@@ -101,7 +107,7 @@ export function DeckCard({
                   </span>
                 )}
               </span>
-              <span className="text-[10px] text-muted-foreground/45">
+              <span className="text-[10px] text-muted-foreground/40">
                 {hasActivity ? formatDate(deck.created_at) : "Not started"}
               </span>
             </div>

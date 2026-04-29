@@ -293,7 +293,14 @@ export default function HomePage() {
             >
               Quick Quiz
             </Link>
-            <Link href="/import" className={buttonVariants({ size: "sm" })}>
+            <Link
+              href="/import"
+              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
+              style={{
+                borderColor: "oklch(0.77 0.195 68 / 0.35)",
+                color: "oklch(0.77 0.195 68 / 0.85)",
+              }}
+            >
               Import notes
             </Link>
           </div>

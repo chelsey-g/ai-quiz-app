@@ -1,5 +1,7 @@
 # Flashcard Answer Modes Implementation Plan
 
+> status: complete
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a mode-selection modal before each study session, giving users the choice of flip card, type answer, multiple choice, or random.

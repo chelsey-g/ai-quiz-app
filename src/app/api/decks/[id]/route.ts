@@ -44,13 +44,14 @@ export async function PATCH(
   const title = typeof body.title === "string" ? body.title.trim() : null;
   if (!title) return Response.json({ error: "title is required" }, { status: 400 });
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("decks")
-    .update({ title })
+    .update({ title }, { count: "exact" })
     .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (!count || count === 0) return Response.json({ error: "Deck not found" }, { status: 404 });
   return Response.json({ ok: true });
 }
 
@@ -79,7 +80,7 @@ export async function DELETE(
     return Response.json({ error: "Deck not found" }, { status: 404 });
   }
 
-  const { error } = await supabase.from("decks").delete().eq("id", id);
+  const { error } = await supabase.from("decks").delete().eq("id", id).eq("user_id", user.id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }

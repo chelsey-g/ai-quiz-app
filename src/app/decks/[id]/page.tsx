@@ -273,6 +273,7 @@ export default function DeckPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [cardsOpen, setCardsOpen] = useState(false);
 
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
@@ -910,30 +911,45 @@ export default function DeckPage() {
 
         {/* All cards list */}
         {!activeTag && allCards.length > 0 && (
-          <div className="mt-8 space-y-2">
-            <p className="text-[10px] uppercase tracking-widest" style={{ color: "oklch(0.77 0.195 68 / 0.65)" }}>
-              {allCards.length} {allCards.length === 1 ? "card" : "cards"}
-            </p>
-            {allCards.map((card) => (
-              <CardRow
-                key={card.id}
-                card={card}
-                isEditing={editingCardId === card.id}
-                isDeleting={deletingCardId === card.id}
-                isSaving={savingEdit && editingCardId === card.id}
-                isDeletingInProgress={deletingInProgress === card.id}
-                editFront={editFront}
-                editBack={editBack}
-                onEditFrontChange={setEditFront}
-                onEditBackChange={setEditBack}
-                onEditStart={startEditCard}
-                onEditSave={handleSaveEdit}
-                onEditCancel={cancelEdit}
-                onDeleteStart={(id) => { setDeletingCardId(id); setEditingCardId(null); }}
-                onDeleteConfirm={handleConfirmDelete}
-                onDeleteCancel={() => setDeletingCardId(null)}
-              />
-            ))}
+          <div className="mt-8 rounded-xl border border-border/40 bg-card/40">
+            <button
+              onClick={() => setCardsOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="text-[10px] font-medium uppercase tracking-[0.15em]" style={{ color: "oklch(0.77 0.195 68 / 0.65)" }}>
+                {allCards.length} {allCards.length === 1 ? "card" : "cards"}
+              </span>
+              <svg
+                className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${cardsOpen ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {cardsOpen && (
+              <div className="space-y-2 border-t border-border/30 px-4 pb-4 pt-3">
+                {allCards.map((card) => (
+                  <CardRow
+                    key={card.id}
+                    card={card}
+                    isEditing={editingCardId === card.id}
+                    isDeleting={deletingCardId === card.id}
+                    isSaving={savingEdit && editingCardId === card.id}
+                    isDeletingInProgress={deletingInProgress === card.id}
+                    editFront={editFront}
+                    editBack={editBack}
+                    onEditFrontChange={setEditFront}
+                    onEditBackChange={setEditBack}
+                    onEditStart={startEditCard}
+                    onEditSave={handleSaveEdit}
+                    onEditCancel={cancelEdit}
+                    onDeleteStart={(id) => { setDeletingCardId(id); setEditingCardId(null); }}
+                    onDeleteConfirm={handleConfirmDelete}
+                    onDeleteCancel={() => setDeletingCardId(null)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

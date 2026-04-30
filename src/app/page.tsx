@@ -593,24 +593,19 @@ export default function HomePage() {
       {selectMode && selectedIds.size > 0 && (
         <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2">
           <div
-            className="flex items-center gap-4 rounded-2xl border px-5 py-3.5 shadow-xl backdrop-blur-md select-none"
-            style={{
-              background: "oklch(0.118 0.011 63 / 0.92)",
-              borderColor: "oklch(0.225 0.011 65)",
-              minWidth: "320px",
-              maxWidth: "420px",
-            }}
+            className="flex items-center gap-4 rounded-2xl border border-border bg-card/95 px-5 py-3.5 shadow-xl backdrop-blur-md select-none"
+            style={{ minWidth: "320px", maxWidth: "420px" }}
           >
             {confirmDelete ? (
               /* Confirm state */
               <>
-                <p className="flex-1 text-sm text-white/70">
+                <p className="flex-1 text-sm text-muted-foreground">
                   Are you sure? This can&apos;t be undone.
                 </p>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   disabled={deleting}
-                  className="rounded-md px-3 py-1.5 text-xs font-medium text-white/50 transition-colors hover:text-white/90 disabled:opacity-50"
+                  className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -629,8 +624,8 @@ export default function HomePage() {
             ) : (
               /* Default state */
               <>
-                <p className="flex-1 text-sm font-medium text-white/70">
-                  <span className="font-heading font-semibold text-white">
+                <p className="flex-1 text-sm font-medium text-muted-foreground">
+                  <span className="font-heading font-semibold text-foreground">
                     {selectedIds.size}
                   </span>{" "}
                   {selectedIds.size === 1 ? "deck" : "decks"} selected

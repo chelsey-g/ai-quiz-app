@@ -539,23 +539,37 @@ export default function HomePage() {
             <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
               Your decks
             </p>
-            {selectMode ? (
-              <button
-                onClick={toggleSelectMode}
-                className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
-                style={{ borderColor: "oklch(0.225 0.011 65)", color: "oklch(0.50 0.018 72)" }}
-              >
-                Cancel
-              </button>
-            ) : (
-              <button
-                onClick={toggleSelectMode}
-                className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
-                style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
-              >
-                Select
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {selectMode && (
+                <button
+                  onClick={() => {
+                    const allSelected = selectedIds.size === sortedDecks.length;
+                    setSelectedIds(allSelected ? new Set() : new Set(sortedDecks.map((d) => d.id)));
+                  }}
+                  className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
+                  style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+                >
+                  {selectedIds.size === sortedDecks.length ? "Deselect all" : "Select all"}
+                </button>
+              )}
+              {selectMode ? (
+                <button
+                  onClick={toggleSelectMode}
+                  className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
+                  style={{ borderColor: "oklch(0.225 0.011 65)", color: "oklch(0.50 0.018 72)" }}
+                >
+                  Cancel
+                </button>
+              ) : (
+                <button
+                  onClick={toggleSelectMode}
+                  className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
+                  style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+                >
+                  Select
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Unified deck grid */}

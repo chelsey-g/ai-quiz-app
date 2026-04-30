@@ -67,8 +67,8 @@ export function DeckCard({
                     borderColor: "oklch(0.77 0.195 68)",
                   }
                 : {
-                    background: "oklch(0.118 0.011 63 / 0.8)",
-                    borderColor: "oklch(0.77 0.195 68 / 0.45)",
+                    background: "transparent",
+                    borderColor: "oklch(0.77 0.195 68 / 0.5)",
                   }
             }
           >

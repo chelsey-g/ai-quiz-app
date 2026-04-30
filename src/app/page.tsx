@@ -604,13 +604,13 @@ export default function HomePage() {
             {confirmDelete ? (
               /* Confirm state */
               <>
-                <p className="flex-1 text-sm text-muted-foreground/80">
+                <p className="flex-1 text-sm text-white/70">
                   Are you sure? This can&apos;t be undone.
                 </p>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   disabled={deleting}
-                  className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground disabled:opacity-50"
+                  className="rounded-md px-3 py-1.5 text-xs font-medium text-white/50 transition-colors hover:text-white/90 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -619,8 +619,8 @@ export default function HomePage() {
                   disabled={deleting}
                   className="rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
                   style={{
-                    border: "1px solid oklch(0.55 0.2 27 / 0.5)",
-                    color: "oklch(0.55 0.2 27 / 0.9)",
+                    border: "1px solid oklch(0.65 0.2 27 / 0.6)",
+                    color: "oklch(0.75 0.2 27)",
                   }}
                 >
                   {deleting ? "Deleting…" : "Confirm"}
@@ -629,8 +629,8 @@ export default function HomePage() {
             ) : (
               /* Default state */
               <>
-                <p className="flex-1 text-sm font-medium text-foreground/80">
-                  <span className="font-heading font-semibold text-foreground">
+                <p className="flex-1 text-sm font-medium text-white/70">
+                  <span className="font-heading font-semibold text-white">
                     {selectedIds.size}
                   </span>{" "}
                   {selectedIds.size === 1 ? "deck" : "decks"} selected
@@ -639,8 +639,8 @@ export default function HomePage() {
                   onClick={() => setConfirmDelete(true)}
                   className="rounded-md border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
                   style={{
-                    border: "1px solid oklch(0.55 0.2 27 / 0.5)",
-                    color: "oklch(0.55 0.2 27 / 0.9)",
+                    border: "1px solid oklch(0.65 0.2 27 / 0.6)",
+                    color: "oklch(0.75 0.2 27)",
                   }}
                 >
                   Delete

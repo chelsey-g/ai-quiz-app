@@ -18,8 +18,8 @@ export async function GET(
   }
 
   try {
-    const { deck, cards } = await getDeckById(id, user.id);
-    return Response.json({ deck, cards });
+    const { deck, cards, deckStats } = await getDeckById(id, user.id);
+    return Response.json({ deck, cards, deckStats });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     const status = (err as Error & { status?: number }).status ?? 500;

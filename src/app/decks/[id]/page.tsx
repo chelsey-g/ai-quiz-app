@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Database } from "@/lib/database.types";
+import type { DeckStatsResult } from "@/lib/services/stats";
 
 type Deck = Database["public"]["Tables"]["decks"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -189,6 +190,56 @@ function CardRow({
   );
 }
 
+function DeckStatsBar({ stats, totalCards }: { stats: DeckStatsResult; totalCards: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-5 rounded-xl border border-border/40 bg-card/40">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
+          Stats
+        </span>
+        <svg
+          className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="grid grid-cols-4 gap-3 border-t border-border/30 px-4 pb-4 pt-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Sessions</p>
+            <p className="font-heading mt-0.5 text-lg font-bold tabular-nums text-foreground">{stats.sessions}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Accuracy</p>
+            <p className="font-heading mt-0.5 text-lg font-bold tabular-nums text-foreground">
+              {stats.accuracy !== null ? `${stats.accuracy}%` : "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Mastered</p>
+            <p className="font-heading mt-0.5 text-lg font-bold tabular-nums text-foreground">
+              {stats.mastered} / {totalCards}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Last studied</p>
+            <p className="font-heading mt-0.5 text-lg font-bold text-foreground">
+              {stats.lastStudied
+                ? new Date(stats.lastStudied).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                : "Never"}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DeckPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -196,6 +247,7 @@ export default function DeckPage() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [dueCards, setDueCards] = useState<Card[]>([]);
+  const [deckStats, setDeckStats] = useState<DeckStatsResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -244,10 +296,11 @@ export default function DeckPage() {
         const { error } = await res.json();
         setError(error ?? "Deck not found");
       } else {
-        const { deck, cards } = await res.json() as { deck: Deck; cards: Card[] };
+        const { deck, cards, deckStats } = await res.json() as { deck: Deck; cards: Card[]; deckStats: DeckStatsResult };
         setDeck(deck);
         setAllCards(cards);
         setDueCards(cards.filter(isDue));
+        setDeckStats(deckStats ?? null);
       }
       setLoading(false);
     }
@@ -617,6 +670,11 @@ export default function DeckPage() {
             {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
           </p>
         </div>
+
+        {/* Per-deck stats */}
+        {deckStats && deck && (
+          <DeckStatsBar stats={deckStats} totalCards={deck.card_count} />
+        )}
 
         {/* Tag filters */}
         {allTags.length > 0 && (

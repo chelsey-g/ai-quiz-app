@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/database.types";
 import type { DeckWithStats } from "@/components/deck-card";
+import { getDeckStats } from "@/lib/services/stats";
+import type { DeckStatsResult } from "@/lib/services/stats";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 type Deck = Database["public"]["Tables"]["decks"]["Row"];
@@ -44,10 +46,10 @@ export async function getDecks(userId: string): Promise<DeckWithStats[]> {
 export async function getDeckById(
   deckId: string,
   userId: string
-): Promise<{ deck: Deck; cards: Card[] }> {
+): Promise<{ deck: Deck; cards: Card[]; deckStats: DeckStatsResult }> {
   const supabase = await createClient();
 
-  const [{ data: deck, error: deckError }, { data: cards, error: cardsError }] =
+  const [{ data: deck, error: deckError }, { data: cards, error: cardsError }, deckStats] =
     await Promise.all([
       supabase
         .from("decks")
@@ -60,6 +62,7 @@ export async function getDeckById(
         .select("*")
         .eq("deck_id", deckId)
         .order("created_at"),
+      getDeckStats(deckId, userId),
     ]);
 
   if (deckError) {
@@ -69,5 +72,9 @@ export async function getDeckById(
     throw err;
   }
 
-  return { deck: deck as Deck, cards: (cards ?? []) as Card[] };
+  if (cardsError) {
+    throw new Error(cardsError.message);
+  }
+
+  return { deck: deck as Deck, cards: (cards ?? []) as Card[], deckStats };
 }

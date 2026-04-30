@@ -1,5 +1,7 @@
 # Stats Page Implementation Plan
 
+status: complete
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a `/stats` page with global study statistics and charts, plus add a compact per-deck stats section to the existing deck detail page.

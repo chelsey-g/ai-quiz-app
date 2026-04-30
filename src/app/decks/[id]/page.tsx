@@ -52,6 +52,143 @@ function formatRelativeDate(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+interface CardRowProps {
+  card: Card;
+  isEditing: boolean;
+  isDeleting: boolean;
+  isSaving: boolean;
+  isDeletingInProgress: boolean;
+  editFront: string;
+  editBack: string;
+  onEditFrontChange: (v: string) => void;
+  onEditBackChange: (v: string) => void;
+  onEditStart: (card: Card) => void;
+  onEditSave: (id: string) => void;
+  onEditCancel: () => void;
+  onDeleteStart: (id: string) => void;
+  onDeleteConfirm: (id: string) => void;
+  onDeleteCancel: () => void;
+}
+
+function CardRow({
+  card,
+  isEditing,
+  isDeleting,
+  isSaving,
+  isDeletingInProgress,
+  editFront,
+  editBack,
+  onEditFrontChange,
+  onEditBackChange,
+  onEditStart,
+  onEditSave,
+  onEditCancel,
+  onDeleteStart,
+  onDeleteConfirm,
+  onDeleteCancel,
+}: CardRowProps) {
+  if (isEditing) {
+    return (
+      <div
+        className="rounded-xl border bg-card px-4 py-3 space-y-2.5"
+        style={{ borderColor: "oklch(0.65 0.18 265 / 0.3)" }}
+      >
+        <textarea
+          autoFocus
+          value={editFront}
+          onChange={(e) => onEditFrontChange(e.target.value)}
+          rows={2}
+          placeholder="Front (question)"
+          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+        />
+        <textarea
+          value={editBack}
+          onChange={(e) => onEditBackChange(e.target.value)}
+          rows={2}
+          placeholder="Back (answer)"
+          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+        />
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            disabled={!editFront.trim() || !editBack.trim() || isSaving}
+            onClick={() => onEditSave(card.id)}
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onEditCancel}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isDeleting) {
+    return (
+      <div
+        className="rounded-xl border bg-card px-4 py-3"
+        style={{ borderColor: "oklch(0.55 0.2 27 / 0.35)" }}
+      >
+        <p className="text-sm font-medium text-foreground">{card.front}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
+        <div className="mt-3 flex items-center gap-2.5">
+          <p className="text-xs text-muted-foreground/70">Delete this card?</p>
+          <button
+            disabled={isDeletingInProgress}
+            onClick={() => onDeleteConfirm(card.id)}
+            className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+            style={{ background: "oklch(0.55 0.2 27 / 0.12)", border: "1px solid oklch(0.55 0.2 27 / 0.4)", color: "oklch(0.75 0.18 27)" }}
+          >
+            {isDeletingInProgress ? "Deleting..." : "Confirm"}
+          </button>
+          <button
+            onClick={onDeleteCancel}
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
+            style={{ border: "1px solid oklch(0.5 0.01 65 / 0.3)" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3"
+      style={{ borderColor: "oklch(0.77 0.195 68 / 0.2)" }}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground">{card.front}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <button
+          onClick={() => onEditStart(card)}
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.12)]"
+          style={{ color: "oklch(0.65 0.18 265 / 0.7)" }}
+          title="Edit card"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+          </svg>
+        </button>
+        <button
+          onClick={() => onDeleteStart(card.id)}
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[oklch(0.55_0.2_27_/_0.12)]"
+          style={{ color: "oklch(0.55 0.2 27 / 0.7)" }}
+          title="Delete card"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DeckPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -84,6 +221,13 @@ export default function DeckPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
+  const [editFront, setEditFront] = useState("");
+  const [editBack, setEditBack] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState<string | null>(null);
 
   const [showModeModal, setShowModeModal] = useState(false);
   const [answerMode, setAnswerMode] = useState<AnswerMode>("flip");
@@ -211,6 +355,51 @@ export default function DeckPage() {
     setCardModes(resolvedModes);
     setMcOptions(resolvedMcOptions);
     setStudyState("studying");
+  }
+
+  function startEditCard(card: Card) {
+    setEditingCardId(card.id);
+    setEditFront(card.front ?? "");
+    setEditBack(card.back ?? "");
+    setDeletingCardId(null);
+  }
+
+  function cancelEdit() {
+    setEditingCardId(null);
+    setEditFront("");
+    setEditBack("");
+  }
+
+  async function handleSaveEdit(cardId: string) {
+    if (!editFront.trim() || !editBack.trim()) return;
+    setSavingEdit(true);
+    const res = await fetch(`/api/cards/${cardId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ front: editFront.trim(), back: editBack.trim() }),
+    });
+    setSavingEdit(false);
+    if (res.ok) {
+      setAllCards((prev) =>
+        prev.map((c) => c.id === cardId ? { ...c, front: editFront.trim(), back: editBack.trim() } : c)
+      );
+      setDueCards((prev) =>
+        prev.map((c) => c.id === cardId ? { ...c, front: editFront.trim(), back: editBack.trim() } : c)
+      );
+      cancelEdit();
+    }
+  }
+
+  async function handleConfirmDelete(cardId: string) {
+    setDeletingInProgress(cardId);
+    const res = await fetch(`/api/cards/${cardId}`, { method: "DELETE" });
+    setDeletingInProgress(null);
+    if (res.ok) {
+      setAllCards((prev) => prev.filter((c) => c.id !== cardId));
+      setDueCards((prev) => prev.filter((c) => c.id !== cardId));
+      setDeck((prev) => prev ? { ...prev, card_count: Math.max(0, prev.card_count - 1) } : prev);
+      setDeletingCardId(null);
+    }
   }
 
   async function handleAddCard(e: React.FormEvent) {
@@ -463,10 +652,24 @@ export default function DeckPage() {
               {isDeckLevelTag ? `All ${tagFilteredCards.length} cards` : `${tagFilteredCards.length} ${tagFilteredCards.length === 1 ? "card" : "cards"}`} · {activeTag}
             </p>
             {tagFilteredCards.map((card) => (
-              <div key={card.id} className="rounded-xl border bg-card px-4 py-3" style={{ borderColor: "oklch(0.77 0.195 68 / 0.2)" }}>
-                <p className="text-sm font-medium text-foreground">{card.front}</p>
-                <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
-              </div>
+              <CardRow
+                key={card.id}
+                card={card}
+                isEditing={editingCardId === card.id}
+                isDeleting={deletingCardId === card.id}
+                isSaving={savingEdit && editingCardId === card.id}
+                isDeletingInProgress={deletingInProgress === card.id}
+                editFront={editFront}
+                editBack={editBack}
+                onEditFrontChange={setEditFront}
+                onEditBackChange={setEditBack}
+                onEditStart={startEditCard}
+                onEditSave={handleSaveEdit}
+                onEditCancel={cancelEdit}
+                onDeleteStart={(id) => { setDeletingCardId(id); setEditingCardId(null); }}
+                onDeleteConfirm={handleConfirmDelete}
+                onDeleteCancel={() => setDeletingCardId(null)}
+              />
             ))}
           </div>
         )}
@@ -646,6 +849,35 @@ export default function DeckPage() {
             </form>
           )}
         </div>
+
+        {/* All cards list */}
+        {!activeTag && allCards.length > 0 && (
+          <div className="mt-8 space-y-2">
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: "oklch(0.77 0.195 68 / 0.65)" }}>
+              {allCards.length} {allCards.length === 1 ? "card" : "cards"}
+            </p>
+            {allCards.map((card) => (
+              <CardRow
+                key={card.id}
+                card={card}
+                isEditing={editingCardId === card.id}
+                isDeleting={deletingCardId === card.id}
+                isSaving={savingEdit && editingCardId === card.id}
+                isDeletingInProgress={deletingInProgress === card.id}
+                editFront={editFront}
+                editBack={editBack}
+                onEditFrontChange={setEditFront}
+                onEditBackChange={setEditBack}
+                onEditStart={startEditCard}
+                onEditSave={handleSaveEdit}
+                onEditCancel={cancelEdit}
+                onDeleteStart={(id) => { setDeletingCardId(id); setEditingCardId(null); }}
+                onDeleteConfirm={handleConfirmDelete}
+                onDeleteCancel={() => setDeletingCardId(null)}
+              />
+            ))}
+          </div>
+        )}
 
         {modeModal}
       </div>

@@ -284,6 +284,46 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [showNewDeck, setShowNewDeck] = useState(false);
 
+  // Bulk select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  function toggleSelectMode() {
+    setSelectMode((v) => !v);
+    setSelectedIds(new Set());
+    setConfirmDelete(false);
+  }
+
+  function toggleDeck(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function handleDeleteSelected() {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    const ids = Array.from(selectedIds);
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/decks/${id}`, { method: "DELETE" }).catch(() => null),
+      ),
+    );
+    setDecks((prev) => prev.filter((d) => !selectedIds.has(d.id)));
+    setSelectedIds(new Set());
+    setSelectMode(false);
+    setConfirmDelete(false);
+    setDeleting(false);
+  }
+
   useEffect(() => {
     async function fetchAll() {
       const [decksRes, statsRes] = await Promise.all([
@@ -359,32 +399,65 @@ export default function HomePage() {
             </p>
           )}
         </div>
-        {!loading && !error && decks.length > 0 && (
+        {!loading && !error && (
           <div className="flex items-center gap-2">
-            <Link
-              href="/quiz/quick"
-              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
-              style={{
-                borderColor: "oklch(0.65 0.18 265 / 0.35)",
-                color: "oklch(0.65 0.18 265 / 0.85)",
-              }}
-            >
-              Quick Quiz
-            </Link>
-            <Link
-              href="/import"
-              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:opacity-90"
-              style={{ background: "oklch(0.77 0.195 68)", color: "oklch(0.15 0.05 68)" }}
-            >
-              Import notes
-            </Link>
-            <button
-              onClick={() => setShowNewDeck(true)}
-              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
-              style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
-            >
-              + New deck
-            </button>
+            {decks.length > 0 && (
+              <>
+                {!selectMode && (
+                  <>
+                    <Link
+                      href="/quiz/quick"
+                      className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
+                      style={{
+                        borderColor: "oklch(0.65 0.18 265 / 0.35)",
+                        color: "oklch(0.65 0.18 265 / 0.85)",
+                      }}
+                    >
+                      Quick Quiz
+                    </Link>
+                    <Link
+                      href="/import"
+                      className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:opacity-90"
+                      style={{ background: "oklch(0.77 0.195 68)", color: "oklch(0.15 0.05 68)" }}
+                    >
+                      Import notes
+                    </Link>
+                  </>
+                )}
+                {selectMode ? (
+                  <button
+                    onClick={toggleSelectMode}
+                    className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-all duration-200 hover:bg-muted/40"
+                    style={{
+                      borderColor: "oklch(0.225 0.011 65)",
+                      color: "oklch(0.50 0.018 72)",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <button
+                    onClick={toggleSelectMode}
+                    className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
+                    style={{
+                      borderColor: "oklch(0.77 0.195 68 / 0.35)",
+                      color: "oklch(0.77 0.195 68 / 0.85)",
+                    }}
+                  >
+                    Select
+                  </button>
+                )}
+              </>
+            )}
+            {!selectMode && (
+              <button
+                onClick={() => setShowNewDeck(true)}
+                className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
+                style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+              >
+                + New deck
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -492,9 +565,77 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedDecks.map((deck, i) => (
               <div key={deck.id} className="animate-card-in" style={{ animationDelay: `${i * 50}ms` }}>
-                <DeckCard deck={deck} dueCount={stats.dueCounts[deck.id] ?? 0} />
+                <DeckCard
+                  deck={deck}
+                  dueCount={stats.dueCounts[deck.id] ?? 0}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(deck.id)}
+                  onSelect={() => toggleDeck(deck.id)}
+                />
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Floating action bar — visible when 1+ decks are selected */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2">
+          <div
+            className="flex items-center gap-4 rounded-2xl border px-5 py-3.5 shadow-xl backdrop-blur-md"
+            style={{
+              background: "oklch(0.118 0.011 63 / 0.92)",
+              borderColor: "oklch(0.225 0.011 65)",
+              minWidth: "320px",
+              maxWidth: "420px",
+            }}
+          >
+            {confirmDelete ? (
+              /* Confirm state */
+              <>
+                <p className="flex-1 text-sm text-muted-foreground/80">
+                  Are you sure? This can&apos;t be undone.
+                </p>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={deleting}
+                  className="rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
+                  style={{
+                    border: "1px solid oklch(0.55 0.2 27 / 0.5)",
+                    color: "oklch(0.55 0.2 27 / 0.9)",
+                  }}
+                >
+                  {deleting ? "Deleting…" : "Confirm"}
+                </button>
+              </>
+            ) : (
+              /* Default state */
+              <>
+                <p className="flex-1 text-sm font-medium text-foreground/80">
+                  <span className="font-heading font-semibold text-foreground">
+                    {selectedIds.size}
+                  </span>{" "}
+                  {selectedIds.size === 1 ? "deck" : "decks"} selected
+                </p>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="rounded-md border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
+                  style={{
+                    border: "1px solid oklch(0.55 0.2 27 / 0.5)",
+                    color: "oklch(0.55 0.2 27 / 0.9)",
+                  }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

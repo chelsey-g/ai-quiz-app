@@ -593,7 +593,7 @@ export default function HomePage() {
       {selectMode && selectedIds.size > 0 && (
         <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2">
           <div
-            className="flex items-center gap-4 rounded-2xl border px-5 py-3.5 shadow-xl backdrop-blur-md"
+            className="flex items-center gap-4 rounded-2xl border px-5 py-3.5 shadow-xl backdrop-blur-md select-none"
             style={{
               background: "oklch(0.118 0.011 63 / 0.92)",
               borderColor: "oklch(0.225 0.011 65)",

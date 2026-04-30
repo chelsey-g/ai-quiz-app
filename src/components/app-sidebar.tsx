@@ -46,6 +46,15 @@ const NAV_LINKS = [
       </svg>
     ),
   },
+  {
+    href: "/stats",
+    label: "Stats",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5V19a1 1 0 001 1h3a1 1 0 001-1v-5.5M9 8.5V19a1 1 0 001 1h3a1 1 0 001-1V8.5M15 11V19a1 1 0 001 1h3a1 1 0 001-1v-8" />
+      </svg>
+    ),
+  },
 ] as const;
 
 function SidebarContent({

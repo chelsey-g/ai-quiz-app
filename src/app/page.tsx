@@ -575,7 +575,7 @@ export default function HomePage() {
           {/* Unified deck grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedDecks.map((deck, i) => (
-              <div key={deck.id} className="animate-card-in" style={{ animationDelay: `${i * 50}ms` }}>
+              <div key={deck.id} className="animate-card-in h-full" style={{ animationDelay: `${i * 50}ms` }}>
                 <DeckCard
                   deck={deck}
                   dueCount={stats.dueCounts[deck.id] ?? 0}

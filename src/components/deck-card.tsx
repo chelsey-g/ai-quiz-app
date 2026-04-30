@@ -173,7 +173,7 @@ export function DeckCard({
   if (selectMode) {
     return (
       <div
-        className="block group cursor-pointer select-none"
+        className="block group h-full cursor-pointer select-none"
         onClick={onSelect}
         role="checkbox"
         aria-checked={selected}
@@ -191,7 +191,7 @@ export function DeckCard({
   }
 
   return (
-    <Link href={`/decks/${deck.id}`} className="block group">
+    <Link href={`/decks/${deck.id}`} className="block group h-full">
       <div className="relative h-full overflow-hidden rounded-2xl border border-border/50 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_48px_-16px_oklch(0.77_0.195_68_/_0.22)]">
         {/* Top accent gradient line — brighter when active */}
         <div

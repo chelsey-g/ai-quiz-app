@@ -41,12 +41,25 @@ export async function PATCH(
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const title = typeof body.title === "string" ? body.title.trim() : null;
-  if (!title) return Response.json({ error: "title is required" }, { status: 400 });
+  const updates: { title?: string; is_public?: boolean } = {};
+
+  if (typeof body.title === "string") {
+    const title = body.title.trim();
+    if (!title) return Response.json({ error: "title cannot be empty" }, { status: 400 });
+    updates.title = title;
+  }
+
+  if (typeof body.is_public === "boolean") {
+    updates.is_public = body.is_public;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return Response.json({ error: "No valid fields to update" }, { status: 400 });
+  }
 
   const { error, count } = await supabase
     .from("decks")
-    .update({ title }, { count: "exact" })
+    .update(updates, { count: "exact" })
     .eq("id", id)
     .eq("user_id", user.id);
 

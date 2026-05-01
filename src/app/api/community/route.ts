@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const safeQ = q.replace(/[{},]/g, "");
   const supabase = await createClient();
 
   let query = supabase
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     .limit(50);
 
   if (q) {
-    query = query.or(`title.ilike.%${q}%,topic_tags.cs.{${q}}`);
+    query = query.or(`title.ilike.%${safeQ}%,topic_tags.cs.{${safeQ}}`);
   }
 
   const { data, error } = await query;

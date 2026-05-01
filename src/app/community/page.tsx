@@ -38,6 +38,7 @@ export default function CommunityPage() {
       body: JSON.stringify({ deckId }),
     });
     if (res.status === 401) {
+      setForkingId(null);
       router.push("/login");
       return;
     }

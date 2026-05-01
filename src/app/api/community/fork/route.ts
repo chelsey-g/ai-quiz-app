@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
     .select("front, back, card_type, tags")
     .eq("deck_id", deckId);
 
-  if (cardsErr) return Response.json({ error: cardsErr.message }, { status: 500 });
+  if (cardsErr) {
+    await supabase.from("decks").delete().eq("id", newDeck.id);
+    return Response.json({ error: cardsErr.message }, { status: 500 });
+  }
 
   if (sourceCards && sourceCards.length > 0) {
     const { error: insertErr } = await supabase.from("cards").insert(

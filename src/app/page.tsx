@@ -67,7 +67,7 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
     ) : null;
 
   return (
-    <div className="mb-8 grid grid-cols-4 gap-3">
+    <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Total cards</p>
         <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
@@ -386,9 +386,9 @@ export default function HomePage() {
     : decks;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {/* Page header */}
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
             Dashboard
@@ -400,12 +400,12 @@ export default function HomePage() {
           )}
         </div>
         {!loading && !error && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {decks.length > 0 && !selectMode && (
               <>
                 <Link
                   href="/quiz/quick"
-                  className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
+                  className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
                   style={{
                     borderColor: "oklch(0.65 0.18 265 / 0.35)",
                     color: "oklch(0.65 0.18 265 / 0.85)",
@@ -415,17 +415,17 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/import"
-                  className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:opacity-90"
+                  className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:opacity-90"
                   style={{ background: "oklch(0.77 0.195 68)", color: "oklch(0.15 0.05 68)" }}
                 >
-                  Import notes
+                  Import
                 </Link>
               </>
             )}
             {!selectMode && (
               <button
                 onClick={() => setShowNewDeck(true)}
-                className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
+                className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
                 style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
               >
                 + New deck
@@ -438,7 +438,7 @@ export default function HomePage() {
       {/* Loading skeletons */}
       {loading && (
         <div className="space-y-8">
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-20 rounded-xl border border-border/40 bg-card/60 animate-pulse" />
             ))}
@@ -591,10 +591,9 @@ export default function HomePage() {
 
       {/* Floating action bar — visible when 1+ decks are selected */}
       {selectMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2">
+        <div className="fixed bottom-[max(2rem,env(safe-area-inset-bottom,0px)+0.5rem)] left-1/2 z-50 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[420px]">
           <div
             className="flex items-center gap-4 rounded-2xl border border-border bg-card/95 px-5 py-3.5 shadow-xl backdrop-blur-md select-none"
-            style={{ minWidth: "320px", maxWidth: "420px" }}
           >
             {confirmDelete ? (
               /* Confirm state */

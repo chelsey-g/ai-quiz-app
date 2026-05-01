@@ -260,7 +260,7 @@ export default function QuizPage() {
       <div className="flex min-h-screen flex-col">
         {/* Top bar skeleton */}
         <div className="border-b border-border bg-background/80">
-          <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
+          <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-4 sm:px-6">
             <div className="h-3 w-16 animate-pulse rounded bg-muted/40" />
             <div className="flex items-center gap-3">
               <div className="h-1.5 w-32 animate-pulse rounded-full bg-muted/40" />
@@ -269,7 +269,7 @@ export default function QuizPage() {
           </div>
         </div>
         {/* Question card skeleton */}
-        <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
+        <div className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
           <div className="rounded-2xl border border-border/40 bg-card/60 px-8 py-8 animate-pulse">
             <div className="mx-auto mb-5 h-2.5 w-20 rounded bg-muted/40" />
             <div className="mx-auto h-5 w-3/4 rounded bg-muted/40" />
@@ -576,7 +576,7 @@ export default function QuizPage() {
   }
 
   const resultsPhase = phase === "results" && (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
       {/* Score header */}
       <div className="mb-8 text-center">
         <p className="font-heading text-6xl font-bold text-primary">{scorePercent}%</p>

@@ -594,7 +594,7 @@ export default function DeckPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10 space-y-4">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 space-y-4">
         <div className="h-7 w-56 rounded-lg bg-card/80 animate-pulse" />
         <div className="h-4 w-28 rounded-lg bg-card/60 animate-pulse" />
         <div className="mt-8 h-80 rounded-2xl bg-card/60 animate-pulse" />
@@ -604,7 +604,7 @@ export default function DeckPage() {
 
   if (error || !deck) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
         <p className="text-sm text-destructive">{error ?? "Deck not found"}</p>
         <Button variant="ghost" size="sm" className="mt-4" onClick={() => router.push("/")}>
           ← Back to decks
@@ -673,7 +673,7 @@ export default function DeckPage() {
     const next = nextDueDate(allCards);
 
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10 animate-fade-up">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 animate-fade-up">
         <button
           onClick={() => router.push("/")}
           className="mb-8 flex items-center gap-1.5 text-xs text-muted-foreground/60 transition-colors hover:text-foreground"
@@ -685,7 +685,7 @@ export default function DeckPage() {
         </button>
 
         <div className="mb-8">
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {deck.title}
           </h1>
           <div className="mt-3 flex items-center gap-3">
@@ -1006,7 +1006,7 @@ export default function DeckPage() {
     const pct = studyQueue.length > 0 ? Math.round((knownCount / studyQueue.length) * 100) : 0;
 
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10 animate-fade-up">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 animate-fade-up">
         <div className="mb-1.5 text-xs text-muted-foreground/50">{deck.title}</div>
         <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
           Session complete

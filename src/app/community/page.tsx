@@ -50,7 +50,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <h1 className="font-heading text-2xl font-bold text-foreground">Community Decks</h1>
       <p className="mt-1 text-sm text-muted-foreground">Search public decks and fork them to your dashboard.</p>
 

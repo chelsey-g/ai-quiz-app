@@ -30,6 +30,8 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error && error.code !== "PGRST116") {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ display_name: data?.display_name ?? null });
 }

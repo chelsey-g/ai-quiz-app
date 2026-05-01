@@ -2,29 +2,42 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
-  const safeQ = q.replace(/[{},]/g, "");
+  const raw = req.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const safeQ = raw.slice(0, 100).replace(/[^a-zA-Z0-9 \-_]/g, "");
   const supabase = await createClient();
 
   let query = supabase
     .from("decks")
-    .select("id, title, topic_tags, card_count, created_at, user_id, profiles(display_name)")
+    .select("id, title, topic_tags, card_count, created_at, user_id")
     .eq("is_public", true)
     .order("created_at", { ascending: false })
     .limit(50);
 
-  if (q) {
+  if (safeQ) {
     query = query.or(`title.ilike.%${safeQ}%,topic_tags.cs.{${safeQ}}`);
   }
 
-  const { data, error } = await query;
+  const { data: decksData, error } = await query;
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const decks = (data ?? []).map((d) => {
-    const { profiles, ...deck } = d as typeof d & { profiles: { display_name: string | null } | null };
-    return { ...deck, publisher_name: profiles?.display_name ?? null };
-  });
+  const userIds = [...new Set((decksData ?? []).map((d) => d.user_id).filter(Boolean))] as string[];
+
+  const profileMap = new Map<string, string | null>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds);
+    for (const p of profiles ?? []) {
+      profileMap.set(p.id, p.display_name);
+    }
+  }
+
+  const decks = (decksData ?? []).map((d) => ({
+    ...d,
+    publisher_name: d.user_id ? (profileMap.get(d.user_id) ?? null) : null,
+  }));
 
   return Response.json({ decks });
 }

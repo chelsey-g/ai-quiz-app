@@ -164,7 +164,7 @@ function CardRow({
         <p className="text-sm font-medium text-foreground">{card.front}</p>
         <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
       </div>
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
         <button
           onClick={() => onEditStart(card)}
           className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.12)]"
@@ -209,7 +209,7 @@ function DeckStatsBar({ stats, totalCards }: { stats: DeckStatsResult; totalCard
         </svg>
       </button>
       {open && (
-        <div className="grid grid-cols-4 gap-3 border-t border-border/30 px-4 pb-4 pt-3">
+        <div className="grid grid-cols-2 gap-3 border-t border-border/30 px-4 pb-4 pt-3 sm:grid-cols-4">
           <div>
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Sessions</p>
             <p className="font-heading mt-0.5 text-lg font-bold tabular-nums text-foreground">{stats.sessions}</p>
@@ -778,7 +778,7 @@ export default function DeckPage() {
           <div className="space-y-3">
             <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-heading text-base font-semibold text-foreground">
                     Ready to study
@@ -789,12 +789,12 @@ export default function DeckPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg" disabled={tagFilteredDue.length === 0}>
+                  <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg" disabled={tagFilteredDue.length === 0} className="flex-1 sm:flex-none">
                     Start session
                   </Button>
                   <Link
                     href={`/quiz/${id}`}
-                    className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
                   >
                     Take a quiz
                   </Link>
@@ -815,7 +815,7 @@ export default function DeckPage() {
           <div className="space-y-3">
             <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card px-6 py-5">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-heading font-semibold text-foreground">
                     {activeTag ? `All caught up · ${activeTag}` : "All caught up"}
@@ -832,12 +832,12 @@ export default function DeckPage() {
                 </div>
                 {tagFilteredCards.length > 0 && (
                   <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
+                    <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }} className="flex-1 sm:flex-none">
                       Retest all
                     </Button>
                     <Link
                       href={`/quiz/${id}`}
-                      className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
                     >
                       Take a quiz
                     </Link>

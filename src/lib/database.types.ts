@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       cards: {
@@ -103,6 +78,7 @@ export type Database = {
           card_count: number
           created_at: string
           id: string
+          is_public: boolean
           note_id: string | null
           title: string
           topic_tags: string[]
@@ -112,6 +88,7 @@ export type Database = {
           card_count?: number
           created_at?: string
           id?: string
+          is_public?: boolean
           note_id?: string | null
           title: string
           topic_tags?: string[]
@@ -121,7 +98,8 @@ export type Database = {
           card_count?: number
           created_at?: string
           id?: string
-          note_id?: string
+          is_public?: boolean
+          note_id?: string | null
           title?: string
           topic_tags?: string[]
           user_id?: string | null
@@ -166,6 +144,24 @@ export type Database = {
           source_path?: string
           title?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
         }
         Relationships: []
       }
@@ -338,10 +334,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.95.4 (currently installed v2.67.1)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

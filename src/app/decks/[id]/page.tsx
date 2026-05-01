@@ -282,6 +282,9 @@ export default function DeckPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState<string | null>(null);
 
+  const [isPublic, setIsPublic] = useState(false);
+  const [togglingPublic, setTogglingPublic] = useState(false);
+
   const [showModeModal, setShowModeModal] = useState(false);
   const [answerMode, setAnswerMode] = useState<AnswerMode>("flip");
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -299,6 +302,7 @@ export default function DeckPage() {
       } else {
         const { deck, cards, deckStats } = await res.json() as { deck: Deck; cards: Card[]; deckStats: DeckStatsResult };
         setDeck(deck);
+        setIsPublic((deck as any).is_public ?? false);
         setAllCards(cards);
         setDueCards(cards.filter(isDue));
         setDeckStats(deckStats ?? null);
@@ -481,6 +485,18 @@ export default function DeckPage() {
     setCardTags([]);
     setTagInput("");
     setShowAddCard(false);
+  }
+
+  async function handleTogglePublic() {
+    setTogglingPublic(true);
+    const next = !isPublic;
+    const res = await fetch(`/api/decks/${deck?.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_public: next }),
+    });
+    if (res.ok) setIsPublic(next);
+    setTogglingPublic(false);
   }
 
   function addTag(tag: string) {
@@ -667,9 +683,29 @@ export default function DeckPage() {
           <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
             {deck.title}
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground/60">
-            {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
-          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <p className="text-sm text-muted-foreground/60">
+              {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
+            </p>
+            <button
+              onClick={handleTogglePublic}
+              disabled={togglingPublic}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                isPublic
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/50 bg-muted/30 text-muted-foreground hover:border-primary/30 hover:text-foreground"
+              }`}
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                {isPublic ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+                )}
+              </svg>
+              {isPublic ? "Public" : "Private"}
+            </button>
+          </div>
         </div>
 
         {/* Per-deck stats */}

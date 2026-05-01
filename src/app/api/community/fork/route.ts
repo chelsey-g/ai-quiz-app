@@ -56,7 +56,10 @@ export async function POST(req: NextRequest) {
         times_correct: 0,
       }))
     );
-    if (insertErr) return Response.json({ error: insertErr.message }, { status: 500 });
+    if (insertErr) {
+      await supabase.from("decks").delete().eq("id", newDeck.id);
+      return Response.json({ error: insertErr.message }, { status: 500 });
+    }
   }
 
   return Response.json({ deckId: newDeck.id }, { status: 201 });

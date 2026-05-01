@@ -495,7 +495,12 @@ export default function DeckPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_public: next }),
     });
-    if (res.ok) setIsPublic(next);
+    if (res.ok) {
+      setIsPublic(next);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError((data as { error?: string }).error ?? "Failed to update visibility");
+    }
     setTogglingPublic(false);
   }
 

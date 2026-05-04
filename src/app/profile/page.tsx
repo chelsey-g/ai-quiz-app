@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getGlobalStats } from "@/lib/services/stats";
 import { ProfileEditor } from "@/components/profile-editor";
+import { CollectionsSection } from "@/components/collections-section";
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
@@ -17,16 +18,27 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const [profileResult, stats] = await Promise.all([
+  const [profileResult, stats, collectionsResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name, avatar_url")
       .eq("id", user.id)
       .single(),
     getGlobalStats(user.id),
+    supabase
+      .from("collections")
+      .select("id, name, is_public, collection_decks(deck_id)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true }),
   ]);
 
   const profile = profileResult.data;
+  const collections = (collectionsResult.data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    is_public: c.is_public,
+    deck_count: c.collection_decks.length,
+  }));
 
   const streakValue =
     stats.totals.streakStatus === "none" || stats.totals.streakDays === 0
@@ -72,6 +84,10 @@ export default async function ProfilePage() {
             value={stats.totals.accuracy !== null ? `${stats.totals.accuracy}%` : "—"}
           />
         </div>
+      </div>
+
+      <div className="mt-8">
+        <CollectionsSection initialCollections={collections} />
       </div>
     </div>
   );

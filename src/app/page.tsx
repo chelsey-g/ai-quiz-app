@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DeckCard, type DeckWithStats } from "@/components/deck-card";
+import { CollectionPopover } from "@/components/collection-popover";
 import { useRouter } from "next/navigation";
 
 type DashboardStats = {
@@ -583,13 +584,18 @@ export default function HomePage() {
           {/* Unified deck grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedDecks.map((deck, i) => (
-              <div key={deck.id} className="animate-card-in h-full" style={{ animationDelay: `${i * 50}ms` }}>
+              <div key={deck.id} className="animate-card-in relative h-full" style={{ animationDelay: `${i * 50}ms` }}>
                 <DeckCard
                   deck={deck}
                   selectMode={selectMode}
                   selected={selectedIds.has(deck.id)}
                   onSelect={() => toggleDeck(deck.id)}
                 />
+                {!selectMode && (
+                  <div className="absolute bottom-3 right-3 z-10">
+                    <CollectionPopover deckId={deck.id} />
+                  </div>
+                )}
               </div>
             ))}
           </div>

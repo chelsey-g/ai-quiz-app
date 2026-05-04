@@ -76,6 +76,71 @@ export type Database = {
           },
         ]
       }
+      collection_decks: {
+        Row: {
+          added_at: string
+          collection_id: string
+          deck_id: string
+        }
+        Insert: {
+          added_at?: string
+          collection_id: string
+          deck_id: string
+        }
+        Update: {
+          added_at?: string
+          collection_id?: string
+          deck_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_decks_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_decks_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decks: {
         Row: {
           card_count: number

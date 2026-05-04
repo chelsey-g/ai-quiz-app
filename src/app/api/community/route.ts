@@ -58,5 +58,5 @@ export async function GET(req: NextRequest) {
     already_forked: forkedSet.has(d.id),
   }));
 
-  return Response.json({ decks });
+  return Response.json({ decks, current_user_id: user?.id ?? null });
 }

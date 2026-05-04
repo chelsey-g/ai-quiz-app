@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type PublicDeck = {
   id: string;
@@ -9,6 +10,7 @@ type PublicDeck = {
   topic_tags: string[];
   card_count: number;
   created_at: string;
+  user_id: string | null;
   publisher_name: string | null;
   publisher_avatar_url: string | null;
   already_forked: boolean;
@@ -47,6 +49,7 @@ function PreviewModal({
   cards,
   loading,
   forkingId,
+  currentUserId,
   onFork,
   onClose,
 }: {
@@ -54,6 +57,7 @@ function PreviewModal({
   cards: PreviewCard[];
   loading: boolean;
   forkingId: string | null;
+  currentUserId: string | null;
   onFork: (id: string) => void;
   onClose: () => void;
 }) {
@@ -86,7 +90,14 @@ function PreviewModal({
             </h2>
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/55">
               <PublisherAvatar name={deck.publisher_name} avatarUrl={deck.publisher_avatar_url} />
-              {deck.publisher_name ?? "Anonymous"} · {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
+              {deck.user_id === currentUserId && deck.publisher_name ? (
+                <Link href="/profile" className="hover:text-foreground transition-colors" onClick={onClose}>
+                  {deck.publisher_name}
+                </Link>
+              ) : (
+                deck.publisher_name ?? "Anonymous"
+              )}
+              {" · "}{deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
             </p>
           </div>
           <button
@@ -169,12 +180,14 @@ function PreviewModal({
 function DeckCard({
   deck,
   forkingId,
+  currentUserId,
   onFork,
   onTagClick,
   onPreview,
 }: {
   deck: PublicDeck;
   forkingId: string | null;
+  currentUserId: string | null;
   onFork: (id: string) => void;
   onTagClick: (tag: string) => void;
   onPreview: (deck: PublicDeck) => void;
@@ -191,7 +204,17 @@ function DeckCard({
         </h3>
         <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground/55">
           <PublisherAvatar name={deck.publisher_name} avatarUrl={deck.publisher_avatar_url} />
-          {deck.publisher_name ?? "Anonymous"}
+          {deck.user_id === currentUserId && deck.publisher_name ? (
+            <Link
+              href="/profile"
+              className="hover:text-foreground transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {deck.publisher_name}
+            </Link>
+          ) : (
+            deck.publisher_name ?? "Anonymous"
+          )}
         </p>
         {deck.topic_tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -236,6 +259,7 @@ function DeckCard({
 export default function CommunityPage() {
   const router = useRouter();
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [recentDecks, setRecentDecks] = useState<PublicDeck[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
 
@@ -255,7 +279,10 @@ export default function CommunityPage() {
   useEffect(() => {
     fetch("/api/community")
       .then((r) => r.json())
-      .then((json) => setRecentDecks(json.decks ?? []))
+      .then((json) => {
+        setRecentDecks(json.decks ?? []);
+        setCurrentUserId(json.current_user_id ?? null);
+      })
       .finally(() => setRecentLoading(false));
   }, []);
 
@@ -464,6 +491,7 @@ export default function CommunityPage() {
                 key={deck.id}
                 deck={deck}
                 forkingId={forkingId}
+                currentUserId={currentUserId}
                 onFork={handleFork}
                 onTagClick={handleTagClick}
                 onPreview={handlePreview}
@@ -480,6 +508,7 @@ export default function CommunityPage() {
           cards={previewCards}
           loading={previewLoading}
           forkingId={forkingId}
+          currentUserId={currentUserId}
           onFork={handleFork}
           onClose={() => setPreviewDeck(null)}
         />

@@ -149,7 +149,7 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
       {open && (
         <div
           ref={popoverRef}
-          className="absolute bottom-full left-0 mb-2 z-50 w-56 rounded-xl border border-border bg-card shadow-xl"
+          className="absolute bottom-full right-0 mb-2 z-50 w-56 rounded-xl border border-border bg-card shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="px-3 pt-3 pb-1">

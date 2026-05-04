@@ -24,13 +24,15 @@ export async function GET(req: NextRequest) {
   const userIds = [...new Set((decksData ?? []).map((d) => d.user_id).filter(Boolean))] as string[];
 
   const profileMap = new Map<string, string | null>();
+  const avatarMap = new Map<string, string | null>();
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, display_name")
+      .select("id, display_name, avatar_url")
       .in("id", userIds);
     for (const p of profiles ?? []) {
       profileMap.set(p.id, p.display_name);
+      avatarMap.set(p.id, p.avatar_url ?? null);
     }
   }
 
@@ -52,6 +54,7 @@ export async function GET(req: NextRequest) {
   const decks = (decksData ?? []).map((d) => ({
     ...d,
     publisher_name: d.user_id ? (profileMap.get(d.user_id) ?? null) : null,
+    publisher_avatar_url: d.user_id ? (avatarMap.get(d.user_id) ?? null) : null,
     already_forked: forkedSet.has(d.id),
   }));
 

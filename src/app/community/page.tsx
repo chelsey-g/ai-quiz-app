@@ -10,8 +10,22 @@ type PublicDeck = {
   card_count: number;
   created_at: string;
   publisher_name: string | null;
+  publisher_avatar_url: string | null;
   already_forked: boolean;
 };
+
+function PublisherAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | null }) {
+  const initial = (name ?? "A").charAt(0).toUpperCase();
+  return (
+    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-primary/15 align-middle">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt={name ?? "avatar"} className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-[8px] font-bold leading-none text-primary">{initial}</span>
+      )}
+    </span>
+  );
+}
 
 type PreviewCard = { id: string; front: string; back: string };
 
@@ -70,8 +84,9 @@ function PreviewModal({
             <h2 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
               {deck.title}
             </h2>
-            <p className="mt-0.5 text-[11px] text-muted-foreground/55">
-              by {deck.publisher_name ?? "Anonymous"} · {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
+            <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/55">
+              <PublisherAvatar name={deck.publisher_name} avatarUrl={deck.publisher_avatar_url} />
+              {deck.publisher_name ?? "Anonymous"} · {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
             </p>
           </div>
           <button
@@ -174,8 +189,9 @@ function DeckCard({
         <h3 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
           {deck.title}
         </h3>
-        <p className="mt-1 text-[11px] text-muted-foreground/55">
-          by {deck.publisher_name ?? "Anonymous"}
+        <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground/55">
+          <PublisherAvatar name={deck.publisher_name} avatarUrl={deck.publisher_avatar_url} />
+          {deck.publisher_name ?? "Anonymous"}
         </p>
         {deck.topic_tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">

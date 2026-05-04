@@ -328,6 +328,8 @@ export default function DeckPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
+  const [activeQueue, setActiveQueue] = useState<Card[]>([]);
+
   const [showModeModal, setShowModeModal] = useState(false);
   const [answerMode, setAnswerMode] = useState<AnswerMode>("flip");
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -373,7 +375,7 @@ export default function DeckPage() {
         return accA - accB;
       })
     : [...tagFilteredCards].sort(() => Math.random() - 0.5);
-  const currentCard = studyQueue[currentIndex];
+  const currentCard = studyState === "studying" ? activeQueue[currentIndex] : studyQueue[currentIndex];
   const currentCardMode: ResolvedMode =
     studyState === "studying" && currentCard
       ? (cardModes[currentCard.id] ?? "flip")
@@ -396,7 +398,7 @@ export default function DeckPage() {
   function goBack() {
     if (cardHistory.length === 0) return;
     const last = cardHistory[cardHistory.length - 1];
-    const prevCard = studyQueue[last.index];
+    const prevCard = activeQueue[last.index];
     if (prevCard) {
       if (last.wasKnown === true) setKnown((prev) => { const s = new Set(prev); s.delete(prevCard.id); return s; });
       if (last.wasKnown === false) setUnknown((prev) => { const s = new Set(prev); s.delete(prevCard.id); return s; });
@@ -414,7 +416,7 @@ export default function DeckPage() {
     setTypedAnswer("");
     setAnswerSubmitted(false);
     setSelectedMcOption(null);
-    if (currentIndex + 1 >= studyQueue.length) {
+    if (currentIndex + 1 >= activeQueue.length) {
       setStudyState("done");
     } else {
       setCurrentIndex((i) => i + 1);
@@ -436,11 +438,24 @@ export default function DeckPage() {
     setAnswerMode(answerModeOverride);
     setShowModeModal(false);
 
+    // Capture the queue once — prevents re-renders from reshuffling it mid-session
+    const capturedQueue: Card[] =
+      contentFilter === "fresh"
+        ? freshCards
+        : contentFilter === "practiced"
+        ? [...practicedCards].sort((a, b) => {
+            const accA = a.times_seen > 0 ? a.times_correct / a.times_seen : 0;
+            const accB = b.times_seen > 0 ? b.times_correct / b.times_seen : 0;
+            return accA - accB;
+          })
+        : [...tagFilteredCards].sort(() => Math.random() - 0.5);
+    setActiveQueue(capturedQueue);
+
     const fixedModes: ResolvedMode[] = ["flip", "type", "multiple-choice"];
     const resolvedModes: Record<string, ResolvedMode> = {};
     const resolvedMcOptions: Record<string, string[]> = {};
 
-    studyQueue.forEach((card) => {
+    capturedQueue.forEach((card) => {
       let cardMode: ResolvedMode =
         answerModeOverride === "random"
           ? fixedModes[Math.floor(Math.random() * fixedModes.length)]
@@ -653,8 +668,8 @@ export default function DeckPage() {
   useEffect(() => {
     if (studyState !== "done" || !deck || !startedAt || sessionSavedRef.current) return;
     sessionSavedRef.current = true;
-    const score = studyQueue.length > 0 ? Math.round((known.size / studyQueue.length) * 100) : 0;
-    const results = studyQueue
+    const score = activeQueue.length > 0 ? Math.round((known.size / activeQueue.length) * 100) : 0;
+    const results = activeQueue
       .filter((c) => known.has(c.id) || unknown.has(c.id))
       .map((c) => ({ cardId: c.id, correct: known.has(c.id) }));
     fetch("/api/sessions", {
@@ -662,7 +677,7 @@ export default function DeckPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deckId: deck.id, score, startedAt, results }),
     });
-  }, [studyState, deck, startedAt, known, unknown, studyQueue]);
+  }, [studyState, deck, startedAt, known, unknown, activeQueue]);
 
   if (loading) {
     return (
@@ -1087,7 +1102,7 @@ export default function DeckPage() {
   if (studyState === "done") {
     const knownCount = known.size;
     const unknownCount = unknown.size;
-    const pct = studyQueue.length > 0 ? Math.round((knownCount / studyQueue.length) * 100) : 0;
+    const pct = activeQueue.length > 0 ? Math.round((knownCount / activeQueue.length) * 100) : 0;
 
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 animate-fade-up">
@@ -1149,7 +1164,7 @@ export default function DeckPage() {
   }
 
   // ── Studying ──────────────────────────────────────────────────────────────
-  const progressPct = (currentIndex / studyQueue.length) * 100;
+  const progressPct = (currentIndex / activeQueue.length) * 100;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -1201,7 +1216,7 @@ export default function DeckPage() {
         </div>
         <span className="font-heading text-sm font-semibold tabular-nums text-foreground">
           {currentIndex + 1}
-          <span className="text-muted-foreground/50 font-normal"> / {studyQueue.length}</span>
+          <span className="text-muted-foreground/50 font-normal"> / {activeQueue.length}</span>
         </span>
       </div>
 

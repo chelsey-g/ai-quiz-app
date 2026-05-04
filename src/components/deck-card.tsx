@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 import type { Database } from "@/lib/database.types";
 
@@ -28,12 +29,14 @@ export function DeckCard({
   selected = false,
   onSelect,
   selectMode = false,
+  topAction,
 }: {
   deck: DeckWithStats;
   accuracyPercent?: number;
   selected?: boolean;
   onSelect?: () => void;
   selectMode?: boolean;
+  topAction?: React.ReactNode;
 }) {
   // Use the explicitly-passed accuracyPercent if provided, otherwise derive from deck stats
   const pct = accuracyPercent !== undefined ? accuracyPercent : accuracyPct(deck.total_seen, deck.total_correct);
@@ -184,8 +187,9 @@ export function DeckCard({
   }
 
   return (
-    <Link href={`/decks/${deck.id}`} className="block group h-full">
-      <div className="relative h-full overflow-hidden rounded-2xl border border-border/50 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_48px_-16px_oklch(0.77_0.195_68_/_0.22)]">
+    <div className="relative h-full group">
+      <Link href={`/decks/${deck.id}`} className="block h-full">
+        <div className="relative h-full overflow-hidden rounded-2xl border border-border/50 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_48px_-16px_oklch(0.77_0.195_68_/_0.22)]">
         {/* Top accent gradient line — brighter when active */}
         <div
           className={`absolute inset-x-0 top-0 h-px transition-all duration-300 bg-gradient-to-r from-transparent to-transparent ${
@@ -197,7 +201,7 @@ export function DeckCard({
 
         <div className="p-5">
           {/* Title — most prominent element */}
-          <h3 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
+          <h3 className={`font-heading text-base font-bold leading-snug text-foreground line-clamp-2 ${topAction ? "pr-7" : ""}`}>
             {deck.title}
           </h3>
 
@@ -257,6 +261,12 @@ export function DeckCard({
           </div>
         </div>
       </div>
-    </Link>
+      </Link>
+      {topAction && (
+        <div className="absolute top-2 right-2 z-10">
+          {topAction}
+        </div>
+      )}
+    </div>
   );
 }

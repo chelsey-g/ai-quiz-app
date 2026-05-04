@@ -584,18 +584,14 @@ export default function HomePage() {
           {/* Unified deck grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedDecks.map((deck, i) => (
-              <div key={deck.id} className="animate-card-in relative h-full" style={{ animationDelay: `${i * 50}ms` }}>
+              <div key={deck.id} className="animate-card-in h-full" style={{ animationDelay: `${i * 50}ms` }}>
                 <DeckCard
                   deck={deck}
                   selectMode={selectMode}
                   selected={selectedIds.has(deck.id)}
                   onSelect={() => toggleDeck(deck.id)}
+                  topAction={!selectMode ? <CollectionPopover deckId={deck.id} /> : undefined}
                 />
-                {!selectMode && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <CollectionPopover deckId={deck.id} />
-                  </div>
-                )}
               </div>
             ))}
           </div>

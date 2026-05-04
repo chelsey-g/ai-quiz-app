@@ -20,29 +20,11 @@ const NAV_LINKS = [
     ),
   },
   {
-    href: "/notes",
-    label: "Notes",
+    href: "/create",
+    label: "Create",
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    ),
-  },
-  {
-    href: "/generate",
-    label: "Generate",
-    icon: (
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
-    href: "/import",
-    label: "Import",
-    icon: (
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 8l-3-3m3 3l3-3" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
       </svg>
     ),
   },
@@ -61,6 +43,15 @@ const NAV_LINKS = [
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+      </svg>
+    ),
+  },
+  {
+    href: "/profile",
+    label: "Profile",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
       </svg>
     ),
   },
@@ -95,7 +86,7 @@ function SidebarContent({
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 flex-1">
         {NAV_LINKS.map(({ href, label, icon }) => {
-          const isActive = pathname === href;
+          const isActive = href === "/" ? pathname === href : pathname.startsWith(href);
           return (
             <Link
               key={href}
@@ -126,7 +117,13 @@ function SidebarContent({
 
       {/* User info + sign out */}
       <div className="border-t border-border/40 pt-3 mt-3">
-        <p className="truncate px-3 text-[11px] text-muted-foreground/50 mb-2">{user.email}</p>
+        <Link
+          href="/profile"
+          onClick={onNavClick}
+          className="truncate block px-3 text-[11px] text-muted-foreground/50 mb-2 hover:text-muted-foreground transition-colors"
+        >
+          {user.email}
+        </Link>
         <div className="flex items-center gap-2">
           <form action={signOut} className="flex-1">
             <button

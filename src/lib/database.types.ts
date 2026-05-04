@@ -27,6 +27,7 @@ export type Database = {
           last_seen_at: string | null
           next_review_at: string | null
           repetitions: number
+          sort_order: number | null
           tags: string[]
           times_correct: number
           times_seen: number
@@ -43,6 +44,7 @@ export type Database = {
           last_seen_at?: string | null
           next_review_at?: string | null
           repetitions?: number
+          sort_order?: number | null
           tags?: string[]
           times_correct?: number
           times_seen?: number
@@ -59,6 +61,7 @@ export type Database = {
           last_seen_at?: string | null
           next_review_at?: string | null
           repetitions?: number
+          sort_order?: number | null
           tags?: string[]
           times_correct?: number
           times_seen?: number
@@ -80,6 +83,7 @@ export type Database = {
           id: string
           is_public: boolean
           note_id: string | null
+          source_deck_id: string | null
           title: string
           topic_tags: string[]
           user_id: string | null
@@ -90,6 +94,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           note_id?: string | null
+          source_deck_id?: string | null
           title: string
           topic_tags?: string[]
           user_id?: string | null
@@ -100,6 +105,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           note_id?: string | null
+          source_deck_id?: string | null
           title?: string
           topic_tags?: string[]
           user_id?: string | null
@@ -110,6 +116,13 @@ export type Database = {
             columns: ["note_id"]
             isOneToOne: false
             referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decks_source_deck_id_fkey"
+            columns: ["source_deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
             referencedColumns: ["id"]
           },
         ]
@@ -149,16 +162,19 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           display_name: string | null
           id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           id?: string

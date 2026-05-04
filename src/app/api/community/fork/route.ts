@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
 
   if (srcErr || !source) return Response.json({ error: "Deck not found" }, { status: 404 });
 
+  // Reject if already forked
+  const { data: existing } = await supabase
+    .from("decks")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("source_deck_id", deckId)
+    .maybeSingle();
+
+  if (existing) return Response.json({ error: "Already in your library" }, { status: 409 });
+
   // Copy deck
   const { data: newDeck, error: deckErr } = await supabase
     .from("decks")
@@ -30,6 +40,7 @@ export async function POST(req: NextRequest) {
       card_count: source.card_count,
       user_id: user.id,
       is_public: false,
+      source_deck_id: deckId,
     })
     .select("id")
     .single();

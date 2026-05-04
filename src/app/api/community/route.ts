@@ -34,9 +34,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Check which decks the current user has already forked (optional auth)
+  const { data: { user } } = await supabase.auth.getUser();
+  const forkedSet = new Set<string>();
+  if (user && decksData && decksData.length > 0) {
+    const publicIds = decksData.map((d) => d.id);
+    const { data: forks } = await supabase
+      .from("decks")
+      .select("source_deck_id")
+      .eq("user_id", user.id)
+      .in("source_deck_id", publicIds);
+    for (const f of forks ?? []) {
+      if (f.source_deck_id) forkedSet.add(f.source_deck_id);
+    }
+  }
+
   const decks = (decksData ?? []).map((d) => ({
     ...d,
     publisher_name: d.user_id ? (profileMap.get(d.user_id) ?? null) : null,
+    already_forked: forkedSet.has(d.id),
   }));
 
   return Response.json({ decks });

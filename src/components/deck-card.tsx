@@ -24,14 +24,12 @@ function accuracyPct(seen: number, correct: number): number | null {
 
 export function DeckCard({
   deck,
-  dueCount = 0,
   accuracyPercent,
   selected = false,
   onSelect,
   selectMode = false,
 }: {
   deck: DeckWithStats;
-  dueCount?: number;
   accuracyPercent?: number;
   selected?: boolean;
   onSelect?: () => void;
@@ -155,11 +153,6 @@ export function DeckCard({
                   {deck.unattempted_count} new
                 </span>
               )}
-              {dueCount > 0 && (
-                <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
-                  {dueCount} due
-                </span>
-              )}
             </span>
             <span className="text-[10px] text-muted-foreground/40">
               {hasActivity ? formatDate(deck.created_at) : "Not started"}
@@ -254,11 +247,6 @@ export function DeckCard({
                 {deck.unattempted_count > 0 && (
                   <span className="rounded-full bg-primary/14 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                     {deck.unattempted_count} new
-                  </span>
-                )}
-                {dueCount > 0 && (
-                  <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
-                    {dueCount} due
                   </span>
                 )}
               </span>

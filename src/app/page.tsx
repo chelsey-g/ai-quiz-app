@@ -16,9 +16,8 @@ type DashboardStats = {
   totalCards: number;
   totalSeen: number;
   totalCorrect: number;
-  cardsDueToday: number;
+  freshCards: number;
   recentDeckIds: string[];
-  dueCounts: Record<string, number>;
   streakDays: number;
   streakStatus: "active" | "at_risk" | "none";
 };
@@ -81,13 +80,9 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
         </p>
       </div>
       <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Due today</p>
-        <p
-          className={`font-heading mt-1 text-2xl font-bold tabular-nums ${
-            stats.cardsDueToday > 0 ? "text-amber-400" : "text-foreground"
-          }`}
-        >
-          {stats.cardsDueToday}
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Fresh</p>
+        <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
+          {stats.freshCards}
         </p>
       </div>
       <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
@@ -113,13 +108,7 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
   );
 }
 
-function JumpBackInCard({
-  deck,
-  dueCount,
-}: {
-  deck: DeckWithStats;
-  dueCount: number;
-}) {
+function JumpBackInCard({ deck }: { deck: DeckWithStats }) {
   return (
     <Link href={`/decks/${deck.id}`} className="block group mb-8">
       <div
@@ -183,13 +172,7 @@ function JumpBackInCard({
             )}
           </div>
 
-          {/* Right side — due badge + arrow */}
           <div className="flex flex-none items-center gap-3">
-            {dueCount > 0 && (
-              <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-semibold text-amber-400">
-                {dueCount} due
-              </span>
-            )}
             <svg
               className="h-4 w-4 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-muted-foreground/70"
               fill="none"
@@ -276,6 +259,15 @@ function NewDeckDialog({
   );
 }
 
+type SortMode = "alpha" | "created" | "studied" | "size";
+
+const SORT_LABELS: Record<SortMode, string> = {
+  alpha: "A → Z",
+  created: "Newest",
+  studied: "Last studied",
+  size: "Most cards",
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [decks, setDecks] = useState<DeckWithStats[]>([]);
@@ -283,6 +275,18 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewDeck, setShowNewDeck] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("studied");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("deck-sort") as SortMode | null;
+    if (saved && saved in SORT_LABELS) setSortMode(saved);
+    else setSortMode("studied");
+  }, []);
+
+  function handleSortChange(mode: SortMode) {
+    setSortMode(mode);
+    localStorage.setItem("deck-sort", mode);
+  }
 
   // Bulk select state
   const [selectMode, setSelectMode] = useState(false);
@@ -365,23 +369,19 @@ export default function HomePage() {
           .find((d): d is DeckWithStats => d !== undefined) ?? null)
       : null;
 
-  // Unified sorted deck list:
-  // 1. Decks with dueCount > 0 — sorted desc by due count
-  // 2. Recently studied decks (no due cards)
-  // 3. Everything else
   const sortedDecks = stats
     ? (() => {
-        const recentSet = new Set(stats.recentDeckIds);
-        const withDue = decks
-          .filter((d) => (stats.dueCounts[d.id] ?? 0) > 0)
-          .sort((a, b) => (stats.dueCounts[b.id] ?? 0) - (stats.dueCounts[a.id] ?? 0));
-        const recentNoDue = decks.filter(
-          (d) => recentSet.has(d.id) && (stats.dueCounts[d.id] ?? 0) === 0,
-        );
-        const dueIds = new Set(withDue.map((d) => d.id));
-        const recentNoDueIds = new Set(recentNoDue.map((d) => d.id));
-        const rest = decks.filter((d) => !dueIds.has(d.id) && !recentNoDueIds.has(d.id));
-        return [...withDue, ...recentNoDue, ...rest];
+        const copy = [...decks];
+        if (sortMode === "alpha") return copy.sort((a, b) => a.title.localeCompare(b.title));
+        if (sortMode === "created") return copy.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        if (sortMode === "size") return copy.sort((a, b) => b.card_count - a.card_count);
+        // studied (default): recently studied first, then by created_at
+        const recentIndex = Object.fromEntries(stats.recentDeckIds.map((id, i) => [id, i]));
+        return copy.sort((a, b) => {
+          const ai = recentIndex[a.id] ?? Infinity;
+          const bi = recentIndex[b.id] ?? Infinity;
+          return ai !== bi ? ai - bi : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
       })()
     : decks;
 
@@ -528,18 +528,26 @@ export default function HomePage() {
 
           {/* Jump back in — hero CTA if recently studied */}
           {jumpDeck && (
-            <JumpBackInCard
-              deck={jumpDeck}
-              dueCount={stats.dueCounts[jumpDeck.id] ?? 0}
-            />
+            <JumpBackInCard deck={jumpDeck} />
           )}
 
           {/* Deck grid header row */}
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60 shrink-0">
               Your decks
             </p>
             <div className="flex items-center gap-2">
+              {!selectMode && (
+                <select
+                  value={sortMode}
+                  onChange={(e) => handleSortChange(e.target.value as SortMode)}
+                  className="rounded-md border border-border/50 bg-card px-2 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer"
+                >
+                  {(Object.keys(SORT_LABELS) as SortMode[]).map((m) => (
+                    <option key={m} value={m}>{SORT_LABELS[m]}</option>
+                  ))}
+                </select>
+              )}
               {selectMode && (
                 <button
                   onClick={() => {
@@ -578,7 +586,6 @@ export default function HomePage() {
               <div key={deck.id} className="animate-card-in h-full" style={{ animationDelay: `${i * 50}ms` }}>
                 <DeckCard
                   deck={deck}
-                  dueCount={stats.dueCounts[deck.id] ?? 0}
                   selectMode={selectMode}
                   selected={selectedIds.has(deck.id)}
                   onSelect={() => toggleDeck(deck.id)}

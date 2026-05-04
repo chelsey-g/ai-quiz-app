@@ -59,7 +59,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
       .not("completed_at", "is", null),
     supabase
       .from("cards")
-      .select("deck_id, times_seen, times_correct, interval_days")
+      .select("deck_id, times_seen, times_correct")
       .in("deck_id", deckIds),
   ]);
 
@@ -74,7 +74,6 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
     deck_id: string;
     times_seen: number;
     times_correct: number;
-    interval_days: number;
   }[];
 
   // Totals
@@ -89,7 +88,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
   const totalSeen = allCards.reduce((sum, c) => sum + c.times_seen, 0);
   const totalCorrect = allCards.reduce((sum, c) => sum + c.times_correct, 0);
   const accuracy = totalSeen > 0 ? Math.round((totalCorrect / totalSeen) * 100) : null;
-  const cardsMastered = allCards.filter((c) => c.interval_days >= 21).length;
+  const cardsMastered = allCards.filter((c) => c.times_seen >= 5 && c.times_correct / c.times_seen >= 0.8).length;
 
   const { streakDays, streakStatus } = computeStreak(
     completedSessions.map((s) => s.completed_at)
@@ -102,7 +101,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
     const deckSeen = deckCards.reduce((sum, c) => sum + c.times_seen, 0);
     const deckCorrect = deckCards.reduce((sum, c) => sum + c.times_correct, 0);
     const deckAccuracy = deckSeen > 0 ? Math.round((deckCorrect / deckSeen) * 100) : null;
-    const mastered = deckCards.filter((c) => c.interval_days >= 21).length;
+    const mastered = deckCards.filter((c) => c.times_seen >= 5 && c.times_correct / c.times_seen >= 0.8).length;
     const sortedSessions = [...deckSessions].sort((a, b) =>
       b.completed_at.localeCompare(a.completed_at)
     );
@@ -147,17 +146,17 @@ export async function getDeckStats(deckId: string, userId: string): Promise<Deck
       .order("completed_at", { ascending: false }),
     supabase
       .from("cards")
-      .select("times_seen, times_correct, interval_days")
+      .select("times_seen, times_correct")
       .eq("deck_id", deckId),
   ]);
 
   const completedSessions = (sessions ?? []) as { completed_at: string }[];
-  const deckCards = (cards ?? []) as { times_seen: number; times_correct: number; interval_days: number }[];
+  const deckCards = (cards ?? []) as { times_seen: number; times_correct: number }[];
 
   const totalSeen = deckCards.reduce((sum, c) => sum + c.times_seen, 0);
   const totalCorrect = deckCards.reduce((sum, c) => sum + c.times_correct, 0);
   const accuracy = totalSeen > 0 ? Math.round((totalCorrect / totalSeen) * 100) : null;
-  const mastered = deckCards.filter((c) => c.interval_days >= 21).length;
+  const mastered = deckCards.filter((c) => c.times_seen >= 5 && c.times_correct / c.times_seen >= 0.8).length;
   const lastStudied = completedSessions[0]?.completed_at ?? null;
 
   return { sessions: completedSessions.length, accuracy, mastered, lastStudied };

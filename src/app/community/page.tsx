@@ -10,7 +10,10 @@ type PublicDeck = {
   card_count: number;
   created_at: string;
   publisher_name: string | null;
+  already_forked: boolean;
 };
+
+type PreviewCard = { id: string; front: string; back: string };
 
 function popularTags(decks: PublicDeck[]): string[] {
   const counts: Record<string, number> = {};
@@ -25,20 +28,149 @@ function popularTags(decks: PublicDeck[]): string[] {
     .map(([tag]) => tag);
 }
 
+function PreviewModal({
+  deck,
+  cards,
+  loading,
+  forkingId,
+  onFork,
+  onClose,
+}: {
+  deck: PublicDeck;
+  cards: PreviewCard[];
+  loading: boolean;
+  forkingId: string | null;
+  onFork: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+
+  function toggleReveal(cardId: string) {
+    setRevealedIds((prev) => {
+      const next = new Set(prev);
+      next.has(cardId) ? next.delete(cardId) : next.add(cardId);
+      return next;
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <div className="relative z-10 flex w-full flex-col rounded-t-2xl border border-border bg-card shadow-2xl sm:max-w-xl sm:rounded-2xl"
+           style={{ maxHeight: "85dvh" }}>
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-border/50 px-5 py-4">
+          <div className="min-w-0 pr-4">
+            <h2 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
+              {deck.title}
+            </h2>
+            <p className="mt-0.5 text-[11px] text-muted-foreground/55">
+              by {deck.publisher_name ?? "Anonymous"} · {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-muted/40 hover:text-foreground"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Card list */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-14 animate-pulse rounded-xl border border-border/40 bg-muted/30" />
+            ))
+          ) : cards.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground/60">No cards in this deck.</p>
+          ) : (
+            cards.map((card, idx) => {
+              const revealed = revealedIds.has(card.id);
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  onClick={() => toggleReveal(card.id)}
+                  className="w-full rounded-xl border border-border/40 bg-card px-4 py-3 text-left transition-colors hover:border-primary/30 hover:bg-muted/20"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50 mb-1">
+                        {idx + 1}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">{card.front}</p>
+                      {revealed && (
+                        <p className="mt-2 text-sm text-muted-foreground/80 border-t border-border/40 pt-2">
+                          {card.back}
+                        </p>
+                      )}
+                    </div>
+                    <svg
+                      className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground/30 transition-transform ${revealed ? "rotate-180" : ""}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border/50 px-5 py-4">
+          {deck.already_forked ? (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground/60">Already in your library</p>
+              <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                Forked ✓
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={() => onFork(deck.id)}
+              disabled={forkingId === deck.id}
+              className="w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {forkingId === deck.id ? "Forking…" : "Fork to my library"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DeckCard({
   deck,
   forkingId,
   onFork,
   onTagClick,
+  onPreview,
 }: {
   deck: PublicDeck;
   forkingId: string | null;
   onFork: (id: string) => void;
   onTagClick: (tag: string) => void;
+  onPreview: (deck: PublicDeck) => void;
 }) {
   return (
     <div className="flex flex-col justify-between rounded-2xl border border-border/50 bg-card p-5 transition-all duration-200 hover:border-primary/30 hover:shadow-[0_8px_24px_-8px_oklch(0.77_0.195_68_/_0.15)]">
-      <div>
+      <button
+        type="button"
+        className="text-left"
+        onClick={() => onPreview(deck)}
+      >
         <h3 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
           {deck.title}
         </h3>
@@ -48,28 +180,38 @@ function DeckCard({
         {deck.topic_tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {deck.topic_tags.slice(0, 3).map((tag) => (
-              <button
+              <span
                 key={tag}
-                onClick={() => onTagClick(tag)}
-                className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/65 transition-colors hover:border-primary/30 hover:text-primary"
+                onClick={(e) => { e.stopPropagation(); onTagClick(tag); }}
+                className="cursor-pointer rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/65 transition-colors hover:border-primary/30 hover:text-primary"
               >
                 {tag}
-              </button>
+              </span>
             ))}
           </div>
         )}
-      </div>
+      </button>
       <div className="mt-4 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground/55">
-          {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
-        </span>
         <button
-          onClick={() => onFork(deck.id)}
-          disabled={forkingId === deck.id}
-          className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-60"
+          type="button"
+          onClick={() => onPreview(deck)}
+          className="text-xs text-muted-foreground/55 hover:text-primary transition-colors"
         >
-          {forkingId === deck.id ? "Forking…" : "Fork"}
+          {deck.card_count} {deck.card_count === 1 ? "card" : "cards"} · Preview
         </button>
+        {deck.already_forked ? (
+          <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            Forked ✓
+          </span>
+        ) : (
+          <button
+            onClick={() => onFork(deck.id)}
+            disabled={forkingId === deck.id}
+            className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-60"
+          >
+            {forkingId === deck.id ? "Forking…" : "Fork"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -89,6 +231,10 @@ export default function CommunityPage() {
 
   const [forkingId, setForkingId] = useState<string | null>(null);
 
+  const [previewDeck, setPreviewDeck] = useState<PublicDeck | null>(null);
+  const [previewCards, setPreviewCards] = useState<PreviewCard[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
   // Load recent decks on mount
   useEffect(() => {
     fetch("/api/community")
@@ -96,6 +242,16 @@ export default function CommunityPage() {
       .then((json) => setRecentDecks(json.decks ?? []))
       .finally(() => setRecentLoading(false));
   }, []);
+
+  // Close preview on Escape
+  useEffect(() => {
+    if (!previewDeck) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setPreviewDeck(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewDeck]);
 
   const tags = popularTags(recentDecks);
   const isFiltering = searched || activeTag !== null;
@@ -136,6 +292,16 @@ export default function CommunityPage() {
     setResults([]);
   }
 
+  async function handlePreview(deck: PublicDeck) {
+    setPreviewDeck(deck);
+    setPreviewCards([]);
+    setPreviewLoading(true);
+    const res = await fetch(`/api/community/${deck.id}`);
+    const json = await res.json();
+    setPreviewCards(json.cards ?? []);
+    setPreviewLoading(false);
+  }
+
   async function handleFork(deckId: string) {
     setForkingId(deckId);
     const res = await fetch("/api/community/fork", {
@@ -150,6 +316,7 @@ export default function CommunityPage() {
     }
     if (res.ok) {
       const { deckId: newId } = await res.json();
+      setPreviewDeck(null);
       router.push(`/decks/${newId}`);
     }
     setForkingId(null);
@@ -283,11 +450,24 @@ export default function CommunityPage() {
                 forkingId={forkingId}
                 onFork={handleFork}
                 onTagClick={handleTagClick}
+                onPreview={handlePreview}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Preview modal */}
+      {previewDeck && (
+        <PreviewModal
+          deck={previewDeck}
+          cards={previewCards}
+          loading={previewLoading}
+          forkingId={forkingId}
+          onFork={handleFork}
+          onClose={() => setPreviewDeck(null)}
+        />
+      )}
     </div>
   );
 }

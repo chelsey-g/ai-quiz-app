@@ -6,9 +6,8 @@ export type DashboardStats = {
   totalCards: number;
   totalSeen: number;
   totalCorrect: number;
-  cardsDueToday: number;
+  freshCards: number;
   recentDeckIds: string[];
-  dueCounts: Record<string, number>;
   streakDays: number;
   streakStatus: StreakStatus;
 };
@@ -37,9 +36,8 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       totalCards: 0,
       totalSeen: 0,
       totalCorrect: 0,
-      cardsDueToday: 0,
+      freshCards: 0,
       recentDeckIds: [],
-      dueCounts: {},
       streakDays: 0,
       streakStatus: "none",
     };
@@ -52,7 +50,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   ] = await Promise.all([
     supabase
       .from("cards")
-      .select("deck_id, times_seen, times_correct, next_review_at")
+      .select("deck_id, times_seen, times_correct")
       .in("deck_id", deckIds),
     supabase
       .from("sessions")
@@ -78,24 +76,12 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     throw new Error(allSessionDatesError.message);
   }
 
-  const now = new Date().toISOString();
   const allCards = cards ?? [];
 
   const totalCards = allCards.length;
   const totalSeen = allCards.reduce((s, c) => s + c.times_seen, 0);
   const totalCorrect = allCards.reduce((s, c) => s + c.times_correct, 0);
-
-  const isDue = (c: { times_seen: number; next_review_at: string | null }) =>
-    c.times_seen > 0 && c.next_review_at !== null && c.next_review_at <= now;
-
-  const cardsDueToday = allCards.filter(isDue).length;
-
-  const dueCounts: Record<string, number> = {};
-  for (const card of allCards) {
-    if (isDue(card)) {
-      dueCounts[card.deck_id] = (dueCounts[card.deck_id] ?? 0) + 1;
-    }
-  }
+  const freshCards = allCards.filter((c) => c.times_seen === 0).length;
 
   const seen = new Set<string>();
   const recentDeckIds: string[] = [];
@@ -116,9 +102,8 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     totalCards,
     totalSeen,
     totalCorrect,
-    cardsDueToday,
+    freshCards,
     recentDeckIds,
-    dueCounts,
     streakDays,
     streakStatus,
   };

@@ -61,7 +61,8 @@ export async function getDeckById(
         .from("cards")
         .select("*")
         .eq("deck_id", deckId)
-        .order("created_at"),
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true }),
       getDeckStats(deckId, userId),
     ]);
 

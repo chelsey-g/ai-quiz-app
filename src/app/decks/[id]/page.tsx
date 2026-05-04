@@ -11,6 +11,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Database } from "@/lib/database.types";
 import type { DeckStatsResult } from "@/lib/services/stats";
 
@@ -18,7 +34,7 @@ type Deck = Database["public"]["Tables"]["decks"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 
 type StudyState = "idle" | "studying" | "done";
-type StudyMode = "due" | "all";
+type ContentFilter = "fresh" | "practiced" | "mix";
 type AnswerMode = "flip" | "type" | "multiple-choice" | "random";
 type ResolvedMode = "flip" | "type" | "multiple-choice";
 
@@ -31,26 +47,8 @@ function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
   return [...distractors, targetCard.back].sort(() => Math.random() - 0.5);
 }
 
-function isDue(card: Card): boolean {
-  if (!card.next_review_at) return true;
-  return new Date(card.next_review_at) <= new Date();
-}
-
-function nextDueDate(cards: Card[]): Date | null {
-  const upcoming = cards
-    .filter((c) => c.next_review_at && !isDue(c))
-    .map((c) => new Date(c.next_review_at!));
-  if (upcoming.length === 0) return null;
-  return upcoming.reduce((min, d) => (d < min ? d : min));
-}
-
-function formatRelativeDate(date: Date): string {
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 1) return "tomorrow";
-  if (diffDays <= 7) return `in ${diffDays} days`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function isFresh(card: Card): boolean {
+  return card.times_seen === 0;
 }
 
 interface CardRowProps {
@@ -69,6 +67,8 @@ interface CardRowProps {
   onDeleteStart: (id: string) => void;
   onDeleteConfirm: (id: string) => void;
   onDeleteCancel: () => void;
+  dragListeners?: Record<string, unknown>;
+  dragAttributes?: Record<string, unknown>;
 }
 
 function CardRow({
@@ -87,6 +87,8 @@ function CardRow({
   onDeleteStart,
   onDeleteConfirm,
   onDeleteCancel,
+  dragListeners,
+  dragAttributes,
 }: CardRowProps) {
   if (isEditing) {
     return (
@@ -160,6 +162,21 @@ function CardRow({
       className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3"
       style={{ borderColor: "oklch(0.77 0.195 68 / 0.2)" }}
     >
+      {dragListeners && (
+        <button
+          type="button"
+          className="mt-0.5 flex h-6 w-5 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/50 transition-colors hover:text-muted-foreground active:cursor-grabbing"
+          title="Drag to reorder"
+          {...(dragListeners as React.HTMLAttributes<HTMLButtonElement>)}
+          {...(dragAttributes as React.HTMLAttributes<HTMLButtonElement>)}
+        >
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 16 16">
+            <circle cx="5.5" cy="3.5" r="1.25" /><circle cx="10.5" cy="3.5" r="1.25" />
+            <circle cx="5.5" cy="8" r="1.25" /><circle cx="10.5" cy="8" r="1.25" />
+            <circle cx="5.5" cy="12.5" r="1.25" /><circle cx="10.5" cy="12.5" r="1.25" />
+          </svg>
+        </button>
+      )}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">{card.front}</p>
         <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
@@ -186,6 +203,25 @@ function CardRow({
           </svg>
         </button>
       </div>
+    </div>
+  );
+}
+
+function SortableCardRow(props: CardRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: props.card.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 10 : undefined,
+        position: "relative",
+      }}
+    >
+      <CardRow {...props} dragListeners={listeners as unknown as Record<string, unknown>} dragAttributes={attributes as unknown as Record<string, unknown>} />
     </div>
   );
 }
@@ -246,7 +282,6 @@ export default function DeckPage() {
 
   const [deck, setDeck] = useState<Deck | null>(null);
   const [allCards, setAllCards] = useState<Card[]>([]);
-  const [dueCards, setDueCards] = useState<Card[]>([]);
   const [deckStats, setDeckStats] = useState<DeckStatsResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -262,7 +297,7 @@ export default function DeckPage() {
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   const [studyState, setStudyState] = useState<StudyState>("idle");
-  const [studyMode, setStudyMode] = useState<StudyMode>("due");
+  const [contentFilter, setContentFilter] = useState<ContentFilter>("mix");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [known, setKnown] = useState<Set<string>>(new Set());
@@ -273,7 +308,7 @@ export default function DeckPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [cardsOpen, setCardsOpen] = useState(false);
+  const [cardsOpen, setCardsOpen] = useState(true);
 
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
@@ -284,6 +319,14 @@ export default function DeckPage() {
 
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
 
   const [showModeModal, setShowModeModal] = useState(false);
   const [answerMode, setAnswerMode] = useState<AnswerMode>("flip");
@@ -304,7 +347,6 @@ export default function DeckPage() {
         setDeck(deck);
         setIsPublic((deck as any).is_public ?? false);
         setAllCards(cards);
-        setDueCards(cards.filter(isDue));
         setDeckStats(deckStats ?? null);
       }
       setLoading(false);
@@ -321,10 +363,16 @@ export default function DeckPage() {
       })()
     : allCards;
   const isDeckLevelTag = activeTag !== null && !cardLevelTags.includes(activeTag);
-  const tagFilteredDue = activeTag && !isDeckLevelTag
-    ? dueCards.filter((c) => ((c as Card & { tags?: string[] }).tags ?? []).includes(activeTag))
-    : dueCards;
-  const studyQueue = studyMode === "all" ? tagFilteredCards : tagFilteredDue;
+  const freshCards = tagFilteredCards.filter(isFresh);
+  const practicedCards = tagFilteredCards.filter((c) => !isFresh(c));
+  const studyQueue =
+    contentFilter === "fresh" ? freshCards
+    : contentFilter === "practiced" ? [...practicedCards].sort((a, b) => {
+        const accA = a.times_seen > 0 ? a.times_correct / a.times_seen : 0;
+        const accB = b.times_seen > 0 ? b.times_correct / b.times_seen : 0;
+        return accA - accB;
+      })
+    : [...tagFilteredCards].sort(() => Math.random() - 0.5);
   const currentCard = studyQueue[currentIndex];
   const currentCardMode: ResolvedMode =
     studyState === "studying" && currentCard
@@ -374,7 +422,7 @@ export default function DeckPage() {
     }
   }
 
-  function startStudy(mode: AnswerMode = answerMode) {
+  function startStudy(answerModeOverride: AnswerMode = answerMode) {
     sessionSavedRef.current = false;
     setCurrentIndex(0);
     setFlipped(false);
@@ -385,7 +433,7 @@ export default function DeckPage() {
     setTypedAnswer("");
     setAnswerSubmitted(false);
     setSelectedMcOption(null);
-    setAnswerMode(mode);
+    setAnswerMode(answerModeOverride);
     setShowModeModal(false);
 
     const fixedModes: ResolvedMode[] = ["flip", "type", "multiple-choice"];
@@ -394,9 +442,9 @@ export default function DeckPage() {
 
     studyQueue.forEach((card) => {
       let cardMode: ResolvedMode =
-        mode === "random"
+        answerModeOverride === "random"
           ? fixedModes[Math.floor(Math.random() * fixedModes.length)]
-          : (mode as ResolvedMode);
+          : (answerModeOverride as ResolvedMode);
 
       // Fall back to flip if not enough cards for MC distractors
       if (cardMode === "multiple-choice" && tagFilteredCards.length < 2) {
@@ -441,9 +489,6 @@ export default function DeckPage() {
       setAllCards((prev) =>
         prev.map((c) => c.id === cardId ? { ...c, front: editFront.trim(), back: editBack.trim() } : c)
       );
-      setDueCards((prev) =>
-        prev.map((c) => c.id === cardId ? { ...c, front: editFront.trim(), back: editBack.trim() } : c)
-      );
       cancelEdit();
     }
   }
@@ -454,7 +499,6 @@ export default function DeckPage() {
     setDeletingInProgress(null);
     if (res.ok) {
       setAllCards((prev) => prev.filter((c) => c.id !== cardId));
-      setDueCards((prev) => prev.filter((c) => c.id !== cardId));
       setDeck((prev) => prev ? { ...prev, card_count: Math.max(0, prev.card_count - 1) } : prev);
       setDeletingCardId(null);
     }
@@ -478,13 +522,41 @@ export default function DeckPage() {
     }
     const newCard = await res.json();
     setAllCards((prev) => [...prev, newCard]);
-    setDueCards((prev) => [...prev, newCard]);
     setDeck((prev) => prev ? { ...prev, card_count: prev.card_count + 1 } : prev);
     setCardFront("");
     setCardBack("");
     setCardTags([]);
     setTagInput("");
     setShowAddCard(false);
+  }
+
+  async function handleSaveTitle() {
+    const trimmed = titleInput.trim();
+    setEditingTitle(false);
+    if (!trimmed || !deck || trimmed === deck.title) return;
+    const res = await fetch(`/api/decks/${deck.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: trimmed }),
+    });
+    if (res.ok) {
+      setDeck((prev) => prev ? { ...prev, title: trimmed } : prev);
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = allCards.findIndex((c) => c.id === active.id);
+    const newIdx = allCards.findIndex((c) => c.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const reordered = arrayMove(allCards, oldIdx, newIdx);
+    setAllCards(reordered);
+    fetch(`/api/decks/${id}/reorder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardIds: reordered.map((c) => c.id) }),
+    });
   }
 
   async function handleTogglePublic() {
@@ -619,58 +691,81 @@ export default function DeckPage() {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-heading text-base font-semibold">
-            How do you want to answer?
+            Start session
           </DialogTitle>
         </DialogHeader>
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          {(
-            [
-              {
-                mode: "flip" as AnswerMode,
-                label: "Flip card",
-                description: "Reveal & self-assess",
-              },
-              {
-                mode: "type" as AnswerMode,
-                label: "Type answer",
-                description: "Write it out",
-              },
-              {
-                mode: "multiple-choice" as AnswerMode,
-                label: "Multiple choice",
-                description: "Pick from options",
-                disabled: tagFilteredCards.length < 2,
-              },
-              {
-                mode: "random" as AnswerMode,
-                label: "Random",
-                description: "Mix it up",
-              },
-            ] as Array<{ mode: AnswerMode; label: string; description: string; disabled?: boolean }>
-          ).map(({ mode, label, description, disabled }) => (
-            <button
-              key={mode}
-              disabled={disabled}
-              onClick={() => !disabled && startStudy(mode)}
-              className={`rounded-xl border p-4 text-left transition-colors ${
-                disabled
-                  ? "cursor-not-allowed border-border/40 opacity-40"
-                  : "border-border hover:border-primary/50 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
-              }`}
-            >
-              <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
-            </button>
-          ))}
+
+        {/* Content filter */}
+        <div className="mt-3">
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60">What to study</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { filter: "fresh" as ContentFilter, label: "Fresh", description: `${freshCards.length} unseen` },
+              { filter: "practiced" as ContentFilter, label: "Practiced", description: `${practicedCards.length} seen`, },
+              { filter: "mix" as ContentFilter, label: "Mix", description: "Everything" },
+            ]).map(({ filter, label, description }) => (
+              <button
+                key={filter}
+                onClick={() => setContentFilter(filter)}
+                className={`rounded-xl border p-3 text-left transition-colors focus:outline-none ${
+                  contentFilter === filter
+                    ? "border-primary/50 bg-primary/10"
+                    : "border-border hover:border-primary/30 hover:bg-muted/40"
+                }`}
+              >
+                <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground/70">{description}</p>
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Answer mode */}
+        <div className="mt-4">
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60">How to answer</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                { mode: "flip" as AnswerMode, label: "Flip card", description: "Reveal & self-assess" },
+                { mode: "type" as AnswerMode, label: "Type answer", description: "Write it out" },
+                { mode: "multiple-choice" as AnswerMode, label: "Multiple choice", description: "Pick from options", disabled: tagFilteredCards.length < 2 },
+                { mode: "random" as AnswerMode, label: "Random", description: "Mix it up" },
+              ] as Array<{ mode: AnswerMode; label: string; description: string; disabled?: boolean }>
+            ).map(({ mode, label, description, disabled }) => (
+              <button
+                key={mode}
+                disabled={disabled}
+                onClick={() => setAnswerMode(mode)}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  disabled
+                    ? "cursor-not-allowed border-border/40 opacity-40"
+                    : answerMode === mode
+                    ? "border-primary/50 bg-primary/10"
+                    : "border-border hover:border-primary/30 hover:bg-muted/40 focus:outline-none"
+                }`}
+              >
+                <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => startStudy(answerMode)}
+          disabled={studyQueue.length === 0}
+          className="mt-4 w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {studyQueue.length === 0 ? "No cards to study" : `Start · ${studyQueue.length} ${studyQueue.length === 1 ? "card" : "cards"}`}
+        </button>
       </DialogContent>
     </Dialog>
   );
 
   // ── Idle — deck overview ──────────────────────────────────────────────────
   if (studyState === "idle") {
-    const hasDue = dueCards.length > 0;
-    const next = nextDueDate(allCards);
+    const totalFresh = allCards.filter(isFresh).length;
+    const totalPracticed = allCards.length - totalFresh;
 
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 animate-fade-up">
@@ -685,9 +780,35 @@ export default function DeckPage() {
         </button>
 
         <div className="mb-8">
-          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {deck.title}
-          </h1>
+          {editingTitle ? (
+            <input
+              autoFocus
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onBlur={handleSaveTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleSaveTitle(); }
+                if (e.key === "Escape") setEditingTitle(false);
+              }}
+              className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl w-full bg-transparent border-b-2 border-primary/50 focus:outline-none pb-0.5"
+            />
+          ) : (
+            <div className="group flex items-center gap-2">
+              <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                {deck.title}
+              </h1>
+              <button
+                type="button"
+                onClick={() => { setTitleInput(deck.title); setEditingTitle(true); }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg opacity-0 transition-all group-hover:opacity-100 hover:bg-muted/40"
+                title="Rename deck"
+              >
+                <svg className="h-3.5 w-3.5 text-muted-foreground/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                </svg>
+              </button>
+            </div>
+          )}
           <div className="mt-3 flex items-center gap-3">
             <p className="text-sm text-muted-foreground/60">
               {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
@@ -774,79 +895,35 @@ export default function DeckPage() {
           </div>
         )}
 
-        {hasDue ? (
-          <div className="space-y-3">
-            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-heading text-base font-semibold text-foreground">
-                    Ready to study
-                  </p>
-                  <p className="mt-0.5 text-sm text-muted-foreground/70">
-                    {tagFilteredDue.length} {tagFilteredDue.length === 1 ? "card" : "cards"} due
-                    {activeTag ? ` · ${activeTag}` : " now"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button onClick={() => { setStudyMode("due"); setShowModeModal(true); }} size="lg" disabled={tagFilteredDue.length === 0} className="flex-1 sm:flex-none">
-                    Start session
-                  </Button>
-                  <Link
-                    href={`/quiz/${id}`}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
-                  >
-                    Take a quiz
-                  </Link>
-                </div>
-              </div>
+        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-heading text-base font-semibold text-foreground">Start session</p>
+              <p className="mt-0.5 text-sm text-muted-foreground/70">
+                {tagFilteredCards.filter(isFresh).length} fresh · {tagFilteredCards.filter((c) => !isFresh(c)).length} practiced
+                {activeTag ? ` · ${activeTag}` : ""}
+              </p>
             </div>
-            {tagFilteredCards.length > tagFilteredDue.length && (
-              <button
-                onClick={() => { setStudyMode("all"); setShowModeModal(true); }}
-                className="w-full rounded-xl py-2.5 text-center text-xs font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowModeModal(true)}
+                size="lg"
+                disabled={tagFilteredCards.length === 0}
+                className="flex-1 sm:flex-none"
+              >
+                Start session
+              </Button>
+              <Link
+                href={`/quiz/${id}`}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
                 style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
               >
-                Retest all {tagFilteredCards.length} cards{activeTag ? ` · ${activeTag}` : ""}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card px-6 py-5">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-heading font-semibold text-foreground">
-                    {activeTag ? `All caught up · ${activeTag}` : "All caught up"}
-                  </p>
-                  {next ? (
-                    <p className="mt-1 text-sm text-muted-foreground/70">
-                      Next card due {formatRelativeDate(next)}
-                    </p>
-                  ) : tagFilteredCards.length === 0 ? (
-                    <p className="mt-1 text-sm text-muted-foreground/70">
-                      {activeTag ? `No cards tagged "${activeTag}".` : "No cards in this deck yet."}
-                    </p>
-                  ) : null}
-                </div>
-                {tagFilteredCards.length > 0 && (
-                  <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => { setStudyMode("all"); setShowModeModal(true); }} className="flex-1 sm:flex-none">
-                      Retest all
-                    </Button>
-                    <Link
-                      href={`/quiz/${id}`}
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]" style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
-                    >
-                      Take a quiz
-                    </Link>
-                  </div>
-                )}
-              </div>
+                Take a quiz
+              </Link>
             </div>
           </div>
-        )}
+        </div>
         {/* Add card section */}
         <div className="mt-8">
           {!showAddCard ? (
@@ -957,9 +1034,12 @@ export default function DeckPage() {
               onClick={() => setCardsOpen((v) => !v)}
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
-              <span className="text-[10px] font-medium uppercase tracking-[0.15em]" style={{ color: "oklch(0.77 0.195 68 / 0.65)" }}>
-                {allCards.length} {allCards.length === 1 ? "card" : "cards"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-medium uppercase tracking-[0.15em]" style={{ color: "oklch(0.77 0.195 68 / 0.65)" }}>
+                  {allCards.length} {allCards.length === 1 ? "card" : "cards"}
+                </span>
+                <span className="text-[10px] text-foreground">· drag to reorder</span>
+              </div>
               <svg
                 className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${cardsOpen ? "rotate-180" : ""}`}
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -968,28 +1048,32 @@ export default function DeckPage() {
               </svg>
             </button>
             {cardsOpen && (
-              <div className="space-y-2 border-t border-border/30 px-4 pb-4 pt-3">
-                {allCards.map((card) => (
-                  <CardRow
-                    key={card.id}
-                    card={card}
-                    isEditing={editingCardId === card.id}
-                    isDeleting={deletingCardId === card.id}
-                    isSaving={savingEdit && editingCardId === card.id}
-                    isDeletingInProgress={deletingInProgress === card.id}
-                    editFront={editFront}
-                    editBack={editBack}
-                    onEditFrontChange={setEditFront}
-                    onEditBackChange={setEditBack}
-                    onEditStart={startEditCard}
-                    onEditSave={handleSaveEdit}
-                    onEditCancel={cancelEdit}
-                    onDeleteStart={(id) => { setDeletingCardId(id); setEditingCardId(null); }}
-                    onDeleteConfirm={handleConfirmDelete}
-                    onDeleteCancel={() => setDeletingCardId(null)}
-                  />
-                ))}
-              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={allCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2 border-t border-border/30 px-4 pb-4 pt-3">
+                    {allCards.map((card) => (
+                      <SortableCardRow
+                        key={card.id}
+                        card={card}
+                        isEditing={editingCardId === card.id}
+                        isDeleting={deletingCardId === card.id}
+                        isSaving={savingEdit && editingCardId === card.id}
+                        isDeletingInProgress={deletingInProgress === card.id}
+                        editFront={editFront}
+                        editBack={editBack}
+                        onEditFrontChange={setEditFront}
+                        onEditBackChange={setEditBack}
+                        onEditStart={startEditCard}
+                        onEditSave={handleSaveEdit}
+                        onEditCancel={cancelEdit}
+                        onDeleteStart={(cardId) => { setDeletingCardId(cardId); setEditingCardId(null); }}
+                        onDeleteConfirm={handleConfirmDelete}
+                        onDeleteCancel={() => setDeletingCardId(null)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         )}
@@ -1055,7 +1139,7 @@ export default function DeckPage() {
               Study again
             </Button>
           )}
-          <Button onClick={() => { setStudyMode("all"); setShowModeModal(true); }}>
+          <Button onClick={() => setShowModeModal(true)}>
             Retest all
           </Button>
         </div>

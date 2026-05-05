@@ -105,14 +105,14 @@ function CardRow({
           onChange={(e) => onEditFrontChange(e.target.value)}
           rows={2}
           placeholder="Front (question)"
-          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full resize-none break-words rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
         <textarea
           value={editBack}
           onChange={(e) => onEditBackChange(e.target.value)}
           rows={2}
           placeholder="Back (answer)"
-          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full resize-none break-words rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
         <div className="flex items-center gap-2">
           <Button
@@ -1016,14 +1016,14 @@ export default function DeckPage() {
                 onChange={(e) => setCardFront(e.target.value)}
                 placeholder="Front (question)"
                 rows={2}
-                className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full resize-none break-words rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
               <textarea
                 value={cardBack}
                 onChange={(e) => setCardBack(e.target.value)}
                 placeholder="Back (answer)"
-                rows={2}
-                className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                rows={3}
+                className="w-full resize-none break-words rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
 
               {/* Tag input */}

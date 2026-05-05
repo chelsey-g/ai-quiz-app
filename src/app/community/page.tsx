@@ -404,13 +404,13 @@ export default function CommunityPage() {
               style={
                 activeTag === tag
                   ? {
-                      border: "1px solid oklch(0.77 0.195 68 / 0.6)",
-                      background: "oklch(0.77 0.195 68 / 0.12)",
-                      color: "oklch(0.77 0.195 68)",
+                      border: "1px solid oklch(0.76 0.160 62 / 0.6)",
+                      background: "oklch(0.76 0.160 62 / 0.12)",
+                      color: "oklch(0.76 0.160 62)",
                     }
                   : {
-                      border: "1px solid oklch(0.77 0.195 68 / 0.3)",
-                      color: "oklch(0.77 0.195 68 / 0.7)",
+                      border: "1px solid oklch(0.76 0.160 62 / 0.3)",
+                      color: "oklch(0.76 0.160 62 / 0.7)",
                     }
               }
             >

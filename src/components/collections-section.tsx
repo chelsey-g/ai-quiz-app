@@ -80,13 +80,13 @@ export function CollectionsSection({
                 style={
                   col.is_public
                     ? {
-                        borderColor: "oklch(0.77 0.195 68 / 0.4)",
-                        color: "oklch(0.77 0.195 68 / 0.9)",
-                        background: "oklch(0.77 0.195 68 / 0.08)",
+                        borderColor: "oklch(0.76 0.160 62 / 0.4)",
+                        color: "oklch(0.76 0.160 62 / 0.9)",
+                        background: "oklch(0.76 0.160 62 / 0.08)",
                       }
                     : {
                         borderColor: "oklch(0.225 0.011 65 / 0.4)",
-                        color: "oklch(0.50 0.018 72)",
+                        color: "oklch(0.63 0.022 68)",
                         background: "transparent",
                       }
                 }

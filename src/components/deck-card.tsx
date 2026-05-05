@@ -48,8 +48,8 @@ export function DeckCard({
       style={
         selected
           ? {
-              borderColor: "oklch(0.77 0.195 68 / 0.6)",
-              boxShadow: "0 0 0 1px oklch(0.77 0.195 68 / 0.25)",
+              borderColor: "oklch(0.76 0.160 62 / 0.6)",
+              boxShadow: "0 0 0 1px oklch(0.76 0.160 62 / 0.25)",
             }
           : selectMode
           ? { borderColor: "oklch(0.225 0.011 65 / 0.5)" }
@@ -64,12 +64,12 @@ export function DeckCard({
             style={
               selected
                 ? {
-                    background: "oklch(0.77 0.195 68)",
-                    borderColor: "oklch(0.77 0.195 68)",
+                    background: "oklch(0.76 0.160 62)",
+                    borderColor: "oklch(0.76 0.160 62)",
                   }
                 : {
                     background: "transparent",
-                    borderColor: "oklch(0.77 0.195 68 / 0.5)",
+                    borderColor: "oklch(0.76 0.160 62 / 0.5)",
                   }
             }
           >
@@ -78,7 +78,7 @@ export function DeckCard({
                 className="h-3 w-3"
                 viewBox="0 0 12 12"
                 fill="none"
-                stroke="oklch(0.09 0.006 65)"
+                stroke="oklch(0.18 0.025 50)"
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"

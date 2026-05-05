@@ -417,7 +417,7 @@ export default function HomePage() {
                 <Link
                   href="/import"
                   className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:opacity-90"
-                  style={{ background: "oklch(0.77 0.195 68)", color: "oklch(0.15 0.05 68)" }}
+                  style={{ background: "oklch(0.76 0.160 62)", color: "oklch(0.15 0.05 68)" }}
                 >
                   Import
                 </Link>
@@ -427,7 +427,7 @@ export default function HomePage() {
               <button
                 onClick={() => setShowNewDeck(true)}
                 className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
-                style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+                style={{ borderColor: "oklch(0.76 0.160 62 / 0.35)", color: "oklch(0.76 0.160 62 / 0.85)" }}
               >
                 + New deck
               </button>
@@ -556,7 +556,7 @@ export default function HomePage() {
                     setSelectedIds(allSelected ? new Set() : new Set(sortedDecks.map((d) => d.id)));
                   }}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
-                  style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+                  style={{ borderColor: "oklch(0.76 0.160 62 / 0.35)", color: "oklch(0.76 0.160 62 / 0.85)" }}
                 >
                   {selectedIds.size === sortedDecks.length ? "Deselect all" : "Select all"}
                 </button>
@@ -565,7 +565,7 @@ export default function HomePage() {
                 <button
                   onClick={toggleSelectMode}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
-                  style={{ borderColor: "oklch(0.225 0.011 65)", color: "oklch(0.50 0.018 72)" }}
+                  style={{ borderColor: "oklch(0.30 0.022 55)", color: "oklch(0.63 0.022 68)" }}
                 >
                   Cancel
                 </button>
@@ -573,7 +573,7 @@ export default function HomePage() {
                 <button
                   onClick={toggleSelectMode}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
-                  style={{ borderColor: "oklch(0.77 0.195 68 / 0.35)", color: "oklch(0.77 0.195 68 / 0.85)" }}
+                  style={{ borderColor: "oklch(0.76 0.160 62 / 0.35)", color: "oklch(0.76 0.160 62 / 0.85)" }}
                 >
                   Select
                 </button>

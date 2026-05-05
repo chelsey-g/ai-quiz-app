@@ -184,8 +184,8 @@ function CardRow({
         </button>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground">{card.front}</p>
-        <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
+        <p className="text-sm font-medium text-foreground break-words">{card.front}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground/80 break-words">{card.back}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
         <button
@@ -1320,28 +1320,28 @@ export default function DeckPage() {
             >
               {/* Front */}
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-8 text-center"
+                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-border bg-card px-8 py-6 text-center overflow-y-auto overscroll-contain"
                 style={{ backfaceVisibility: "hidden" }}
               >
-                <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
+                <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                   Question
                 </p>
-                <p className="text-lg font-medium leading-relaxed text-foreground">
+                <p className="w-full text-lg font-medium leading-relaxed text-foreground break-words">
                   {currentCard.front}
                 </p>
-                <p className="mt-8 text-[10px] text-muted-foreground/50">
+                <p className="mt-auto pt-4 w-full text-[10px] text-muted-foreground/50">
                   tap or press space to reveal
                 </p>
               </div>
               {/* Back */}
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-primary/20 bg-card px-8 text-center"
+                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-primary/20 bg-card px-8 py-6 text-center overflow-y-auto overscroll-contain"
                 style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
-                <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
+                <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                   Answer
                 </p>
-                <p className="text-lg leading-relaxed text-foreground">{currentCard.back}</p>
+                <p className="w-full text-lg leading-relaxed text-foreground break-words">{currentCard.back}</p>
               </div>
             </div>
           </div>

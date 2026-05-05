@@ -86,7 +86,7 @@ export function CollectionsSection({
                       }
                     : {
                         borderColor: "oklch(0.225 0.011 65 / 0.4)",
-                        color: "oklch(0.63 0.022 68)",
+                        color: "oklch(0.78 0.018 70)",
                         background: "transparent",
                       }
                 }

@@ -565,7 +565,7 @@ export default function HomePage() {
                 <button
                   onClick={toggleSelectMode}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
-                  style={{ borderColor: "oklch(0.30 0.022 55)", color: "oklch(0.63 0.022 68)" }}
+                  style={{ borderColor: "oklch(0.30 0.022 55)", color: "oklch(0.78 0.018 70)" }}
                 >
                   Cancel
                 </button>

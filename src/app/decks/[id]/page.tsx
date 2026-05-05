@@ -1324,43 +1324,41 @@ export default function DeckPage() {
       {currentCardMode === "flip" && (
         <>
           <div
-            className="cursor-pointer select-none"
+            className="relative cursor-pointer select-none"
             style={{ perspective: "1200px" }}
             onClick={() => setFlipped((f) => !f)}
           >
-            {/* Grid overlay: both faces share the same cell so height = tallest face */}
             <div
-              className="w-full transition-transform duration-500"
+              className="relative h-72 w-full transition-transform duration-500"
               style={{
                 transformStyle: "preserve-3d",
                 transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                display: "grid",
               }}
             >
               {/* Front */}
               <div
-                className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-8 py-8 text-center min-h-36"
-                style={{ gridArea: "1/1", backfaceVisibility: "hidden" }}
+                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-border bg-card px-8 py-6 text-center overflow-y-auto overscroll-contain"
+                style={{ backfaceVisibility: "hidden" }}
               >
-                <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
+                <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                   Question
                 </p>
-                <p className="text-lg font-medium leading-relaxed text-foreground break-words">
+                <p className="w-full text-lg font-medium leading-relaxed text-foreground break-words">
                   {currentCard.front}
                 </p>
-                <p className="mt-6 text-[10px] text-muted-foreground/50">
+                <p className="mt-auto pt-4 w-full text-[10px] text-muted-foreground/50">
                   tap or press space to reveal
                 </p>
               </div>
               {/* Back */}
               <div
-                className="flex flex-col items-center justify-center rounded-2xl border border-primary/20 bg-card px-8 py-8 text-center min-h-36"
-                style={{ gridArea: "1/1", backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-primary/20 bg-card px-8 py-6 text-center overflow-y-auto overscroll-contain"
+                style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
-                <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
+                <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                   Answer
                 </p>
-                <p className="text-lg leading-relaxed text-foreground break-words">{currentCard.back}</p>
+                <p className="w-full text-lg leading-relaxed text-foreground break-words">{currentCard.back}</p>
               </div>
             </div>
           </div>

@@ -179,12 +179,13 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
                         style={
                           col.contains_deck
                             ? {
-                                background: "oklch(0.72 0.220 285)",
-                                borderColor: "oklch(0.72 0.220 285)",
+                                background: "var(--dashboard-accent-teal)",
+                                borderColor: "var(--dashboard-accent-teal)",
                               }
                             : {
                                 background: "transparent",
-                                borderColor: "oklch(0.72 0.220 285 / 0.4)",
+                                borderColor:
+                                  "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
                               }
                         }
                       >
@@ -193,7 +194,7 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
                             className="h-2.5 w-2.5"
                             viewBox="0 0 12 12"
                             fill="none"
-                            stroke="oklch(0.10 0.025 280)"
+                            stroke="var(--dashboard-accent-ink)"
                             strokeWidth={2.5}
                             strokeLinecap="round"
                             strokeLinejoin="round"

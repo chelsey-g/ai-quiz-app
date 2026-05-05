@@ -62,7 +62,7 @@ export function StatsCharts({
                 contentStyle={TOOLTIP_STYLE}
                 cursor={{ fill: "oklch(0.5 0 0 / 0.05)" }}
               />
-              <Bar dataKey="count" name="Sessions" fill="oklch(0.72 0.220 285)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="count" name="Sessions" fill="var(--dashboard-accent-teal)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -112,7 +112,7 @@ export function StatsCharts({
               <Line
                 type="monotone"
                 dataKey="pct"
-                stroke="oklch(0.65 0.18 265)"
+                stroke="var(--dashboard-accent-coral)"
                 strokeWidth={2}
                 dot={false}
                 connectNulls={false}

@@ -404,8 +404,22 @@ export default function QuizPage() {
             {(answers.length > 0 || currentIndex > 0) && (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
-                style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+                style={{
+                  border:
+                    "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                  color: "var(--dashboard-accent-teal-strong)",
+                  background:
+                    "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background =
+                    "color-mix(in oklch, var(--dashboard-accent-teal) 10%, transparent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background =
+                    "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)";
+                }}
               >
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />

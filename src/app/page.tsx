@@ -115,27 +115,32 @@ function JumpBackInCard({ deck }: { deck: DeckWithStats }) {
       <div
         className="relative overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-0.5"
         style={{
-          borderColor: "oklch(0.65 0.18 265 / 0.35)",
+          borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
           boxShadow: "0 0 0 0 transparent",
         }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLDivElement).style.boxShadow =
-            "0 16px 40px -12px oklch(0.65 0.18 265 / 0.18)";
+            "0 16px 40px -12px color-mix(in oklch, var(--dashboard-accent-teal) 24%, transparent)";
         }}
         onMouseLeave={(e) => {
           (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 0 0 transparent";
         }}
       >
-        {/* Blue-violet top accent line */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[oklch(0.65_0.18_265/_0.7)] to-transparent transition-all duration-300 group-hover:via-[oklch(0.65_0.18_265/_1)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent transition-all duration-300 group-hover:opacity-100 opacity-80"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, transparent, color-mix(in oklch, var(--dashboard-accent-teal) 85%, transparent), transparent)",
+          }}
+        />
 
         <div className="flex items-center gap-5 px-6 py-5">
           {/* Icon */}
           <div
             className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-105"
             style={{
-              borderColor: "oklch(0.65 0.18 265 / 0.3)",
-              background: "oklch(0.65 0.18 265 / 0.1)",
+              borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)",
+              background:
+                "color-mix(in oklch, var(--dashboard-accent-teal) 14%, transparent)",
             }}
           >
             <svg
@@ -144,7 +149,7 @@ function JumpBackInCard({ deck }: { deck: DeckWithStats }) {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={1.75}
-              style={{ color: "oklch(0.65 0.18 265)" }}
+              style={{ color: "var(--dashboard-accent-teal-strong)" }}
               aria-hidden="true"
             >
               <path
@@ -159,7 +164,10 @@ function JumpBackInCard({ deck }: { deck: DeckWithStats }) {
           <div className="min-w-0 flex-1">
             <p
               className="font-heading text-[10px] font-semibold uppercase tracking-[0.15em] mb-0.5"
-              style={{ color: "oklch(0.65 0.18 265 / 0.8)" }}
+              style={{
+                color:
+                  "color-mix(in oklch, var(--dashboard-accent-teal-strong) 82%, var(--foreground) 18%)",
+              }}
             >
               Jump back in
             </p>
@@ -408,8 +416,9 @@ export default function HomePage() {
                   href="/quiz/quick"
                   className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
                   style={{
-                    borderColor: "oklch(0.65 0.18 265 / 0.35)",
-                    color: "oklch(0.65 0.18 265 / 0.85)",
+                    borderColor:
+                      "color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)",
+                    color: "var(--dashboard-accent-teal-strong)",
                   }}
                 >
                   Quick Quiz
@@ -417,7 +426,10 @@ export default function HomePage() {
                 <Link
                   href="/import"
                   className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:opacity-90"
-                  style={{ background: "oklch(0.72 0.220 285)", color: "oklch(0.15 0.05 68)" }}
+                  style={{
+                    background: "var(--dashboard-accent-amber)",
+                    color: "var(--dashboard-accent-ink)",
+                  }}
                 >
                   Import
                 </Link>
@@ -427,7 +439,11 @@ export default function HomePage() {
               <button
                 onClick={() => setShowNewDeck(true)}
                 className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
-                style={{ borderColor: "oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.85)" }}
+                style={{
+                  borderColor:
+                    "color-mix(in oklch, var(--dashboard-accent-rose) 52%, transparent)",
+                  color: "var(--dashboard-accent-rose)",
+                }}
               >
                 + New deck
               </button>
@@ -539,15 +555,27 @@ export default function HomePage() {
             </p>
             <div className="flex items-center gap-2">
               {!selectMode && (
-                <select
-                  value={sortMode}
-                  onChange={(e) => handleSortChange(e.target.value as SortMode)}
-                  className="rounded-md border border-border/50 bg-card px-2 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer"
-                >
-                  {(Object.keys(SORT_LABELS) as SortMode[]).map((m) => (
-                    <option key={m} value={m}>{SORT_LABELS[m]}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={sortMode}
+                    onChange={(e) => handleSortChange(e.target.value as SortMode)}
+                    className="appearance-none rounded-md border border-border/50 bg-card pl-2 pr-7 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer"
+                  >
+                    {(Object.keys(SORT_LABELS) as SortMode[]).map((m) => (
+                      <option key={m} value={m}>{SORT_LABELS[m]}</option>
+                    ))}
+                  </select>
+                  <svg
+                    className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/70"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 8l4 4 4-4" />
+                  </svg>
+                </div>
               )}
               {selectMode && (
                 <button
@@ -556,7 +584,11 @@ export default function HomePage() {
                     setSelectedIds(allSelected ? new Set() : new Set(sortedDecks.map((d) => d.id)));
                   }}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
-                  style={{ borderColor: "oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.85)" }}
+                  style={{
+                    borderColor:
+                      "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                    color: "var(--dashboard-accent-teal-strong)",
+                  }}
                 >
                   {selectedIds.size === sortedDecks.length ? "Deselect all" : "Select all"}
                 </button>
@@ -565,7 +597,10 @@ export default function HomePage() {
                 <button
                   onClick={toggleSelectMode}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
-                  style={{ borderColor: "oklch(0.22 0.040 280)", color: "oklch(0.78 0.018 70)" }}
+                  style={{
+                    borderColor: "color-mix(in oklch, var(--border) 80%, transparent)",
+                    color: "color-mix(in oklch, var(--foreground) 62%, var(--muted-foreground) 38%)",
+                  }}
                 >
                   Cancel
                 </button>
@@ -573,7 +608,11 @@ export default function HomePage() {
                 <button
                   onClick={toggleSelectMode}
                   className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
-                  style={{ borderColor: "oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.85)" }}
+                  style={{
+                    borderColor:
+                      "color-mix(in oklch, var(--dashboard-accent-coral) 45%, transparent)",
+                    color: "var(--dashboard-accent-coral)",
+                  }}
                 >
                   Select
                 </button>
@@ -622,8 +661,9 @@ export default function HomePage() {
                   disabled={deleting}
                   className="rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
                   style={{
-                    border: "1px solid oklch(0.65 0.2 27 / 0.6)",
-                    color: "oklch(0.75 0.2 27)",
+                    border:
+                      "1px solid color-mix(in oklch, var(--dashboard-accent-rose) 65%, transparent)",
+                    color: "var(--dashboard-accent-rose)",
                   }}
                 >
                   {deleting ? "Deleting…" : "Confirm"}
@@ -642,8 +682,9 @@ export default function HomePage() {
                   onClick={() => setConfirmDelete(true)}
                   className="rounded-md border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
                   style={{
-                    border: "1px solid oklch(0.65 0.2 27 / 0.6)",
-                    color: "oklch(0.75 0.2 27)",
+                    border:
+                      "1px solid color-mix(in oklch, var(--dashboard-accent-rose) 65%, transparent)",
+                    color: "var(--dashboard-accent-rose)",
                   }}
                 >
                   Delete

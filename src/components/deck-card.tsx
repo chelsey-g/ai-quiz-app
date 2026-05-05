@@ -48,8 +48,10 @@ export function DeckCard({
       style={
         selected
           ? {
-              borderColor: "oklch(0.72 0.220 285 / 0.6)",
-              boxShadow: "0 0 0 1px oklch(0.72 0.220 285 / 0.25)",
+              borderColor:
+                "color-mix(in oklch, var(--dashboard-accent-teal) 70%, transparent)",
+              boxShadow:
+                "0 0 0 1px color-mix(in oklch, var(--dashboard-accent-teal) 32%, transparent)",
             }
           : selectMode
           ? { borderColor: "oklch(0.225 0.011 65 / 0.5)" }
@@ -64,12 +66,13 @@ export function DeckCard({
             style={
               selected
                 ? {
-                    background: "oklch(0.72 0.220 285)",
-                    borderColor: "oklch(0.72 0.220 285)",
+                    background: "var(--dashboard-accent-teal)",
+                    borderColor: "var(--dashboard-accent-teal)",
                   }
                 : {
                     background: "transparent",
-                    borderColor: "oklch(0.72 0.220 285 / 0.5)",
+                    borderColor:
+                      "color-mix(in oklch, var(--dashboard-accent-teal) 55%, transparent)",
                   }
             }
           >
@@ -78,7 +81,8 @@ export function DeckCard({
                 className="h-3 w-3"
                 viewBox="0 0 12 12"
                 fill="none"
-                stroke="oklch(0.10 0.025 280)"
+                stroke="var(--dashboard-accent-ink)"
+                style={{ stroke: "var(--dashboard-accent-ink)" }}
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -95,10 +99,10 @@ export function DeckCard({
       <div
         className={`absolute inset-x-0 top-0 h-px transition-all duration-300 bg-gradient-to-r from-transparent to-transparent ${
           selected
-            ? "via-primary/80"
+            ? "via-[var(--dashboard-accent-teal)] opacity-100"
             : hasActivity
-            ? "via-primary/65 group-hover:via-primary/90"
-            : "via-border group-hover:via-primary/40"
+            ? "via-[var(--dashboard-accent-teal)] opacity-80 group-hover:opacity-100"
+            : "via-border opacity-70 group-hover:via-[var(--dashboard-accent-coral)] group-hover:opacity-90"
         }`}
       />
 
@@ -114,7 +118,15 @@ export function DeckCard({
             {deck.topic_tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/65"
+                className="rounded-full border px-2 py-0.5 text-[10px]"
+                style={{
+                  borderColor:
+                    "color-mix(in oklch, var(--dashboard-accent-coral) 35%, var(--border) 65%)",
+                  background:
+                    "color-mix(in oklch, var(--dashboard-accent-coral) 10%, var(--muted) 90%)",
+                  color:
+                    "color-mix(in oklch, var(--dashboard-accent-coral) 55%, var(--muted-foreground) 45%)",
+                }}
               >
                 {tag}
               </span>
@@ -152,7 +164,15 @@ export function DeckCard({
             <span className="flex items-center gap-2 text-xs text-muted-foreground/55">
               {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
               {deck.unattempted_count > 0 && (
-                <span className="rounded-full bg-primary/14 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                  style={{
+                    background:
+                      "color-mix(in oklch, var(--dashboard-accent-amber) 18%, transparent)",
+                    color:
+                      "color-mix(in oklch, var(--dashboard-accent-amber) 70%, var(--foreground) 30%)",
+                  }}
+                >
                   {deck.unattempted_count} new
                 </span>
               )}
@@ -189,13 +209,13 @@ export function DeckCard({
   return (
     <div className="relative h-full group">
       <Link href={`/decks/${deck.id}`} className="block h-full">
-        <div className="relative h-full overflow-hidden rounded-2xl border border-border/50 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_48px_-16px_oklch(0.77_0.195_68_/_0.22)]">
+        <div className="dashboard-card-hover relative h-full overflow-hidden rounded-2xl border border-border/50 bg-card">
         {/* Top accent gradient line — brighter when active */}
         <div
           className={`absolute inset-x-0 top-0 h-px transition-all duration-300 bg-gradient-to-r from-transparent to-transparent ${
             hasActivity
-              ? "via-primary/65 group-hover:via-primary/90"
-              : "via-border group-hover:via-primary/40"
+              ? "via-[var(--dashboard-accent-teal)] opacity-80 group-hover:opacity-100"
+              : "via-border opacity-70 group-hover:via-[var(--dashboard-accent-coral)] group-hover:opacity-90"
           }`}
         />
 
@@ -211,7 +231,15 @@ export function DeckCard({
               {deck.topic_tags.slice(0, 3).map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/65"
+                  className="rounded-full border px-2 py-0.5 text-[10px]"
+                  style={{
+                    borderColor:
+                      "color-mix(in oklch, var(--dashboard-accent-coral) 35%, var(--border) 65%)",
+                    background:
+                      "color-mix(in oklch, var(--dashboard-accent-coral) 10%, var(--muted) 90%)",
+                    color:
+                      "color-mix(in oklch, var(--dashboard-accent-coral) 55%, var(--muted-foreground) 45%)",
+                  }}
                 >
                   {tag}
                 </span>
@@ -249,7 +277,15 @@ export function DeckCard({
               <span className="flex items-center gap-2 text-xs text-muted-foreground/55">
                 {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
                 {deck.unattempted_count > 0 && (
-                  <span className="rounded-full bg-primary/14 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                    style={{
+                      background:
+                        "color-mix(in oklch, var(--dashboard-accent-amber) 18%, transparent)",
+                      color:
+                        "color-mix(in oklch, var(--dashboard-accent-amber) 70%, var(--foreground) 30%)",
+                    }}
+                  >
                     {deck.unattempted_count} new
                   </span>
                 )}

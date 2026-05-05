@@ -94,7 +94,10 @@ function CardRow({
     return (
       <div
         className="rounded-xl border bg-card px-4 py-3 space-y-2.5"
-        style={{ borderColor: "oklch(0.65 0.18 265 / 0.3)" }}
+        style={{
+          borderColor:
+            "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)",
+        }}
       >
         <textarea
           autoFocus
@@ -160,7 +163,10 @@ function CardRow({
   return (
     <div
       className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3"
-      style={{ borderColor: "oklch(0.72 0.220 285 / 0.2)" }}
+      style={{
+        borderColor:
+          "color-mix(in oklch, var(--dashboard-accent-teal) 30%, transparent)",
+      }}
     >
       {dragListeners && (
         <button
@@ -184,8 +190,18 @@ function CardRow({
       <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
         <button
           onClick={() => onEditStart(card)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.12)]"
-          style={{ color: "oklch(0.65 0.18 265 / 0.7)" }}
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+          style={{
+            color:
+              "color-mix(in oklch, var(--dashboard-accent-teal-strong) 72%, var(--muted-foreground) 28%)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background =
+              "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+          }}
           title="Edit card"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -861,8 +877,15 @@ export default function DeckPage() {
               onClick={() => setActiveTag(null)}
               className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
               style={activeTag === null
-                ? { border: "1px solid oklch(0.72 0.220 285 / 0.6)", background: "oklch(0.72 0.220 285 / 0.12)", color: "oklch(0.72 0.220 285)" }
-                : { border: "1px solid oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.75)" }}
+                ? {
+                    border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 62%, transparent)",
+                    background: "color-mix(in oklch, var(--dashboard-accent-coral) 12%, transparent)",
+                    color: "var(--dashboard-accent-coral)",
+                  }
+                : {
+                    border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 38%, transparent)",
+                    color: "color-mix(in oklch, var(--dashboard-accent-coral) 78%, var(--muted-foreground) 22%)",
+                  }}
             >
               All
             </button>
@@ -872,8 +895,15 @@ export default function DeckPage() {
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
                 className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
                 style={activeTag === tag
-                  ? { border: "1px solid oklch(0.72 0.220 285 / 0.6)", background: "oklch(0.72 0.220 285 / 0.12)", color: "oklch(0.72 0.220 285)" }
-                  : { border: "1px solid oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.75)" }}
+                  ? {
+                      border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 62%, transparent)",
+                      background: "color-mix(in oklch, var(--dashboard-accent-coral) 12%, transparent)",
+                      color: "var(--dashboard-accent-coral)",
+                    }
+                  : {
+                      border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 38%, transparent)",
+                      color: "color-mix(in oklch, var(--dashboard-accent-coral) 78%, var(--muted-foreground) 22%)",
+                    }}
               >
                 {tag}
               </button>
@@ -884,7 +914,13 @@ export default function DeckPage() {
         {/* Cards for selected tag */}
         {activeTag && (
           <div className="mb-6 space-y-2">
-            <p className="text-[10px] uppercase tracking-widest" style={{ color: "oklch(0.72 0.220 285 / 0.65)" }}>
+            <p
+              className="text-[10px] uppercase tracking-widest"
+              style={{
+                color:
+                  "color-mix(in oklch, var(--dashboard-accent-coral) 70%, var(--muted-foreground) 30%)",
+              }}
+            >
               {isDeckLevelTag ? `All ${tagFilteredCards.length} cards` : `${tagFilteredCards.length} ${tagFilteredCards.length === 1 ? "card" : "cards"}`} · {activeTag}
             </p>
             {tagFilteredCards.map((card) => (
@@ -931,8 +967,22 @@ export default function DeckPage() {
               </Button>
               <Link
                 href={`/quiz/${id}`}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
-                style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                style={{
+                  border:
+                    "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                  color: "var(--dashboard-accent-teal-strong)",
+                  background:
+                    "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background =
+                    "color-mix(in oklch, var(--dashboard-accent-teal) 9%, transparent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background =
+                    "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)";
+                }}
               >
                 Take a quiz
               </Link>
@@ -945,7 +995,12 @@ export default function DeckPage() {
             <button
               onClick={() => { setShowAddCard(true); setAddCardError(null); }}
               className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium transition-colors hover:bg-[oklch(0.77_0.195_68_/_0.08)]"
-              style={{ border: "1px solid oklch(0.72 0.220 285 / 0.4)", color: "oklch(0.72 0.220 285 / 0.85)" }}
+              style={{
+                border:
+                  "1px solid color-mix(in oklch, var(--dashboard-accent-amber) 45%, transparent)",
+                color:
+                  "color-mix(in oklch, var(--dashboard-accent-amber) 75%, var(--foreground) 25%)",
+              }}
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1050,7 +1105,13 @@ export default function DeckPage() {
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-[0.15em]" style={{ color: "oklch(0.72 0.220 285 / 0.65)" }}>
+                <span
+                  className="text-[10px] font-medium uppercase tracking-[0.15em]"
+                  style={{
+                    color:
+                      "color-mix(in oklch, var(--dashboard-accent-coral) 70%, var(--muted-foreground) 30%)",
+                  }}
+                >
                   {allCards.length} {allCards.length === 1 ? "card" : "cards"}
                 </span>
                 <span className="text-[10px] text-foreground">· drag to reorder</span>
@@ -1203,8 +1264,22 @@ export default function DeckPage() {
           {cardHistory.length > 0 && (
             <button
               onClick={goBack}
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[oklch(0.65_0.18_265_/_0.08)]"
-              style={{ border: "1px solid oklch(0.65 0.18 265 / 0.4)", color: "oklch(0.65 0.18 265 / 0.85)" }}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+              style={{
+                border:
+                  "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                color: "var(--dashboard-accent-teal-strong)",
+                background:
+                  "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background =
+                  "color-mix(in oklch, var(--dashboard-accent-teal) 10%, transparent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background =
+                  "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)";
+              }}
               title="Undo last rating"
             >
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

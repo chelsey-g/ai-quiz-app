@@ -100,9 +100,11 @@ function SidebarContent({
               style={
                 isActive
                   ? {
-                      background: "oklch(0.65 0.18 265 / 0.12)",
-                      color: "oklch(0.65 0.18 265)",
-                      borderLeft: "2px solid oklch(0.65 0.18 265 / 0.7)",
+                      background:
+                        "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)",
+                      color: "var(--dashboard-accent-teal-strong)",
+                      borderLeft:
+                        "2px solid color-mix(in oklch, var(--dashboard-accent-teal) 72%, transparent)",
                       paddingLeft: "10px",
                     }
                   : undefined

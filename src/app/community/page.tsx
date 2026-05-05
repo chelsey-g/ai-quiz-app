@@ -404,13 +404,17 @@ export default function CommunityPage() {
               style={
                 activeTag === tag
                   ? {
-                      border: "1px solid oklch(0.72 0.220 285 / 0.6)",
-                      background: "oklch(0.72 0.220 285 / 0.12)",
-                      color: "oklch(0.72 0.220 285)",
+                      border:
+                        "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 62%, transparent)",
+                      background:
+                        "color-mix(in oklch, var(--dashboard-accent-coral) 14%, transparent)",
+                      color: "var(--dashboard-accent-coral)",
                     }
                   : {
-                      border: "1px solid oklch(0.72 0.220 285 / 0.3)",
-                      color: "oklch(0.72 0.220 285 / 0.7)",
+                      border:
+                        "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 35%, transparent)",
+                      color:
+                        "color-mix(in oklch, var(--dashboard-accent-coral) 75%, var(--muted-foreground) 25%)",
                     }
               }
             >

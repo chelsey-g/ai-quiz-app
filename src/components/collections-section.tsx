@@ -80,9 +80,9 @@ export function CollectionsSection({
                 style={
                   col.is_public
                     ? {
-                        borderColor: "oklch(0.76 0.160 62 / 0.4)",
-                        color: "oklch(0.76 0.160 62 / 0.9)",
-                        background: "oklch(0.76 0.160 62 / 0.08)",
+                        borderColor: "oklch(0.72 0.220 285 / 0.4)",
+                        color: "oklch(0.72 0.220 285 / 0.9)",
+                        background: "oklch(0.72 0.220 285 / 0.08)",
                       }
                     : {
                         borderColor: "oklch(0.225 0.011 65 / 0.4)",

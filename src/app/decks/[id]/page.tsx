@@ -160,7 +160,7 @@ function CardRow({
   return (
     <div
       className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3"
-      style={{ borderColor: "oklch(0.76 0.160 62 / 0.2)" }}
+      style={{ borderColor: "oklch(0.72 0.220 285 / 0.2)" }}
     >
       {dragListeners && (
         <button
@@ -861,8 +861,8 @@ export default function DeckPage() {
               onClick={() => setActiveTag(null)}
               className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
               style={activeTag === null
-                ? { border: "1px solid oklch(0.76 0.160 62 / 0.6)", background: "oklch(0.76 0.160 62 / 0.12)", color: "oklch(0.76 0.160 62)" }
-                : { border: "1px solid oklch(0.76 0.160 62 / 0.35)", color: "oklch(0.76 0.160 62 / 0.75)" }}
+                ? { border: "1px solid oklch(0.72 0.220 285 / 0.6)", background: "oklch(0.72 0.220 285 / 0.12)", color: "oklch(0.72 0.220 285)" }
+                : { border: "1px solid oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.75)" }}
             >
               All
             </button>
@@ -872,8 +872,8 @@ export default function DeckPage() {
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
                 className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
                 style={activeTag === tag
-                  ? { border: "1px solid oklch(0.76 0.160 62 / 0.6)", background: "oklch(0.76 0.160 62 / 0.12)", color: "oklch(0.76 0.160 62)" }
-                  : { border: "1px solid oklch(0.76 0.160 62 / 0.35)", color: "oklch(0.76 0.160 62 / 0.75)" }}
+                  ? { border: "1px solid oklch(0.72 0.220 285 / 0.6)", background: "oklch(0.72 0.220 285 / 0.12)", color: "oklch(0.72 0.220 285)" }
+                  : { border: "1px solid oklch(0.72 0.220 285 / 0.35)", color: "oklch(0.72 0.220 285 / 0.75)" }}
               >
                 {tag}
               </button>
@@ -884,7 +884,7 @@ export default function DeckPage() {
         {/* Cards for selected tag */}
         {activeTag && (
           <div className="mb-6 space-y-2">
-            <p className="text-[10px] uppercase tracking-widest" style={{ color: "oklch(0.76 0.160 62 / 0.65)" }}>
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: "oklch(0.72 0.220 285 / 0.65)" }}>
               {isDeckLevelTag ? `All ${tagFilteredCards.length} cards` : `${tagFilteredCards.length} ${tagFilteredCards.length === 1 ? "card" : "cards"}`} · {activeTag}
             </p>
             {tagFilteredCards.map((card) => (
@@ -945,7 +945,7 @@ export default function DeckPage() {
             <button
               onClick={() => { setShowAddCard(true); setAddCardError(null); }}
               className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium transition-colors hover:bg-[oklch(0.77_0.195_68_/_0.08)]"
-              style={{ border: "1px solid oklch(0.76 0.160 62 / 0.4)", color: "oklch(0.76 0.160 62 / 0.85)" }}
+              style={{ border: "1px solid oklch(0.72 0.220 285 / 0.4)", color: "oklch(0.72 0.220 285 / 0.85)" }}
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1050,7 +1050,7 @@ export default function DeckPage() {
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-[0.15em]" style={{ color: "oklch(0.76 0.160 62 / 0.65)" }}>
+                <span className="text-[10px] font-medium uppercase tracking-[0.15em]" style={{ color: "oklch(0.72 0.220 285 / 0.65)" }}>
                   {allCards.length} {allCards.length === 1 ? "card" : "cards"}
                 </span>
                 <span className="text-[10px] text-foreground">· drag to reorder</span>

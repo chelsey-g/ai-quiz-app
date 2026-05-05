@@ -38,6 +38,27 @@ type ContentFilter = "fresh" | "practiced" | "mix";
 type AnswerMode = "flip" | "type" | "multiple-choice" | "random";
 type ResolvedMode = "flip" | "type" | "multiple-choice";
 
+function AutoTextarea({ value, onChange, className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      rows={1}
+      className={className}
+      style={{ overflow: "hidden", resize: "none" }}
+      {...props}
+    />
+  );
+}
+
 function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
   const distractors = allCards
     .filter((c) => c.id !== targetCard.id)
@@ -99,20 +120,18 @@ function CardRow({
             "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)",
         }}
       >
-        <textarea
+        <AutoTextarea
           autoFocus
           value={editFront}
           onChange={(e) => onEditFrontChange(e.target.value)}
-          rows={2}
           placeholder="Front (question)"
-          className="w-full resize-none break-words rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-        <textarea
+        <AutoTextarea
           value={editBack}
           onChange={(e) => onEditBackChange(e.target.value)}
-          rows={2}
           placeholder="Back (answer)"
-          className="w-full resize-none break-words rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
         <div className="flex items-center gap-2">
           <Button
@@ -1010,20 +1029,18 @@ export default function DeckPage() {
           ) : (
             <form onSubmit={handleAddCard} className="space-y-3 rounded-2xl border border-border/50 bg-card p-5">
               <p className="font-heading text-sm font-semibold text-foreground">Add a card</p>
-              <textarea
+              <AutoTextarea
                 autoFocus
                 value={cardFront}
                 onChange={(e) => setCardFront(e.target.value)}
                 placeholder="Front (question)"
-                rows={2}
-                className="w-full resize-none break-words rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
-              <textarea
+              <AutoTextarea
                 value={cardBack}
                 onChange={(e) => setCardBack(e.target.value)}
                 placeholder="Back (answer)"
-                rows={3}
-                className="w-full resize-none break-words rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
 
               {/* Tag input */}

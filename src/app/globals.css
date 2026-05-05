@@ -143,7 +143,7 @@
   * {
     @apply border-border outline-ring/50;
   }
-  button, [role="button"] {
+  button, [role="button"], [role="checkbox"], [role="radio"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"] {
     cursor: pointer;
   }
   body {

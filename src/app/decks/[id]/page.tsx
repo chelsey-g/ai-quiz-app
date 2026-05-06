@@ -1318,33 +1318,6 @@ export default function DeckPage() {
             </svg>
             {deck.title}
           </button>
-          {cardHistory.length > 0 && (
-            <button
-              onClick={goBack}
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
-              style={{
-                border:
-                  "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
-                color: "var(--dashboard-accent-teal-strong)",
-                background:
-                  "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  "color-mix(in oklch, var(--dashboard-accent-teal) 10%, transparent)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background =
-                  "color-mix(in oklch, var(--dashboard-accent-teal) 0%, transparent)";
-              }}
-              title="Undo last rating"
-            >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-              </svg>
-              Undo
-            </button>
-          )}
         </div>
         <span className="font-heading text-sm font-semibold tabular-nums text-foreground">
           {currentIndex + 1}
@@ -1422,9 +1395,19 @@ export default function DeckPage() {
             </Button>
           </div>
 
-          <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
+          <p className="mt-4 text-center text-[10px] text-muted-foreground/40 hidden sm:block">
             space to flip · ← still learning · → knew it
           </p>
+          {cardHistory.length > 0 && (
+            <div className="mt-3 flex justify-center">
+              <button onClick={goBack} className="flex items-center gap-1 text-xs text-muted-foreground/50 transition-colors hover:text-foreground">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Undo
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -1499,9 +1482,19 @@ export default function DeckPage() {
           )}
 
           {answerSubmitted && (
-            <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
+            <p className="mt-4 text-center text-[10px] text-muted-foreground/40 hidden sm:block">
               ← still learning · → knew it
             </p>
+          )}
+          {cardHistory.length > 0 && (
+            <div className="mt-3 flex justify-center">
+              <button onClick={goBack} className="flex items-center gap-1 text-xs text-muted-foreground/50 transition-colors hover:text-foreground">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Undo
+              </button>
+            </div>
           )}
         </>
       )}
@@ -1569,9 +1562,19 @@ export default function DeckPage() {
             </div>
           )}
 
-          <p className="mt-4 text-center text-[10px] text-muted-foreground/40">
+          <p className="mt-4 text-center text-[10px] text-muted-foreground/40 hidden sm:block">
             {selectedMcOption ? "enter or → to continue" : "1 · 2 · 3 · 4 to select"}
           </p>
+          {cardHistory.length > 0 && (
+            <div className="mt-3 flex justify-center">
+              <button onClick={goBack} className="flex items-center gap-1 text-xs text-muted-foreground/50 transition-colors hover:text-foreground">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Undo
+              </button>
+            </div>
+          )}
         </>
       )}
 

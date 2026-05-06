@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
+import { generateDistractors } from "@/lib/ai/generate-distractors";
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function POST(
   // Verify deck ownership
   const { data: deck, error: deckError } = await supabase
     .from("decks")
-    .select("id, card_count")
+    .select("id, card_count, title, topic_tags")
     .eq("id", deckId)
     .eq("user_id", user.id)
     .single();
@@ -49,6 +50,19 @@ export async function POST(
     .from("decks")
     .update({ card_count: deck.card_count + 1 })
     .eq("id", deckId);
+
+  // Generate and persist distractors in the background — card is returned immediately.
+  generateDistractors(
+    [{ cardId: card.id, front: card.front, back: card.back }],
+    deck.title,
+  ).then((result) => {
+    const distractors = result[card.id];
+    if (distractors?.length) {
+      createClient().then((sb) =>
+        sb.from("cards").update({ mc_distractors: distractors }).eq("id", card.id)
+      );
+    }
+  }).catch(() => {});
 
   return Response.json(card, { status: 201 });
 }

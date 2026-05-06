@@ -14,7 +14,7 @@ import {
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -181,27 +181,14 @@ function CardRow({
 
   return (
     <div
-      className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3"
+      className={`group rounded-xl border bg-card px-4 py-3 flex items-start gap-3${dragListeners ? " cursor-grab active:cursor-grabbing" : ""}`}
       style={{
         borderColor:
           "color-mix(in oklch, var(--dashboard-accent-teal) 30%, transparent)",
       }}
+      {...(dragListeners as React.HTMLAttributes<HTMLDivElement> | undefined)}
+      {...(dragAttributes as React.HTMLAttributes<HTMLDivElement> | undefined)}
     >
-      {dragListeners && (
-        <button
-          type="button"
-          className="mt-0.5 flex h-6 w-5 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/50 transition-colors hover:text-muted-foreground active:cursor-grabbing"
-          title="Drag to reorder"
-          {...(dragListeners as React.HTMLAttributes<HTMLButtonElement>)}
-          {...(dragAttributes as React.HTMLAttributes<HTMLButtonElement>)}
-        >
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 16 16">
-            <circle cx="5.5" cy="3.5" r="1.25" /><circle cx="10.5" cy="3.5" r="1.25" />
-            <circle cx="5.5" cy="8" r="1.25" /><circle cx="10.5" cy="8" r="1.25" />
-            <circle cx="5.5" cy="12.5" r="1.25" /><circle cx="10.5" cy="12.5" r="1.25" />
-          </svg>
-        </button>
-      )}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground break-words">{card.front}</p>
         <p className="mt-1.5 text-sm text-muted-foreground/80 break-words">{card.back}</p>
@@ -360,8 +347,8 @@ export default function DeckPage() {
   const [titleInput, setTitleInput] = useState("");
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
   );
 
   const [activeQueue, setActiveQueue] = useState<Card[]>([]);
@@ -1184,7 +1171,7 @@ export default function DeckPage() {
                 >
                   {allCards.length} {allCards.length === 1 ? "card" : "cards"}
                 </span>
-                <span className="text-[10px] text-foreground">· drag to reorder</span>
+                <span className="text-[10px] text-muted-foreground/40">· drag to reorder</span>
               </div>
               <svg
                 className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${cardsOpen ? "rotate-180" : ""}`}

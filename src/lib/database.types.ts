@@ -23,7 +23,6 @@ export type Database = {
           ease_factor: number
           front: string
           id: string
-          mc_distractors: string[] | null
           interval_days: number
           last_seen_at: string | null
           next_review_at: string | null
@@ -41,7 +40,6 @@ export type Database = {
           ease_factor?: number
           front: string
           id?: string
-          mc_distractors?: string[] | null
           interval_days?: number
           last_seen_at?: string | null
           next_review_at?: string | null
@@ -59,7 +57,6 @@ export type Database = {
           ease_factor?: number
           front?: string
           id?: string
-          mc_distractors?: string[] | null
           interval_days?: number
           last_seen_at?: string | null
           next_review_at?: string | null

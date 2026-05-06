@@ -155,8 +155,8 @@ function CardRow({
         className="rounded-xl border bg-card px-4 py-3"
         style={{ borderColor: "oklch(0.55 0.2 27 / 0.35)" }}
       >
-        <p className="text-sm font-medium text-foreground">{card.front}</p>
-        <p className="mt-1.5 text-sm text-muted-foreground/80">{card.back}</p>
+        <p className="text-sm font-medium text-foreground break-words">{card.front}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground/80 break-words">{card.back}</p>
         <div className="mt-3 flex items-center gap-2.5">
           <p className="text-xs text-muted-foreground/70">Delete this card?</p>
           <button

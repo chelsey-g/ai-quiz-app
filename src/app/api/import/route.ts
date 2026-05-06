@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { generateCards } from "@/lib/ai/generate-cards";
 import type { Database } from "@/lib/database.types";
+import { generateAndSaveDistractorsForDeck } from "@/lib/services/distractors";
 
 function serviceClient() {
   return createServiceClient<Database>(
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
           }))
         );
         if (cardsError) throw new Error(`Cards insert failed: ${cardsError.message}`);
+        generateAndSaveDistractorsForDeck(newDeck.id, deck.title).catch(() => {});
       }
 
       results.push({

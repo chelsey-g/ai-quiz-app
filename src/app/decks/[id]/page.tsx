@@ -348,7 +348,6 @@ export default function DeckPage() {
   const [cardHistory, setCardHistory] = useState<{ index: number; wasKnown: boolean | null }[]>([]);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
-  const [activeTag, setActiveTag] = useState<string | null>(null);
   const [cardsOpen, setCardsOpen] = useState(true);
 
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -360,6 +359,8 @@ export default function DeckPage() {
 
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
+
+  const [showDeleteDeck, setShowDeleteDeck] = useState(false);
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
@@ -397,17 +398,9 @@ export default function DeckPage() {
     load();
   }, [id]);
 
-  const cardLevelTags = [...new Set(allCards.flatMap((c) => (c as Card & { tags?: string[] }).tags ?? []))];
-  const allTags = [...new Set([...(deck?.topic_tags ?? []), ...cardLevelTags])];
-  const tagFilteredCards = activeTag
-    ? (() => {
-        const byCardTag = allCards.filter((c) => ((c as Card & { tags?: string[] }).tags ?? []).includes(activeTag));
-        return byCardTag.length > 0 ? byCardTag : allCards;
-      })()
-    : allCards;
-  const isDeckLevelTag = activeTag !== null && !cardLevelTags.includes(activeTag);
-  const freshCards = tagFilteredCards.filter(isFresh);
-  const practicedCards = tagFilteredCards.filter((c) => !isFresh(c));
+  const allTags = [...new Set(deck?.topic_tags ?? [])];
+  const freshCards = allCards.filter(isFresh);
+  const practicedCards = allCards.filter((c) => !isFresh(c));
   const studyQueue =
     contentFilter === "fresh" ? freshCards
     : contentFilter === "practiced" ? [...practicedCards].sort((a, b) => {
@@ -415,7 +408,7 @@ export default function DeckPage() {
         const accB = b.times_seen > 0 ? b.times_correct / b.times_seen : 0;
         return accA - accB;
       })
-    : [...tagFilteredCards].sort(() => Math.random() - 0.5);
+    : [...allCards].sort(() => Math.random() - 0.5);
   const currentCard = studyState === "studying" ? activeQueue[currentIndex] : studyQueue[currentIndex];
   const currentCardMode: ResolvedMode =
     studyState === "studying" && currentCard
@@ -489,7 +482,7 @@ export default function DeckPage() {
             const accB = b.times_seen > 0 ? b.times_correct / b.times_seen : 0;
             return accA - accB;
           })
-        : [...tagFilteredCards].sort(() => Math.random() - 0.5);
+        : [...allCards].sort(() => Math.random() - 0.5);
     setActiveQueue(capturedQueue);
 
     const fixedModes: ResolvedMode[] = ["flip", "type", "multiple-choice"];
@@ -503,14 +496,14 @@ export default function DeckPage() {
           : (answerModeOverride as ResolvedMode);
 
       // Fall back to flip if not enough cards for MC distractors
-      if (cardMode === "multiple-choice" && tagFilteredCards.length < 2) {
+      if (cardMode === "multiple-choice" && allCards.length < 2) {
         cardMode = "flip";
       }
 
       resolvedModes[card.id] = cardMode;
 
       if (cardMode === "multiple-choice") {
-        resolvedMcOptions[card.id] = generateMcOptions(tagFilteredCards, card);
+        resolvedMcOptions[card.id] = generateMcOptions(allCards, card);
       }
     });
 
@@ -635,6 +628,12 @@ export default function DeckPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardIds: reordered.map((c) => c.id) }),
     });
+  }
+
+  async function handleDeleteDeck() {
+    if (!deck) return;
+    await fetch(`/api/decks/${deck.id}`, { method: "DELETE" });
+    router.push("/");
   }
 
   async function handleTogglePublic() {
@@ -806,7 +805,7 @@ export default function DeckPage() {
               [
                 { mode: "flip" as AnswerMode, label: "Flip card", description: "Reveal & self-assess" },
                 { mode: "type" as AnswerMode, label: "Type answer", description: "Write it out" },
-                { mode: "multiple-choice" as AnswerMode, label: "Multiple choice", description: "Pick from options", disabled: tagFilteredCards.length < 2 },
+                { mode: "multiple-choice" as AnswerMode, label: "Multiple choice", description: "Pick from options", disabled: allCards.length < 2 },
                 { mode: "random" as AnswerMode, label: "Random", description: "Mix it up" },
               ] as Array<{ mode: AnswerMode; label: string; description: string; disabled?: boolean }>
             ).map(({ mode, label, description, disabled }) => (
@@ -887,7 +886,7 @@ export default function DeckPage() {
               </button>
             </div>
           )}
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <p className="text-sm text-muted-foreground/60">
               {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
             </p>
@@ -909,6 +908,44 @@ export default function DeckPage() {
               </svg>
               {isPublic ? "Public" : "Private"}
             </button>
+            {showDeleteDeck ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground/60">Delete deck?</span>
+                <button
+                  onClick={handleDeleteDeck}
+                  className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                  style={{
+                    background: "oklch(0.55 0.2 27 / 0.12)",
+                    border: "1px solid oklch(0.55 0.2 27 / 0.4)",
+                    color: "oklch(0.75 0.18 27)",
+                  }}
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setShowDeleteDeck(false)}
+                  className="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
+                  style={{ borderColor: "oklch(0.5 0.01 65 / 0.3)" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDeleteDeck(true)}
+                className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                style={{
+                  background: "oklch(0.55 0.2 27 / 0.15)",
+                  border: "1px solid oklch(0.55 0.2 27 / 0.4)",
+                  color: "oklch(0.75 0.18 27)",
+                }}
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            )}
           </div>
         </div>
 
@@ -917,97 +954,40 @@ export default function DeckPage() {
           <DeckStatsBar stats={deckStats} totalCards={deck.card_count} />
         )}
 
-        {/* Tag filters */}
+        {/* Tags */}
         {allTags.length > 0 && (
           <div className="mb-6 flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTag(null)}
-              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
-              style={activeTag === null
-                ? {
-                    border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 62%, transparent)",
-                    background: "color-mix(in oklch, var(--dashboard-accent-coral) 12%, transparent)",
-                    color: "var(--dashboard-accent-coral)",
-                  }
-                : {
-                    border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 38%, transparent)",
-                    color: "color-mix(in oklch, var(--dashboard-accent-coral) 78%, var(--muted-foreground) 22%)",
-                  }}
-            >
-              All
-            </button>
             {allTags.map((tag) => (
-              <button
+              <Link
                 key={tag}
-                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+                href={`/tags/${encodeURIComponent(tag)}`}
                 className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
-                style={activeTag === tag
-                  ? {
-                      border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 62%, transparent)",
-                      background: "color-mix(in oklch, var(--dashboard-accent-coral) 12%, transparent)",
-                      color: "var(--dashboard-accent-coral)",
-                    }
-                  : {
-                      border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 38%, transparent)",
-                      color: "color-mix(in oklch, var(--dashboard-accent-coral) 78%, var(--muted-foreground) 22%)",
-                    }}
+                style={{
+                  border: "1px solid color-mix(in oklch, var(--dashboard-accent-coral) 38%, transparent)",
+                  color: "color-mix(in oklch, var(--dashboard-accent-coral) 78%, var(--muted-foreground) 22%)",
+                }}
               >
                 {tag}
-              </button>
+              </Link>
             ))}
           </div>
         )}
 
         {/* Cards for selected tag */}
-        {activeTag && (
-          <div className="mb-6 space-y-2">
-            <p
-              className="text-[10px] uppercase tracking-widest"
-              style={{
-                color:
-                  "color-mix(in oklch, var(--dashboard-accent-coral) 70%, var(--muted-foreground) 30%)",
-              }}
-            >
-              {isDeckLevelTag ? `All ${tagFilteredCards.length} cards` : `${tagFilteredCards.length} ${tagFilteredCards.length === 1 ? "card" : "cards"}`} · {activeTag}
-            </p>
-            {tagFilteredCards.map((card) => (
-              <CardRow
-                key={card.id}
-                card={card}
-                isEditing={editingCardId === card.id}
-                isDeleting={deletingCardId === card.id}
-                isSaving={savingEdit && editingCardId === card.id}
-                isDeletingInProgress={deletingInProgress === card.id}
-                editFront={editFront}
-                editBack={editBack}
-                onEditFrontChange={setEditFront}
-                onEditBackChange={setEditBack}
-                onEditStart={startEditCard}
-                onEditSave={handleSaveEdit}
-                onEditCancel={cancelEdit}
-                onDeleteStart={(id) => { setDeletingCardId(id); setEditingCardId(null); }}
-                onDeleteConfirm={handleConfirmDelete}
-                onDeleteCancel={() => setDeletingCardId(null)}
-              />
-            ))}
-          </div>
-        )}
-
         <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-heading text-base font-semibold text-foreground">Start session</p>
               <p className="mt-0.5 text-sm text-muted-foreground/70">
-                {tagFilteredCards.filter(isFresh).length} fresh · {tagFilteredCards.filter((c) => !isFresh(c)).length} practiced
-                {activeTag ? ` · ${activeTag}` : ""}
+                {allCards.filter(isFresh).length} fresh · {allCards.filter((c) => !isFresh(c)).length} practiced
               </p>
             </div>
             <div className="flex items-center gap-3">
               <Button
                 onClick={() => setShowModeModal(true)}
                 size="lg"
-                disabled={tagFilteredCards.length === 0}
+                disabled={allCards.length === 0}
                 className="flex-1 sm:flex-none"
               >
                 Start session
@@ -1173,7 +1153,7 @@ export default function DeckPage() {
         </div>
 
         {/* All cards list */}
-        {!activeTag && allCards.length > 0 && (
+        {allCards.length > 0 && (
           <div className="mt-8 rounded-xl border border-border/40 bg-card/40">
             <button
               onClick={() => setCardsOpen((v) => !v)}
@@ -1359,8 +1339,21 @@ export default function DeckPage() {
             style={{ perspective: "1200px" }}
             onClick={() => setFlipped((f) => !f)}
           >
+            {/* Sizer: drives outer container height.
+                Not flipped → min-h-72 only (front stays compact).
+                Flipped → back content shown, grows if long. */}
+            <div className="invisible pointer-events-none px-8 py-6 flex flex-col min-h-72" aria-hidden>
+              {flipped && (
+                <>
+                  <p className="mb-4 text-[10px]">placeholder</p>
+                  <p className="text-lg leading-relaxed break-words">{currentCard.back}</p>
+                </>
+              )}
+            </div>
+
+            {/* 3D flip wrapper — absolutely covers the sizer */}
             <div
-              className="relative h-72 w-full transition-transform duration-500"
+              className="absolute inset-0 transition-transform duration-500"
               style={{
                 transformStyle: "preserve-3d",
                 transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
@@ -1368,7 +1361,7 @@ export default function DeckPage() {
             >
               {/* Front */}
               <div
-                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-border bg-card px-8 py-6 text-center overflow-y-auto overscroll-contain"
+                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-border bg-card px-8 py-6 text-center overflow-hidden"
                 style={{ backfaceVisibility: "hidden" }}
               >
                 <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
@@ -1383,7 +1376,7 @@ export default function DeckPage() {
               </div>
               {/* Back */}
               <div
-                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-primary/20 bg-card px-8 py-6 text-center overflow-y-auto overscroll-contain"
+                className="absolute inset-0 flex flex-col items-start rounded-2xl border border-primary/20 bg-card px-8 py-6 text-center overflow-hidden"
                 style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
                 <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">

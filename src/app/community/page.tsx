@@ -130,10 +130,10 @@ function PreviewModal({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50 mb-1">
-                        {idx + 1}
+                      <p className="text-sm font-medium text-foreground">
+                        <span className="mr-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50">{idx + 1}</span>
+                        {card.front}
                       </p>
-                      <p className="text-sm font-medium text-foreground">{card.front}</p>
                       {revealed && (
                         <p className="mt-2 text-sm text-muted-foreground/80 border-t border-border/40 pt-2">
                           {card.back}

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DeckCard, type DeckWithStats } from "@/components/deck-card";
-import { CollectionPopover } from "@/components/collection-popover";
 import { Button } from "@/components/ui/button";
 
 type Collection = {
@@ -27,6 +26,9 @@ export default function CollectionDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -70,6 +72,18 @@ export default function CollectionDetailPage() {
     });
     setDecks((prev) => prev.filter((d) => d.id !== deckId));
     setRemovingId(null);
+  }
+
+  async function handleRenameDeck(deckId: string) {
+    const name = renameInput.trim();
+    setRenamingDeckId(null);
+    if (!name) return;
+    await fetch(`/api/decks/${deckId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: name }),
+    });
+    setDecks((prev) => prev.map((d) => d.id === deckId ? { ...d, title: name } : d));
   }
 
   if (loading) {
@@ -198,22 +212,98 @@ export default function CollectionDetailPage() {
               className="animate-card-in h-full"
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              <div className="relative h-full">
-                <DeckCard
-                  deck={deck}
-                  topAction={<CollectionPopover deckId={deck.id} />}
-                />
-                <button
-                  onClick={() => handleRemoveDeck(deck.id)}
-                  disabled={removingId === deck.id}
-                  className="absolute bottom-3 right-3 z-10 rounded-md border px-2 py-1 text-[10px] font-medium transition-colors hover:bg-destructive/5 disabled:opacity-40"
-                  style={{
-                    borderColor: "color-mix(in oklch, var(--destructive) 30%, transparent)",
-                    color: "var(--destructive)",
-                  }}
-                >
-                  {removingId === deck.id ? "Removing…" : "Remove"}
-                </button>
+              <div className="group/card relative h-full">
+                {renamingDeckId === deck.id ? (
+                  <div className="flex h-full min-h-[10rem] flex-col items-start justify-center gap-3 rounded-2xl border border-border/40 bg-card/60 p-5">
+                    <p className="text-xs font-medium text-muted-foreground/60">Rename deck</p>
+                    <input
+                      autoFocus
+                      value={renameInput}
+                      onChange={(e) => setRenameInput(e.target.value)}
+                      onBlur={() => handleRenameDeck(deck.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); handleRenameDeck(deck.id); }
+                        if (e.key === "Escape") setRenamingDeckId(null);
+                      }}
+                      className="w-full bg-transparent text-sm font-medium text-foreground border-b border-primary/40 focus:outline-none pb-0.5"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleRenameDeck(deck.id)}
+                        className="rounded-md px-2.5 py-1 text-xs font-medium"
+                        style={{
+                          background: "oklch(0.55 0.15 200 / 0.12)",
+                          border: "1px solid oklch(0.55 0.15 200 / 0.4)",
+                          color: "var(--dashboard-accent-teal-strong)",
+                        }}
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setRenamingDeckId(null)}
+                        className="rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 hover:text-foreground"
+                        style={{ border: "1px solid oklch(0.5 0.01 65 / 0.3)" }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <DeckCard deck={deck} />
+                )}
+
+                {renamingDeckId !== deck.id && (
+                  <div className="absolute right-2 top-2 z-10">
+                    <button
+                      onClick={() => setMenuOpenId(menuOpenId === deck.id ? null : deck.id)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg opacity-0 transition-all group-hover/card:opacity-100 hover:bg-muted/40"
+                      style={{ background: menuOpenId === deck.id ? "oklch(0.5 0.01 65 / 0.12)" : undefined }}
+                    >
+                      <svg className="h-4 w-4 text-muted-foreground/60" fill="currentColor" viewBox="0 0 20 20">
+                        <circle cx="10" cy="4" r="1.5" />
+                        <circle cx="10" cy="10" r="1.5" />
+                        <circle cx="10" cy="16" r="1.5" />
+                      </svg>
+                    </button>
+
+                    {menuOpenId === deck.id && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
+                        <div
+                          className="absolute right-0 top-8 z-20 min-w-[160px] rounded-xl border border-border/40 bg-card/95 py-1 shadow-lg backdrop-blur-sm"
+                        >
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setRenameInput(deck.title);
+                              setRenamingDeckId(deck.id);
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-foreground/80 hover:bg-muted/40"
+                          >
+                            <svg className="h-3.5 w-3.5 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                            </svg>
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              handleRemoveDeck(deck.id);
+                            }}
+                            disabled={removingId === deck.id}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-destructive/5 disabled:opacity-40"
+                            style={{ color: "var(--destructive)" }}
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            {removingId === deck.id ? "Removing…" : "Remove from collection"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -116,9 +116,11 @@ export function DeckCard({
         {deck.topic_tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {deck.topic_tags.slice(0, 3).map((tag) => (
-              <span
+              <Link
                 key={tag}
-                className="rounded-full border px-2 py-0.5 text-[10px]"
+                href={`/tags/${encodeURIComponent(tag)}`}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full border px-2 py-0.5 text-[10px] transition-colors hover:brightness-110"
                 style={{
                   borderColor:
                     "color-mix(in oklch, var(--dashboard-accent-coral) 35%, var(--border) 65%)",
@@ -129,7 +131,7 @@ export function DeckCard({
                 }}
               >
                 {tag}
-              </span>
+              </Link>
             ))}
             {deck.topic_tags.length > 3 && (
               <span className="self-center text-[10px] text-muted-foreground/40">
@@ -229,9 +231,11 @@ export function DeckCard({
           {deck.topic_tags.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {deck.topic_tags.slice(0, 3).map((tag) => (
-                <span
+                <Link
                   key={tag}
-                  className="rounded-full border px-2 py-0.5 text-[10px]"
+                  href={`/tags/${encodeURIComponent(tag)}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded-full border px-2 py-0.5 text-[10px] transition-colors hover:brightness-110"
                   style={{
                     borderColor:
                       "color-mix(in oklch, var(--dashboard-accent-coral) 35%, var(--border) 65%)",
@@ -242,7 +246,7 @@ export function DeckCard({
                   }}
                 >
                   {tag}
-                </span>
+                </Link>
               ))}
               {deck.topic_tags.length > 3 && (
                 <span className="self-center text-[10px] text-muted-foreground/40">

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
+import { generateAndSaveDistractors } from "@/lib/services/distractors";
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function POST(
   // Verify deck ownership
   const { data: deck, error: deckError } = await supabase
     .from("decks")
-    .select("id, card_count")
+    .select("id, card_count, title")
     .eq("id", deckId)
     .eq("user_id", user.id)
     .single();
@@ -49,6 +50,9 @@ export async function POST(
     .from("decks")
     .update({ card_count: deck.card_count + 1 })
     .eq("id", deckId);
+
+  // Generate and persist distractors in the background — response is not delayed.
+  generateAndSaveDistractors(card.id, card.front, card.back, deck.title).catch(() => {});
 
   return Response.json(card, { status: 201 });
 }

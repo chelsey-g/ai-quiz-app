@@ -25,13 +25,31 @@ type AnswerRecord = {
   card: Card;
 };
 
+function shuffleAnswers(correct: string, distractors: string[]): string[] {
+  const ck = correct.trim().toLowerCase().replace(/\s+/g, " ");
+  const seen = new Set([ck]);
+  const deduped: string[] = [];
+  for (const d of distractors) {
+    const t = d.trim();
+    if (!t) continue;
+    const k = t.toLowerCase().replace(/\s+/g, " ");
+    if (seen.has(k)) continue;
+    seen.add(k);
+    deduped.push(t);
+    if (deduped.length >= 3) break;
+  }
+  return [...deduped, correct.trim()].sort(() => Math.random() - 0.5);
+}
+
 function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
-  const distractors = allCards
+  if (targetCard.mc_status === "ready" && targetCard.mc_distractors && targetCard.mc_distractors.length >= 3) {
+    return shuffleAnswers(targetCard.back, targetCard.mc_distractors);
+  }
+  const fallback = allCards
     .filter((c) => c.id !== targetCard.id)
     .map((c) => c.back)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
-  return [...distractors, targetCard.back].sort(() => Math.random() - 0.5);
+    .sort(() => Math.random() - 0.5);
+  return shuffleAnswers(targetCard.back, fallback);
 }
 
 function gradeTypeAnswer(userAnswer: string, correct: string): boolean {

@@ -79,3 +79,43 @@ export async function getDeckById(
 
   return { deck: deck as Deck, cards: (cards ?? []) as Card[], deckStats };
 }
+
+export async function getDecksByCollection(
+  collectionId: string,
+  userId: string
+): Promise<DeckWithStats[]> {
+  const supabase = await createClient();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("collection_decks")
+    .select("deck_id")
+    .eq("collection_id", collectionId);
+
+  if (membershipError) throw new Error(membershipError.message);
+
+  const deckIds = (membership ?? []).map((m) => m.deck_id);
+  if (deckIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("decks")
+    .select("*, cards(times_seen, times_correct)")
+    .eq("user_id", userId)
+    .in("id", deckIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((deck) => {
+    const cards = (deck.cards ?? []) as Pick<Card, "times_seen" | "times_correct">[];
+    const totalSeen = cards.reduce((s, c) => s + c.times_seen, 0);
+    const totalCorrect = cards.reduce((s, c) => s + c.times_correct, 0);
+    const unattemptedCount = cards.filter((c) => c.times_seen === 0).length;
+    const { cards: _, ...deckBase } = deck;
+    return {
+      ...deckBase,
+      total_seen: totalSeen,
+      total_correct: totalCorrect,
+      unattempted_count: unattemptedCount,
+    } as DeckWithStats;
+  });
+}

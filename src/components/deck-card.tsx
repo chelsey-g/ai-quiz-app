@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Database } from "@/lib/database.types";
 
 type Deck = Database["public"]["Tables"]["decks"]["Row"];
@@ -38,6 +41,7 @@ export function DeckCard({
   selectMode?: boolean;
   topAction?: React.ReactNode;
 }) {
+  const router = useRouter();
   // Use the explicitly-passed accuracyPercent if provided, otherwise derive from deck stats
   const pct = accuracyPercent !== undefined ? accuracyPercent : accuracyPct(deck.total_seen, deck.total_correct);
   const hasActivity = pct !== null;
@@ -210,7 +214,7 @@ export function DeckCard({
 
   return (
     <div className="relative h-full group">
-      <Link href={`/decks/${deck.id}`} className="block h-full">
+      <div className="block h-full cursor-pointer" onClick={() => router.push(`/decks/${deck.id}`)}>
         <div className="dashboard-card-hover relative h-full overflow-hidden rounded-2xl border border-border/50 bg-card">
         {/* Top accent gradient line — brighter when active */}
         <div
@@ -301,7 +305,7 @@ export function DeckCard({
           </div>
         </div>
       </div>
-      </Link>
+      </div>
       {topAction && (
         <div className="absolute top-2 right-2 z-10">
           {topAction}

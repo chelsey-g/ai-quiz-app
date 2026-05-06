@@ -329,6 +329,7 @@ export default function DeckPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [addingCard, setAddingCard] = useState(false);
   const [addCardError, setAddCardError] = useState<string | null>(null);
+  const [generatingAnswer, setGeneratingAnswer] = useState(false);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   const [studyState, setStudyState] = useState<StudyState>("idle");
@@ -578,6 +579,28 @@ export default function DeckPage() {
     setCardTags([]);
     setTagInput("");
     setShowAddCard(false);
+  }
+
+  async function handleGenerateAnswer() {
+    if (!cardFront.trim() || !deck) return;
+    setGeneratingAnswer(true);
+    try {
+      const res = await fetch("/api/cards/generate-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: cardFront.trim(),
+          deckTitle: deck.title,
+          tags: deck.topic_tags ?? [],
+        }),
+      });
+      if (res.ok) {
+        const { answer } = await res.json();
+        setCardBack(answer);
+      }
+    } finally {
+      setGeneratingAnswer(false);
+    }
   }
 
   async function handleSaveTitle() {
@@ -1036,12 +1059,42 @@ export default function DeckPage() {
                 placeholder="Front (question)"
                 className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
-              <AutoTextarea
-                value={cardBack}
-                onChange={(e) => setCardBack(e.target.value)}
-                placeholder="Back (answer)"
-                className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
+              <div className="space-y-1">
+                <AutoTextarea
+                  value={cardBack}
+                  onChange={(e) => setCardBack(e.target.value)}
+                  placeholder="Back (answer)"
+                  className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                {cardFront.trim() && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleGenerateAnswer}
+                      disabled={generatingAnswer}
+                      className="flex items-center gap-1 text-[11px] font-medium transition-opacity disabled:opacity-40 hover:opacity-70"
+                      style={{ color: "var(--primary)" }}
+                    >
+                      {generatingAnswer ? (
+                        <>
+                          <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                          </svg>
+                          Generating…
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                          </svg>
+                          Generate with AI
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Tag input */}
               <div className="relative">

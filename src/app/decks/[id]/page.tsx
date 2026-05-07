@@ -623,6 +623,7 @@ export default function DeckPage() {
   async function handleGenerateAnswer() {
     if (!cardFront.trim() || !deck) return;
     setGeneratingAnswer(true);
+    setCardBack("");
     try {
       const res = await fetch("/api/cards/generate-answer", {
         method: "POST",
@@ -633,9 +634,15 @@ export default function DeckPage() {
           tags: deck.topic_tags ?? [],
         }),
       });
-      if (res.ok) {
-        const { answer } = await res.json();
-        setCardBack(answer);
+      if (!res.ok || !res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        setCardBack(text);
       }
     } finally {
       setGeneratingAnswer(false);

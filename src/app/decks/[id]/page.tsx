@@ -379,6 +379,33 @@ export default function DeckPage() {
   const [selectedMcOption, setSelectedMcOption] = useState<string | null>(null);
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
+  const [generatingMc, setGeneratingMc] = useState(false);
+  const pendingModeRef = useRef<AnswerMode | null>(null);
+
+  useEffect(() => {
+    if (!generatingMc) return;
+    let cancelled = false;
+    async function poll() {
+      while (!cancelled) {
+        await new Promise(r => setTimeout(r, 2000));
+        if (cancelled) break;
+        const res = await fetch(`/api/decks/${id}`);
+        if (!res.ok || cancelled) break;
+        const { cards: fresh } = await res.json();
+        if (cancelled) break;
+        setAllCards(fresh);
+        if (!fresh.some((c: Card) => c.mc_status === "pending")) {
+          setGeneratingMc(false);
+          const mode = pendingModeRef.current;
+          pendingModeRef.current = null;
+          if (mode) launchStudy(mode, fresh);
+          break;
+        }
+      }
+    }
+    poll();
+    return () => { cancelled = true; };
+  }, [generatingMc, id]);
 
   useEffect(() => {
     async function load() {
@@ -459,6 +486,18 @@ export default function DeckPage() {
   }
 
   function startStudy(answerModeOverride: AnswerMode = answerMode) {
+    const needsMc = answerModeOverride === "multiple-choice" || answerModeOverride === "random";
+    const hasPending = needsMc && allCards.some(c => c.mc_status === "pending");
+    if (hasPending) {
+      pendingModeRef.current = answerModeOverride;
+      setShowModeModal(false);
+      setGeneratingMc(true);
+      return;
+    }
+    launchStudy(answerModeOverride, allCards);
+  }
+
+  function launchStudy(answerModeOverride: AnswerMode, cards: Card[]) {
     sessionSavedRef.current = false;
     setCurrentIndex(0);
     setFlipped(false);
@@ -472,17 +511,20 @@ export default function DeckPage() {
     setAnswerMode(answerModeOverride);
     setShowModeModal(false);
 
+    const fresh = cards.filter(isFresh);
+    const practiced = cards.filter(c => !isFresh(c));
+
     // Capture the queue once — prevents re-renders from reshuffling it mid-session
     const capturedQueue: Card[] =
       contentFilter === "fresh"
-        ? freshCards
+        ? fresh
         : contentFilter === "practiced"
-        ? [...practicedCards].sort((a, b) => {
+        ? [...practiced].sort((a, b) => {
             const accA = a.times_seen > 0 ? a.times_correct / a.times_seen : 0;
             const accB = b.times_seen > 0 ? b.times_correct / b.times_seen : 0;
             return accA - accB;
           })
-        : [...allCards].sort(() => Math.random() - 0.5);
+        : [...cards].sort(() => Math.random() - 0.5);
     setActiveQueue(capturedQueue);
 
     const fixedModes: ResolvedMode[] = ["flip", "type", "multiple-choice"];
@@ -495,15 +537,14 @@ export default function DeckPage() {
           ? fixedModes[Math.floor(Math.random() * fixedModes.length)]
           : (answerModeOverride as ResolvedMode);
 
-      // Fall back to flip if not enough cards for MC distractors
-      if (cardMode === "multiple-choice" && allCards.length < 2) {
+      if (cardMode === "multiple-choice" && (cards.length < 2 || card.mc_status !== "ready")) {
         cardMode = "flip";
       }
 
       resolvedModes[card.id] = cardMode;
 
       if (cardMode === "multiple-choice") {
-        resolvedMcOptions[card.id] = generateMcOptions(allCards, card);
+        resolvedMcOptions[card.id] = generateMcOptions(cards, card);
       }
     });
 
@@ -838,6 +879,19 @@ export default function DeckPage() {
       </DialogContent>
     </Dialog>
   );
+
+  // ── Generating MC distractors overlay ────────────────────────────────────
+  if (generatingMc) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-10 py-8 shadow-xl">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <p className="text-sm font-medium text-foreground">Generating multiple choice questions…</p>
+          <p className="text-xs text-muted-foreground">This only happens once per deck</p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Idle — deck overview ──────────────────────────────────────────────────
   if (studyState === "idle") {

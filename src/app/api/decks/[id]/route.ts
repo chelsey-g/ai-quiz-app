@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getDeckById } from "@/lib/services/decks";
+import { generateAndSaveDistractorsForDeck } from "@/lib/services/distractors";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -19,6 +20,9 @@ export async function GET(
 
   try {
     const { deck, cards, deckStats } = await getDeckById(id, user.id);
+    if (cards.some((c: { mc_status: string | null }) => c.mc_status === "pending")) {
+      generateAndSaveDistractorsForDeck(id, deck.title).catch(() => {});
+    }
     return Response.json({ deck, cards, deckStats });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

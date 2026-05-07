@@ -1,33 +1,27 @@
 import { generateObject } from "ai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
+import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const MODEL_PRIORITY = [
-  { provider: "openai" as const, model: "gpt-4o-mini" },
-  { provider: "anthropic" as const, model: "claude-haiku-4-5-20251001" },
-  { provider: "anthropic" as const, model: "claude-sonnet-4-6" },
-  { provider: "openai" as const, model: "gpt-4o" },
-];
-
 const SINGLE_SYSTEM_PROMPT =
-  "You generate high-quality multiple-choice distractors for a single flashcard. " +
-  "Produce exactly 3 wrong answers that: " +
-  "(1) are the same TYPE and FORMAT as the correct answer — if it's a year, give years; a name, give plausible names; a technical term, give a related term from the same domain; " +
-  "(2) represent common misconceptions or near-misses a learner might hold; " +
-  "(3) are similar in length and tone to the correct answer; " +
-  "(4) would genuinely fool someone who half-knows the material. " +
-  "Never copy, rephrase, or echo the correct answer.";
+  "You generate multiple-choice distractors for a single flashcard.\n" +
+  "Produce exactly 3 wrong answers following these rules:\n" +
+  "(1) Each distractor must answer THE SAME QUESTION as the correct answer — just incorrectly. Never answer a different question or go on a tangent.\n" +
+  "(2) Each distractor must be wrong for a DIFFERENT reason: aim for one common misconception, one related-but-incorrect fact, and one partial truth that misses the key point.\n" +
+  "(3) A student who has fully mastered the material must immediately see all 3 as wrong. A student still learning should find them plausible.\n" +
+  "(4) Match the format and approximate length of the correct answer.\n" +
+  "(5) Never copy, rephrase, or echo the correct answer. Never produce a distractor that is also correct or could be argued as correct.";
 
 const BATCH_SYSTEM_PROMPT =
-  "You generate high-quality multiple-choice distractors for flashcards in batch. " +
-  "For each card, produce exactly 3 wrong answers that: " +
-  "(1) are the same TYPE and FORMAT as the correct answer — if it's a year, give years; a name, give plausible names; a technical term, give a related term from the same domain; " +
-  "(2) represent common misconceptions or near-misses a learner might hold; " +
-  "(3) are similar in length and tone to the correct answer; " +
-  "(4) would genuinely fool someone who half-knows the material. " +
-  "Never copy, rephrase, or echo the correct answer. Return one entry per cardId, in any order.";
+  "You generate multiple-choice distractors for a batch of flashcards.\n" +
+  "For EACH card independently, produce exactly 3 wrong answers following these rules:\n" +
+  "(1) Each distractor must answer THAT CARD'S specific question — just incorrectly. Never answer a different question or go on a tangent.\n" +
+  "(2) CRITICAL: Never use or paraphrase text from another card's correct answer in this batch as a distractor for a different card.\n" +
+  "(3) Each distractor must be wrong for a DIFFERENT reason: aim for one common misconception, one related-but-incorrect fact, and one partial truth that misses the key point.\n" +
+  "(4) A student who has fully mastered the material must immediately see all 3 as wrong. A student still learning should find them plausible.\n" +
+  "(5) Match the format and approximate length of the correct answer.\n" +
+  "(6) Never copy, rephrase, or echo the correct answer. Never produce a distractor that is also correct or could be argued as correct.\n" +
+  "Return one entry per cardId, in any order.";
 
 const SingleSchema = z.object({
   distractors: z.array(z.string()).length(3),
@@ -62,30 +56,23 @@ function cleanDistractors(back: string, raw: string[]): string[] {
   return out;
 }
 
-function getClients() {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-  return {
-    anthropic: anthropicKey ? createAnthropic({ apiKey: anthropicKey }) : null,
-    openai: openaiKey ? createOpenAI({ apiKey: openaiKey }) : null,
-  };
-}
-
 async function callAISingle(front: string, back: string, deckTitle?: string | null): Promise<string[] | null> {
-  const { anthropic, openai } = getClients();
   const prompt =
     (deckTitle?.trim() ? `Deck: ${deckTitle.trim()}\n\n` : "") +
     `Question: ${front}\nCorrect answer (do NOT repeat): ${back}`;
-
-  for (const { provider, model } of MODEL_PRIORITY) {
-    const client = provider === "anthropic" ? anthropic : openai;
-    if (!client) continue;
-    try {
-      const { object } = await generateObject({ model: client(model), schema: SingleSchema, system: SINGLE_SYSTEM_PROMPT, prompt });
-      const clean = cleanDistractors(back, object.distractors);
-      if (clean.length >= 3) return clean;
-    } catch { /* try next */ }
-  }
+  try {
+    const { object } = await generateObject({
+      model: gateway("google/gemini-2.0-flash"),
+      providerOptions: {
+        gateway: { models: ["openai/gpt-4o-mini", "anthropic/claude-haiku-4.5"] },
+      },
+      schema: SingleSchema,
+      system: SINGLE_SYSTEM_PROMPT,
+      prompt,
+    });
+    const clean = cleanDistractors(back, object.distractors);
+    if (clean.length >= 3) return clean;
+  } catch { /* failed */ }
   return null;
 }
 
@@ -94,37 +81,34 @@ async function callAIBatch(
   deckTitle?: string | null,
 ): Promise<Record<string, string[]>> {
   if (items.length === 0) return {};
-  const { anthropic, openai } = getClients();
   const schema = buildBatchSchema(items.length);
-
   const lines = items
     .map((item, i) => `[${i + 1}] cardId="${item.cardId}"\nQuestion: ${item.front}\nCorrect answer (do NOT repeat): ${item.back}`)
     .join("\n\n---\n\n");
   const prompt = (deckTitle?.trim() ? `Deck: ${deckTitle.trim()}\n\n` : "") + lines;
-
-  for (const { provider, model } of MODEL_PRIORITY) {
-    const client = provider === "anthropic" ? anthropic : openai;
-    if (!client) continue;
-    try {
-      const { object } = await generateObject({ model: client(model), schema, system: BATCH_SYSTEM_PROMPT, prompt });
-      const out: Record<string, string[]> = {};
-      const backById = new Map(items.map(i => [i.cardId, i.back]));
-      for (const row of object.results) {
-        const correct = backById.get(row.cardId);
-        if (!correct) continue;
-        const clean = cleanDistractors(correct, row.distractors);
-        if (clean.length >= 3) out[row.cardId] = clean;
-      }
-      return out;
-    } catch { /* try next */ }
-  }
+  try {
+    const { object } = await generateObject({
+      model: gateway("google/gemini-2.0-flash"),
+      providerOptions: {
+        gateway: { models: ["openai/gpt-4o-mini", "anthropic/claude-haiku-4.5"] },
+      },
+      schema,
+      system: BATCH_SYSTEM_PROMPT,
+      prompt,
+    });
+    const out: Record<string, string[]> = {};
+    const backById = new Map(items.map(i => [i.cardId, i.back]));
+    for (const row of object.results) {
+      const correct = backById.get(row.cardId);
+      if (!correct) continue;
+      const clean = cleanDistractors(correct, row.distractors);
+      if (clean.length >= 3) out[row.cardId] = clean;
+    }
+    return out;
+  } catch { /* failed */ }
   return {};
 }
 
-/**
- * Generates and persists distractors for a single card.
- * Safe to call fire-and-forget.
- */
 export async function generateAndSaveDistractors(
   cardId: string,
   front: string,
@@ -140,10 +124,6 @@ export async function generateAndSaveDistractors(
   }
 }
 
-/**
- * Generates and persists distractors for all pending cards in a deck.
- * Call fire-and-forget after bulk card insertion.
- */
 export async function generateAndSaveDistractorsForDeck(
   deckId: string,
   deckTitle?: string | null,

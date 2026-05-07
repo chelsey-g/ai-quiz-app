@@ -20,7 +20,7 @@ export async function GET(
 
   try {
     const { deck, cards, deckStats } = await getDeckById(id, user.id);
-    if (cards.some((c: { mc_status: string | null }) => c.mc_status === "pending")) {
+    if (cards.some((c: { mc_status: string | null }) => c.mc_status === "pending" || c.mc_status === "failed")) {
       generateAndSaveDistractorsForDeck(id, deck.title).catch(() => {});
     }
     return Response.json({ deck, cards, deckStats });

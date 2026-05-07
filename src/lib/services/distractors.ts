@@ -134,7 +134,7 @@ export async function generateAndSaveDistractorsForDeck(
     .from("cards")
     .select("id, front, back")
     .eq("deck_id", deckId)
-    .eq("mc_status", "pending");
+    .in("mc_status", ["pending", "failed"]);
 
   if (!pending?.length) return;
 

@@ -386,7 +386,8 @@ export default function DeckPage() {
     if (!generatingMc) return;
     let cancelled = false;
     async function poll() {
-      while (!cancelled) {
+      let attempts = 0;
+      while (!cancelled && attempts < 15) {
         await new Promise(r => setTimeout(r, 2000));
         if (cancelled) break;
         const res = await fetch(`/api/decks/${id}`);
@@ -394,6 +395,7 @@ export default function DeckPage() {
         const { cards: fresh } = await res.json();
         if (cancelled) break;
         setAllCards(fresh);
+        attempts++;
         if (!fresh.some((c: Card) => c.mc_status === "pending")) {
           setGeneratingMc(false);
           const mode = pendingModeRef.current;
@@ -401,6 +403,12 @@ export default function DeckPage() {
           if (mode) launchStudy(mode, fresh);
           break;
         }
+      }
+      if (!cancelled && attempts >= 15) {
+        setGeneratingMc(false);
+        const mode = pendingModeRef.current;
+        pendingModeRef.current = null;
+        if (mode) launchStudy(mode, allCards);
       }
     }
     poll();
@@ -487,7 +495,7 @@ export default function DeckPage() {
 
   function startStudy(answerModeOverride: AnswerMode = answerMode) {
     const needsMc = answerModeOverride === "multiple-choice" || answerModeOverride === "random";
-    const hasPending = needsMc && allCards.some(c => c.mc_status === "pending");
+    const hasPending = needsMc && allCards.some(c => c.mc_status === "pending" || c.mc_status === "failed");
     if (hasPending) {
       pendingModeRef.current = answerModeOverride;
       setShowModeModal(false);

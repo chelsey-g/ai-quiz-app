@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_attempts: {
+        Row: {
+          card_results: Json
+          challenge_id: string
+          completed_at: string | null
+          id: string
+          score: number | null
+          started_at: string | null
+          status: string
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          card_results?: Json
+          challenge_id: string
+          completed_at?: string | null
+          id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          card_results?: Json
+          challenge_id?: string
+          completed_at?: string | null
+          id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      challenges: {
+        Row: {
+          card_ids: string[] | null
+          challenger_id: string
+          created_at: string
+          deck_id: string | null
+          expires_at: string | null
+          id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          card_ids?: string[] | null
+          challenger_id: string
+          created_at?: string
+          deck_id?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          card_ids?: string[] | null
+          challenger_id?: string
+          created_at?: string
+          deck_id?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           back: string

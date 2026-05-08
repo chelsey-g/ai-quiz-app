@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/app/auth/actions";
 import type { User } from "@supabase/supabase-js";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationPanel } from "@/components/notification-panel";
 
 const NAV_LINKS = [
   {
@@ -38,11 +39,11 @@ const NAV_LINKS = [
     ),
   },
   {
-    href: "/stats",
-    label: "Stats",
+    href: "/challenges",
+    label: "Challenges",
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5V19a1 1 0 001 1h3a1 1 0 001-1v-5.5M9 8.5V19a1 1 0 001 1h3a1 1 0 001-1V8.5M15 11V19a1 1 0 001 1h3a1 1 0 001-1v-8" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
   },
@@ -144,6 +145,7 @@ function SidebarContent({
               Sign out
             </button>
           </form>
+          <NotificationPanel userId={user.id} />
           <ThemeToggle />
         </div>
       </div>

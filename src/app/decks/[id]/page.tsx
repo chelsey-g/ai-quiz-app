@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ChallengeSheet } from "@/components/challenge-sheet";
 import {
   Dialog,
   DialogContent,
@@ -325,6 +326,7 @@ export default function DeckPage() {
   const [deckStats, setDeckStats] = useState<DeckStatsResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [challengeOpen, setChallengeOpen] = useState(false);
 
   const [showAddCard, setShowAddCard] = useState(false);
   const [cardFront, setCardFront] = useState("");
@@ -1082,6 +1084,14 @@ export default function DeckPage() {
               >
                 Take a quiz
               </Link>
+              <Button
+                variant="outline"
+                className="flex-1 sm:flex-none"
+                onClick={() => setChallengeOpen(true)}
+                disabled={allCards.length === 0}
+              >
+                Challenge
+              </Button>
             </div>
           </div>
         </div>
@@ -1353,6 +1363,13 @@ export default function DeckPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
+      <ChallengeSheet
+        open={challengeOpen}
+        onClose={() => setChallengeOpen(false)}
+        deckId={id}
+        deckTitle={deck?.title ?? ""}
+        cards={allCards}
+      />
       {/* Exit confirmation */}
       {showExitConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">

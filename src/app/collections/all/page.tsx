@@ -190,7 +190,7 @@ export default function AllDecksPage() {
                       allSelected ? new Set() : new Set(sortedDecks.map((d) => d.id))
                     );
                   }}
-                  className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
+                  className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
                   style={{
                     borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
                     color: "var(--dashboard-accent-teal-strong)",
@@ -202,7 +202,7 @@ export default function AllDecksPage() {
               {selectMode ? (
                 <button
                   onClick={toggleSelectMode}
-                  className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
+                  className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
                   style={{
                     borderColor: "color-mix(in oklch, var(--border) 80%, transparent)",
                     color: "color-mix(in oklch, var(--foreground) 62%, var(--muted-foreground) 38%)",
@@ -213,7 +213,7 @@ export default function AllDecksPage() {
               ) : (
                 <button
                   onClick={toggleSelectMode}
-                  className="rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
+                  className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
                   style={{
                     borderColor: "color-mix(in oklch, var(--dashboard-accent-coral) 45%, transparent)",
                     color: "var(--dashboard-accent-coral)",
@@ -266,14 +266,14 @@ export default function AllDecksPage() {
                 <button
                   onClick={() => setConfirmDelete(false)}
                   disabled={deleting}
-                  className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground disabled:opacity-50"
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteSelected}
                   disabled={deleting}
-                  className="rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
                   style={{
                     border: "1px solid color-mix(in oklch, var(--dashboard-accent-rose) 65%, transparent)",
                     color: "var(--dashboard-accent-rose)",
@@ -290,7 +290,7 @@ export default function AllDecksPage() {
                 </p>
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="rounded-md border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
+                  className="rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
                   style={{
                     border: "1px solid color-mix(in oklch, var(--dashboard-accent-rose) 65%, transparent)",
                     color: "var(--dashboard-accent-rose)",

@@ -181,14 +181,14 @@ function CardRow({
           <button
             disabled={isDeletingInProgress}
             onClick={() => onDeleteConfirm(card.id)}
-            className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+            className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
             style={{ background: "oklch(0.55 0.2 27 / 0.12)", border: "1px solid oklch(0.55 0.2 27 / 0.4)", color: "oklch(0.75 0.18 27)" }}
           >
             {isDeletingInProgress ? "Deleting..." : "Confirm"}
           </button>
           <button
             onClick={onDeleteCancel}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
+            className="rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
             style={{ border: "1px solid oklch(0.5 0.01 65 / 0.3)" }}
           >
             Cancel
@@ -1072,7 +1072,7 @@ export default function DeckPage() {
               </Button>
               <Link
                 href={`/quiz/${id}`}
-                className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-lg h-9 px-2.5 text-sm font-medium transition-colors"
                 style={{
                   border:
                     "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
@@ -1093,6 +1093,7 @@ export default function DeckPage() {
               </Link>
               <Button
                 variant="outline"
+                size="lg"
                 className="w-full sm:w-auto"
                 onClick={() => setChallengeOpen(true)}
                 disabled={allCards.length === 0}

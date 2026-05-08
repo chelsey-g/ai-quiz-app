@@ -179,7 +179,7 @@ export default function CollectionsPage() {
                   <div className="mt-3 flex gap-2">
                     <button
                       onClick={() => handleDelete(col.id)}
-                      className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+                      className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
                       style={{
                         background: "oklch(0.55 0.2 27 / 0.12)",
                         border: "1px solid oklch(0.55 0.2 27 / 0.4)",
@@ -190,7 +190,7 @@ export default function CollectionsPage() {
                     </button>
                     <button
                       onClick={() => setDeletingId(null)}
-                      className="rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
+                      className="rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
                       style={{ border: "1px solid oklch(0.5 0.01 65 / 0.3)" }}
                     >
                       Cancel

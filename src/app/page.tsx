@@ -342,7 +342,7 @@ export default function HomePage() {
               <>
                 <Link
                   href="/quiz/quick"
-                  className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
+                  className="inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/40 hover:text-foreground"
                   style={{
                     borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)",
                     color: "var(--dashboard-accent-teal-strong)",
@@ -352,7 +352,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/import"
-                  className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:opacity-90"
+                  className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:opacity-90"
                   style={{
                     background: "var(--dashboard-accent-amber)",
                     color: "var(--dashboard-accent-ink)",
@@ -364,7 +364,7 @@ export default function HomePage() {
             )}
             <button
               onClick={() => setShowNewDeck(true)}
-              className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
+              className="inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary"
               style={{
                 borderColor: "color-mix(in oklch, var(--dashboard-accent-rose) 52%, transparent)",
                 color: "var(--dashboard-accent-rose)",

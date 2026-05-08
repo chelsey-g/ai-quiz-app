@@ -80,9 +80,9 @@ export function NotificationPanel({ userId }: { userId: string }) {
     setOpen(false);
     const p = n.payload as NotificationPayload;
     if (n.type === "challenge_received" && p.challenge_id) {
-      const { data: attempts } = await (await fetch(`/api/challenges`)).json();
-      const received = (attempts as { challenge_id: string; id: string }[] | undefined) ?? [];
-      const attempt = received.find?.((a) => a.challenge_id === p.challenge_id);
+      const { received } = await (await fetch(`/api/challenges`)).json();
+      const attempts = (received as { challenge_id: string; id: string }[] | undefined) ?? [];
+      const attempt = attempts.find((a) => a.challenge_id === p.challenge_id);
       if (attempt) {
         router.push(`/challenges/${attempt.id}/play`);
       } else {

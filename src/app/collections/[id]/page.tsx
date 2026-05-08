@@ -165,7 +165,7 @@ export default function CollectionDetailPage() {
               <span className="text-xs text-muted-foreground/70">Delete collection?</span>
               <button
                 onClick={handleDelete}
-                className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+                className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
                 style={{
                   background: "oklch(0.55 0.2 27 / 0.12)",
                   border: "1px solid oklch(0.55 0.2 27 / 0.4)",
@@ -176,7 +176,7 @@ export default function CollectionDetailPage() {
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 hover:text-foreground"
+                className="rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 hover:text-foreground"
                 style={{ border: "1px solid oklch(0.5 0.01 65 / 0.3)" }}
               >
                 Cancel
@@ -185,7 +185,7 @@ export default function CollectionDetailPage() {
           ) : (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-destructive/5"
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-destructive/5"
               style={{
                 borderColor: "color-mix(in oklch, var(--destructive) 35%, transparent)",
                 color: "var(--destructive)",
@@ -230,7 +230,7 @@ export default function CollectionDetailPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleRenameDeck(deck.id)}
-                        className="rounded-md px-2.5 py-1 text-xs font-medium"
+                        className="rounded-lg px-2.5 py-1 text-xs font-medium"
                         style={{
                           background: "oklch(0.55 0.15 200 / 0.12)",
                           border: "1px solid oklch(0.55 0.15 200 / 0.4)",
@@ -241,7 +241,7 @@ export default function CollectionDetailPage() {
                       </button>
                       <button
                         onClick={() => setRenamingDeckId(null)}
-                        className="rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 hover:text-foreground"
+                        className="rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground/70 hover:text-foreground"
                         style={{ border: "1px solid oklch(0.5 0.01 65 / 0.3)" }}
                       >
                         Cancel

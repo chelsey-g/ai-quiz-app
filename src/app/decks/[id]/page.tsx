@@ -917,6 +917,13 @@ export default function DeckPage() {
 
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 animate-fade-up">
+        <ChallengeSheet
+          open={challengeOpen}
+          onClose={() => setChallengeOpen(false)}
+          deckId={id}
+          deckTitle={deck?.title ?? ""}
+          cards={allCards}
+        />
         <button
           onClick={() => router.push("/")}
           className="mb-8 flex items-center gap-1.5 text-xs text-muted-foreground/60 transition-colors hover:text-foreground"

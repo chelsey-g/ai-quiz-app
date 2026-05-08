@@ -7,13 +7,15 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const admin = createAdminClient();
+
   const [sent, received] = await Promise.all([
-    supabase
+    admin
       .from("challenges")
       .select("id, title, deck_id, status, created_at, challenge_attempts(id, user_id, status, score, total)")
       .eq("challenger_id", user.id)
       .order("created_at", { ascending: false }),
-    supabase
+    admin
       .from("challenge_attempts")
       .select("id, status, score, total, challenge_id, challenges(id, title, challenger_id)")
       .eq("user_id", user.id)

@@ -32,7 +32,7 @@ function statusBadge(status: string) {
 }
 
 export default function ChallengeResultsPage() {
-  const { challengeId } = useParams<{ challengeId: string }>();
+  const { id: challengeId } = useParams<{ id: string }>();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [cards, setCards] = useState<CardShape[]>([]);

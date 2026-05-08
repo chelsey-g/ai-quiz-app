@@ -39,7 +39,7 @@ function buildOptions(allCards: Card[], target: Card): string[] {
 }
 
 export default function ChallengPlayPage() {
-  const { attemptId } = useParams<{ attemptId: string }>();
+  const { id: attemptId } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);

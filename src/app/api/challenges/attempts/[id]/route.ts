@@ -11,7 +11,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: attempt, error: attemptErr } = await supabase
+  const admin = createAdminClient();
+
+  const { data: attempt, error: attemptErr } = await admin
     .from("challenge_attempts")
     .select("*")
     .eq("id", id)
@@ -20,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (attemptErr || !attempt) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const { data: challenge, error: challengeErr } = await supabase
+  const { data: challenge, error: challengeErr } = await admin
     .from("challenges")
     .select("*")
     .eq("id", attempt.challenge_id)
@@ -30,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   let cards: unknown[] = [];
   if (challenge.deck_id) {
-    const { data: allCards } = await supabase
+    const { data: allCards } = await admin
       .from("cards")
       .select("*")
       .eq("deck_id", challenge.deck_id);

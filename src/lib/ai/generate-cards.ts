@@ -1,6 +1,5 @@
 import { generateObject } from "ai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
+import { gateway } from "@ai-sdk/gateway";
 import { DeckSchema, type GeneratedDeck } from "./schema";
 
 const FILE_SYSTEM_PROMPT =
@@ -19,25 +18,11 @@ const NOTES_SYSTEM_PROMPT =
   "depending on content depth. If an optional title is provided, use it as the deck title; " +
   "otherwise, infer a clear, specific title from the content. Every card must be self-contained.";
 
-// Ordered cheapest → most capable. Each entry skipped if its key isn't set.
-const MODEL_PRIORITY = [
-  { provider: "openai" as const, model: "gpt-4o-mini" },
-  { provider: "anthropic" as const, model: "claude-haiku-4-5-20251001" },
-  { provider: "anthropic" as const, model: "claude-sonnet-4-6" },
-  { provider: "openai" as const, model: "gpt-4o" },
-];
-
 export async function generateCards(
   content: string,
   filePath: string,
   mode: "file" | "topic" | "notes" = "file"
 ): Promise<{ deck: GeneratedDeck; provider: string; model: string }> {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-
-  const anthropic = anthropicKey ? createAnthropic({ apiKey: anthropicKey }) : null;
-  const openai = openaiKey ? createOpenAI({ apiKey: openaiKey }) : null;
-
   const systemPrompt =
     mode === "topic"
       ? TOPIC_SYSTEM_PROMPT
@@ -52,26 +37,15 @@ export async function generateCards(
         ? (filePath ? `Title: ${filePath}\n\n` : "") + `Notes:\n${content}`
         : `File: ${filePath}\n\n${content}`;
 
-  const errors: string[] = [];
+  const { object } = await generateObject({
+    model: gateway("openai/gpt-4o-mini"),
+    providerOptions: {
+      gateway: { models: ["anthropic/claude-haiku-4.5", "anthropic/claude-sonnet-4-6", "openai/gpt-4o"] },
+    },
+    schema: DeckSchema,
+    system: systemPrompt,
+    prompt: userPrompt,
+  });
 
-  for (const { provider, model } of MODEL_PRIORITY) {
-    const client = provider === "anthropic" ? anthropic : openai;
-    if (!client) continue;
-
-    try {
-      const { object } = await generateObject({
-        model: client(model),
-        schema: DeckSchema,
-        system: systemPrompt,
-        prompt: userPrompt,
-      });
-      return { deck: object, provider, model };
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      errors.push(`${provider}/${model}: ${reason}`);
-      console.warn(`Model failed, trying next. ${provider}/${model}: ${reason}`);
-    }
-  }
-
-  throw new Error(`All models failed:\n${errors.join("\n")}`);
+  return { deck: object, provider: "gateway", model: "openai/gpt-4o-mini" };
 }

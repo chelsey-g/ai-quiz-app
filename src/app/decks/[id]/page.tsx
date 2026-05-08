@@ -1061,18 +1061,18 @@ export default function DeckPage() {
                 {allCards.filter(isFresh).length} fresh · {allCards.filter((c) => !isFresh(c)).length} practiced
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
               <Button
                 onClick={() => setShowModeModal(true)}
                 size="lg"
                 disabled={allCards.length === 0}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto"
               >
                 Start session
               </Button>
               <Link
                 href={`/quiz/${id}`}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
                 style={{
                   border:
                     "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
@@ -1093,7 +1093,7 @@ export default function DeckPage() {
               </Link>
               <Button
                 variant="outline"
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto"
                 onClick={() => setChallengeOpen(true)}
                 disabled={allCards.length === 0}
               >

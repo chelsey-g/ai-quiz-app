@@ -27,17 +27,12 @@ type AnswerRecord = {
 };
 
 function selectWeakCards(cards: Card[], limit = 10): Card[] {
-  const seen = cards.filter((c) => c.times_seen >= 3);
+  if (cards.length === 0) return [];
   const unseen = cards.filter((c) => c.times_seen === 0);
-
-  const sorted = [...seen].sort((a, b) => {
-    const ratioA = a.times_correct / a.times_seen;
-    const ratioB = b.times_correct / b.times_seen;
-    return ratioA - ratioB;
-  });
-
-  const combined = [...sorted, ...unseen];
-  return combined.slice(0, limit);
+  const seen = cards
+    .filter((c) => c.times_seen > 0)
+    .sort((a, b) => a.times_correct / a.times_seen - b.times_correct / b.times_seen);
+  return [...seen, ...unseen].slice(0, limit);
 }
 
 function shuffleAnswers(correct: string, distractors: string[]): string[] {

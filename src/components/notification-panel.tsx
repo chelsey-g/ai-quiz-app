@@ -40,8 +40,9 @@ export function NotificationPanel({ userId }: { userId: string }) {
 
   useEffect(() => {
     const supabase = createClient();
+    const channelName = `notifications:${userId}:${Date.now()}`;
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
@@ -51,7 +52,9 @@ export function NotificationPanel({ userId }: { userId: string }) {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -125,7 +128,7 @@ export function NotificationPanel({ userId }: { userId: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-border bg-background shadow-xl overflow-hidden">
+        <div className="fixed bottom-20 left-3 z-50 w-72 rounded-xl border border-border bg-background shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
             <p className="text-sm font-semibold text-foreground">Notifications</p>
             {unreadCount > 0 && (

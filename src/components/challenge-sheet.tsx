@@ -17,6 +17,13 @@ type Props = {
 };
 
 type Step = "cards" | "recipients" | "confirm";
+type QuizMode = "multiple-choice" | "type" | "random";
+
+const QUIZ_MODES: { value: QuizMode; label: string; description: string }[] = [
+  { value: "multiple-choice", label: "Multiple choice", description: "Pick from 4 options" },
+  { value: "type", label: "Type answer", description: "Write it out" },
+  { value: "random", label: "Random", description: "Mix of both" },
+];
 
 export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Props) {
   const [step, setStep] = useState<Step>("cards");
@@ -25,6 +32,7 @@ export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Prop
   const [searchResults, setSearchResults] = useState<UserResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [recipients, setRecipients] = useState<UserResult[]>([]);
+  const [quizMode, setQuizMode] = useState<QuizMode>("multiple-choice");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -35,6 +43,7 @@ export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Prop
       setQuery("");
       setSearchResults([]);
       setRecipients([]);
+      setQuizMode("multiple-choice");
       setSent(false);
     }
   }, [open, cards]);
@@ -84,6 +93,7 @@ export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Prop
           deck_id: deckId,
           card_ids: allSelected ? null : Array.from(selectedCardIds),
           recipient_ids: recipients.map((r) => r.id),
+          quiz_mode: quizMode,
         }),
       });
       setSent(true);
@@ -220,6 +230,25 @@ export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Prop
                 {recipients.map((r) => (
                   <p key={r.id} className="text-sm text-foreground">{r.display_name}</p>
                 ))}
+              </div>
+              <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3">
+                <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60 mb-3">Answer mode</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {QUIZ_MODES.map(({ value, label, description }) => (
+                    <button
+                      key={value}
+                      onClick={() => setQuizMode(value)}
+                      className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                        quizMode === value
+                          ? "border-primary/50 bg-primary/8 text-foreground"
+                          : "border-border/40 text-muted-foreground hover:border-primary/30 hover:bg-muted/40"
+                      }`}
+                    >
+                      <p className="text-xs font-medium leading-tight">{label}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{description}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

@@ -58,6 +58,7 @@ export type Database = {
           deck_id: string | null
           expires_at: string | null
           id: string
+          quiz_mode: string
           status: string
           title: string
         }
@@ -68,6 +69,7 @@ export type Database = {
           deck_id?: string | null
           expires_at?: string | null
           id?: string
+          quiz_mode?: string
           status?: string
           title: string
         }
@@ -78,6 +80,7 @@ export type Database = {
           deck_id?: string | null
           expires_at?: string | null
           id?: string
+          quiz_mode?: string
           status?: string
           title?: string
         }

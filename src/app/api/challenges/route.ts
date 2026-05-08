@@ -34,11 +34,12 @@ export async function POST(req: NextRequest) {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { title, deck_id, card_ids, recipient_ids } = body as {
+  const { title, deck_id, card_ids, recipient_ids, quiz_mode } = body as {
     title?: string;
     deck_id?: string;
     card_ids?: string[] | null;
     recipient_ids?: string[];
+    quiz_mode?: string;
   };
 
   if (!title?.trim()) return Response.json({ error: "title is required" }, { status: 400 });
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
       title: title.trim(),
       deck_id: deck_id ?? null,
       card_ids: card_ids ?? null,
+      quiz_mode: quiz_mode ?? "multiple-choice",
     })
     .select()
     .single();

@@ -10,6 +10,7 @@ type ChallengeAttempt = Database["public"]["Tables"]["challenge_attempts"]["Row"
 type Challenge = Database["public"]["Tables"]["challenges"]["Row"];
 
 type CardResult = { card_id: string; correct: boolean; chosen_answer: string };
+type ResolvedMode = "multiple-choice" | "type";
 
 function shuffleAnswers(correct: string, distractors: string[]): string[] {
   const ck = correct.trim().toLowerCase().replace(/\s+/g, " ");
@@ -38,6 +39,29 @@ function buildOptions(allCards: Card[], target: Card): string[] {
   return shuffleAnswers(target.back, fallback);
 }
 
+function gradeTypeAnswer(userAnswer: string, correct: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase();
+  return (
+    norm(userAnswer) === norm(correct) ||
+    norm(correct).includes(norm(userAnswer)) ||
+    norm(userAnswer).includes(norm(correct))
+  );
+}
+
+function resolveCardModes(cards: Card[], quizMode: string): Record<string, ResolvedMode> {
+  const modes: Record<string, ResolvedMode> = {};
+  for (const card of cards) {
+    if (quizMode === "random") {
+      modes[card.id] = Math.random() < 0.5 ? "multiple-choice" : "type";
+    } else if (quizMode === "type") {
+      modes[card.id] = "type";
+    } else {
+      modes[card.id] = "multiple-choice";
+    }
+  }
+  return modes;
+}
+
 export default function ChallengPlayPage() {
   const { id: attemptId } = useParams<{ id: string }>();
   const router = useRouter();
@@ -48,12 +72,16 @@ export default function ChallengPlayPage() {
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
+  const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
 
   const [phase, setPhase] = useState<"quiz" | "done">("quiz");
   const [index, setIndex] = useState(0);
   const [results, setResults] = useState<CardResult[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [started, setStarted] = useState(false);
+
+  // Type-answer state
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);
 
   const savingRef = useRef(false);
 
@@ -66,8 +94,14 @@ export default function ChallengPlayPage() {
         setChallenge(d.challenge);
         const c: Card[] = d.cards ?? [];
         setCards(c);
+        const modes = resolveCardModes(c, d.challenge?.quiz_mode ?? "multiple-choice");
+        setCardModes(modes);
         const opts: Record<string, string[]> = {};
-        c.forEach((card) => { opts[card.id] = buildOptions(c, card); });
+        c.forEach((card) => {
+          if (modes[card.id] === "multiple-choice") {
+            opts[card.id] = buildOptions(c, card);
+          }
+        });
         setMcOptions(opts);
         if (d.attempt.status === "completed") setPhase("done");
         if (d.attempt.card_results && Array.isArray(d.attempt.card_results)) {
@@ -78,18 +112,29 @@ export default function ChallengPlayPage() {
       .finally(() => setLoading(false));
   }, [attemptId]);
 
-  async function pick(option: string) {
+  async function pickMC(option: string) {
     if (selected || !cards[index]) return;
     const card = cards[index];
     const correct = option === card.back;
-    const result: CardResult = { card_id: card.id, correct, chosen_answer: option };
-    const newResults = [...results, result];
-
+    await submitAnswer(card, correct, option);
     setSelected(option);
+  }
+
+  async function submitType() {
+    if (answerSubmitted || !cards[index]) return;
+    const card = cards[index];
+    const correct = gradeTypeAnswer(typedAnswer, card.back);
+    setAnswerSubmitted(true);
+    await submitAnswer(card, correct, typedAnswer);
+  }
+
+  async function submitAnswer(card: Card, correct: boolean, chosenAnswer: string) {
+    const result: CardResult = { card_id: card.id, correct, chosen_answer: chosenAnswer };
+    const newResults = [...results, result];
     setResults(newResults);
 
-    if (!started) {
-      setStarted(true);
+    const isFirst = newResults.length === 1 && attempt?.status === "pending";
+    if (isFirst) {
       await fetch(`/api/challenges/attempts/${attemptId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -119,6 +164,8 @@ export default function ChallengPlayPage() {
 
   function advance() {
     setSelected(null);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
     setIndex((i) => i + 1);
   }
 
@@ -157,7 +204,7 @@ export default function ChallengPlayPage() {
             {pct >= 90 ? "Excellent!" : pct >= 70 ? "Good work!" : "Keep practicing"}
           </p>
           <p className="mt-1 text-sm text-muted-foreground/70">{score}/{total} correct</p>
-          <p className="mt-1 text-xs text-muted-foreground/50">Results sent to {challenge.challenger_id.slice(0, 8)}…</p>
+          <p className="mt-1 text-xs text-muted-foreground/50">Results sent to challenger</p>
         </div>
         <div className="mb-6 flex flex-col gap-2">
           {results.map((r, i) => {
@@ -171,7 +218,7 @@ export default function ChallengPlayPage() {
                     <p className="font-medium text-foreground">{card.front}</p>
                     {!r.correct && (
                       <div className="mt-1 space-y-0.5">
-                        <p className="text-xs text-destructive/80">You chose: {r.chosen_answer}</p>
+                        <p className="text-xs text-destructive/80">You answered: {r.chosen_answer}</p>
                         <p className="text-xs text-green-600 dark:text-green-400">Correct: {card.back}</p>
                       </div>
                     )}
@@ -189,6 +236,7 @@ export default function ChallengPlayPage() {
   }
 
   const card = cards[index];
+  const cardMode: ResolvedMode = cardModes[card?.id] ?? "multiple-choice";
   const options = mcOptions[card?.id] ?? [];
   const progress = index / cards.length;
 
@@ -226,36 +274,84 @@ export default function ChallengPlayPage() {
 
       {/* Question */}
       <div className="mx-auto w-full max-w-2xl flex-1 px-6 pb-10">
-        <div className="rounded-2xl border border-border bg-card px-8 py-8 text-center">
-          <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">Question</p>
-          <p className="text-lg font-medium leading-relaxed text-foreground">{card?.front}</p>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-2">
-          {options.map((option, idx) => {
-            const isCorrect = option === card?.back;
-            const isSelected = selected === option;
-            const revealed = selected !== null;
-            let cls = "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors focus:outline-none";
-            if (!revealed) {
-              cls += " border-border text-foreground hover:border-primary/50 hover:bg-muted/50";
-            } else if (isCorrect) {
-              cls += " border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400";
-            } else if (isSelected) {
-              cls += " border-destructive/50 bg-destructive/10 text-destructive";
-            } else {
-              cls += " border-border/40 text-muted-foreground opacity-50";
-            }
-            return (
-              <button key={idx} disabled={revealed} className={cls} onClick={() => pick(option)}>
-                <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">{idx + 1}.</span>
-                {option}
-              </button>
-            );
-          })}
-        </div>
-        {selected && index + 1 < cards.length && (
-          <div className="mt-4">
-            <Button className="w-full" onClick={advance}>Continue →</Button>
+        {cardMode === "multiple-choice" ? (
+          <>
+            <div className="rounded-2xl border border-border bg-card px-8 py-8 text-center">
+              <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">Question</p>
+              <p className="text-lg font-medium leading-relaxed text-foreground">{card?.front}</p>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-2">
+              {options.map((option, idx) => {
+                const isCorrect = option === card?.back;
+                const isSelected = selected === option;
+                const revealed = selected !== null;
+                let cls = "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors focus:outline-none";
+                if (!revealed) {
+                  cls += " border-border text-foreground hover:border-primary/50 hover:bg-muted/50";
+                } else if (isCorrect) {
+                  cls += " border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400";
+                } else if (isSelected) {
+                  cls += " border-destructive/50 bg-destructive/10 text-destructive";
+                } else {
+                  cls += " border-border/40 text-muted-foreground opacity-50";
+                }
+                return (
+                  <button key={idx} disabled={revealed} className={cls} onClick={() => pickMC(option)}>
+                    <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">{idx + 1}.</span>
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+            {selected && index + 1 < cards.length && (
+              <div className="mt-4">
+                <Button className="w-full" onClick={advance}>Continue →</Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+            <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">Question</p>
+            <p className="text-center text-lg font-medium leading-relaxed text-foreground">{card?.front}</p>
+            {!answerSubmitted ? (
+              <div className="mt-6">
+                <textarea
+                  autoFocus
+                  value={typedAnswer}
+                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && typedAnswer.trim()) {
+                      e.preventDefault();
+                      submitType();
+                    }
+                  }}
+                  placeholder="Type your answer…"
+                  rows={3}
+                  className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <Button className="mt-3 w-full" disabled={!typedAnswer.trim()} onClick={submitType}>
+                  Submit
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-3">
+                <div className={`rounded-xl px-4 py-3 ${gradeTypeAnswer(typedAnswer, card?.back ?? "") ? "border border-green-500/30 bg-green-500/5" : "border border-destructive/30 bg-destructive/5"}`}>
+                  <p className={`text-[10px] font-medium uppercase tracking-[0.12em] ${gradeTypeAnswer(typedAnswer, card?.back ?? "") ? "text-green-600 dark:text-green-400" : "text-destructive/80"}`}>
+                    Your answer
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
+                </div>
+                {!gradeTypeAnswer(typedAnswer, card?.back ?? "") && (
+                  <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-green-600 dark:text-green-400">Correct answer</p>
+                    <p className="mt-1 text-sm text-foreground">{card?.back}</p>
+                  </div>
+                )}
+                {index + 1 < cards.length && (
+                  <Button className="w-full" onClick={advance}>Continue →</Button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

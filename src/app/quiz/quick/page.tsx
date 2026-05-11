@@ -107,14 +107,26 @@ export default function QuickQuizPage() {
   }, []);
 
   async function saveStats(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {
-    void startedAtSnapshot; // not sent to /api/cards/stats but kept for potential future use
-    await fetch("/api/cards/stats", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        results: answersSnapshot.map((a) => ({ cardId: a.cardId, correct: a.correct })),
-      }),
-    });
+    const byDeck = new Map<string, AnswerRecord[]>();
+    for (const a of answersSnapshot) {
+      const did = a.card.deck_id;
+      if (!byDeck.has(did)) byDeck.set(did, []);
+      byDeck.get(did)!.push(a);
+    }
+    await Promise.all(
+      [...byDeck.entries()].map(([deckId, records]) =>
+        fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deckId,
+            score: records.filter((r) => r.correct).length,
+            startedAt: startedAtSnapshot,
+            results: records.map((r) => ({ cardId: r.cardId, correct: r.correct })),
+          }),
+        })
+      )
+    );
   }
 
   function formatElapsed(seconds: number): string {

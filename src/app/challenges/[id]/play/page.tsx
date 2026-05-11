@@ -166,13 +166,15 @@ export default function ChallengPlayPage() {
   async function forkToCollection(collectionId: string) {
     setForking(true);
     try {
-      await fetch(`/api/challenges/attempts/${attemptId}/fork`, {
+      const res = await fetch(`/api/challenges/attempts/${attemptId}/fork`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ collection_id: collectionId }),
       });
-      setForked(true);
-      setShowFork(false);
+      if (res.ok) {
+        setForked(true);
+        setShowFork(false);
+      }
     } finally {
       setForking(false);
     }
@@ -226,7 +228,7 @@ export default function ChallengPlayPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "completed", score, total: cards.length, card_results: newResults }),
       });
-      if (!res.ok) console.error("Failed to save attempt:", await res.text());
+      if (!res.ok) setError("Failed to save your results. Please try again.");
       setPhase("done");
     } else {
       await fetch(`/api/challenges/attempts/${attemptId}`, {

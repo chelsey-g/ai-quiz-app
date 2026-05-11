@@ -354,7 +354,7 @@ export default function CommunityPage() {
     });
     if (res.status === 401) {
       setForkingId(null);
-      router.push("/login");
+      router.push("/auth/login");
       return;
     }
     if (res.ok) {

@@ -166,13 +166,16 @@ export default function SettingsPage() {
               <button
                 key={t}
                 onClick={() => setTheme(t)}
-                className={`flex-1 rounded-xl border px-3 py-2.5 text-xs font-medium capitalize transition-colors ${
+                className={`flex-1 rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors ${
                   theme === t
                     ? "border-primary/40 bg-primary/10 text-primary"
                     : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                 }`}
               >
-                {t}
+                <span className="capitalize">{t}</span>
+                {t === "system" && (
+                  <span className="block text-[10px] font-normal opacity-60 mt-0.5">Follows OS</span>
+                )}
               </button>
             ))}
           </div>

@@ -78,6 +78,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const admin = createAdminClient();
 
+  const { data: currentAttempt } = await admin
+    .from("challenge_attempts")
+    .select("status")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!currentAttempt) return Response.json({ error: "Not found" }, { status: 404 });
+  const wasAlreadyCompleted = currentAttempt.status === "completed";
+
   const { data: attempt, error } = await admin
     .from("challenge_attempts")
     .update(updates)
@@ -88,7 +98,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  if (status === "completed" && attempt) {
+  if (status === "completed" && attempt && !wasAlreadyCompleted) {
     const { data: challenge } = await admin
       .from("challenges")
       .select("challenger_id, title")

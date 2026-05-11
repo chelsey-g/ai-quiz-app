@@ -54,16 +54,19 @@ export default function ChallengesPage() {
   const [received, setReceived] = useState<ReceivedChallenge[]>([]);
   const [profiles, setProfiles] = useState<Profiles>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [declining, setDeclining] = useState<string | null>(null);
 
   const fetchChallenges = useCallback(() => {
     fetch("/api/challenges")
       .then((r) => r.json())
       .then((d) => {
+        if (d.error) { setError(d.error); return; }
         setSent(d.sent ?? []);
         setReceived(d.received ?? []);
         setProfiles(d.profiles ?? {});
       })
+      .catch(() => setError("Failed to load challenges"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -78,12 +81,14 @@ export default function ChallengesPage() {
 
   async function decline(attemptId: string) {
     setDeclining(attemptId);
-    await fetch(`/api/challenges/attempts/${attemptId}`, {
+    const res = await fetch(`/api/challenges/attempts/${attemptId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "declined" }),
     });
-    setReceived((prev) => prev.map((r) => r.id === attemptId ? { ...r, status: "declined" } : r));
+    if (res.ok) {
+      setReceived((prev) => prev.map((r) => r.id === attemptId ? { ...r, status: "declined" } : r));
+    }
     setDeclining(null);
   }
 
@@ -115,6 +120,8 @@ export default function ChallengesPage() {
             <div key={i} className="h-16 animate-pulse rounded-xl border border-border/40 bg-muted/20" />
           ))}
         </div>
+      ) : error ? (
+        <p className="py-10 text-center text-sm text-muted-foreground/50">{error}</p>
       ) : tab === "received" ? (
         (() => {
           const active = received.filter((r) => r.status !== "completed" && r.status !== "declined");

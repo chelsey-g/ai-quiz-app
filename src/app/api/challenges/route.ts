@@ -67,7 +67,22 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(recipient_ids) || recipient_ids.length === 0)
     return Response.json({ error: "at least one recipient required" }, { status: 400 });
 
+  const VALID_QUIZ_MODES = ["multiple-choice", "type"] as const;
+  const resolvedMode = quiz_mode ?? "multiple-choice";
+  if (!VALID_QUIZ_MODES.includes(resolvedMode as typeof VALID_QUIZ_MODES[number]))
+    return Response.json({ error: "invalid quiz_mode" }, { status: 400 });
+
   const admin = createAdminClient();
+
+  // Verify all recipients exist to prevent orphaned attempts
+  const { data: existingProfiles } = await admin
+    .from("profiles")
+    .select("id")
+    .in("id", recipient_ids);
+  const foundIds = new Set((existingProfiles ?? []).map((p) => p.id));
+  const missing = recipient_ids.filter((id) => !foundIds.has(id));
+  if (missing.length > 0)
+    return Response.json({ error: "one or more recipients not found" }, { status: 400 });
 
   const { data: challenge, error: challengeErr } = await admin
     .from("challenges")
@@ -76,7 +91,7 @@ export async function POST(req: NextRequest) {
       title: title.trim(),
       deck_id: deck_id ?? null,
       card_ids: card_ids ?? null,
-      quiz_mode: quiz_mode ?? "multiple-choice",
+      quiz_mode: resolvedMode,
     })
     .select()
     .single();

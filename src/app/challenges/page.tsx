@@ -50,13 +50,24 @@ export default function ChallengesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/challenges")
-      .then((r) => r.json())
-      .then((d) => {
-        setSent(d.sent ?? []);
-        setReceived(d.received ?? []);
-      })
-      .finally(() => setLoading(false));
+    function fetchChallenges() {
+      fetch("/api/challenges")
+        .then((r) => r.json())
+        .then((d) => {
+          setSent(d.sent ?? []);
+          setReceived(d.received ?? []);
+        })
+        .finally(() => setLoading(false));
+    }
+
+    fetchChallenges();
+
+    // Re-fetch when user navigates back to this tab (bypasses Next.js router cache)
+    function handleVisibility() {
+      if (document.visibilityState === "visible") fetchChallenges();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   return (

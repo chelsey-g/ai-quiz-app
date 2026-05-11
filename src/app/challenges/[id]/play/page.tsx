@@ -442,7 +442,7 @@ export default function ChallengPlayPage() {
             >
               {forked ? "Saved to collection ✓" : "Save cards to collection"}
             </Button>
-            <Button className="w-full" onClick={() => router.push("/challenges")}>
+            <Button className="w-full" onClick={() => { router.refresh(); router.push("/challenges"); }}>
               Back to Challenges
             </Button>
           </div>

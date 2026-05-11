@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import type { Database } from "@/lib/database.types";
@@ -92,6 +92,13 @@ export default function ChallengPlayPage() {
   const [studyIndex, setStudyIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
+  // Fork to collection
+  const [showFork, setShowFork] = useState(false);
+  const [collections, setCollections] = useState<{ id: string; name: string }[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [forking, setForking] = useState(false);
+  const [forked, setForked] = useState(false);
+
   const savingRef = useRef(false);
 
   useEffect(() => {
@@ -135,6 +142,40 @@ export default function ChallengPlayPage() {
     setAnswerSubmitted(false);
     savingRef.current = false;
     setPhase("quiz");
+  }
+
+  function retakeQuiz(c: Card[]) {
+    const modes = resolveCardModes(c, challenge?.quiz_mode ?? "multiple-choice");
+    setCardModes(modes);
+    const opts: Record<string, string[]> = {};
+    c.forEach((card) => {
+      if (modes[card.id] === "multiple-choice") opts[card.id] = buildOptions(c, card);
+    });
+    setMcOptions(opts);
+    startQuiz();
+  }
+
+  const openForkPicker = useCallback(async () => {
+    setShowFork(true);
+    setCollectionsLoading(true);
+    const data = await fetch("/api/collections").then((r) => r.json());
+    setCollections(data.collections ?? []);
+    setCollectionsLoading(false);
+  }, []);
+
+  async function forkToCollection(collectionId: string) {
+    setForking(true);
+    try {
+      await fetch(`/api/challenges/attempts/${attemptId}/fork`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collection_id: collectionId }),
+      });
+      setForked(true);
+      setShowFork(false);
+    } finally {
+      setForking(false);
+    }
   }
 
   function studyNext() {
@@ -353,41 +394,94 @@ export default function ChallengPlayPage() {
     const total = cards.length;
     const pct = total > 0 ? Math.round((score / total) * 100) : 0;
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-        <div className="text-center mb-8">
-          <p className="font-heading text-6xl font-bold text-primary">{pct}%</p>
-          <p className="font-heading mt-3 text-lg font-bold text-foreground">
-            {pct >= 90 ? "Excellent!" : pct >= 70 ? "Good work!" : "Keep practicing"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground/70">{score}/{total} correct</p>
-          <p className="mt-1 text-xs text-muted-foreground/50">Results sent to challenger</p>
-        </div>
-        <div className="mb-6 flex flex-col gap-2">
-          {results.map((r, i) => {
-            const card = cards.find((c) => c.id === r.card_id);
-            if (!card) return null;
-            return (
-              <div key={i} className={`rounded-xl border px-4 py-3 ${r.correct ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
-                <div className="flex items-start gap-2 text-sm">
-                  <span className={r.correct ? "text-green-500" : "text-destructive"}>{r.correct ? "✓" : "✗"}</span>
-                  <div>
-                    <p className="font-medium text-foreground">{card.front}</p>
-                    {!r.correct && (
-                      <div className="mt-1 space-y-0.5">
-                        <p className="text-xs text-destructive/80">You answered: {r.chosen_answer}</p>
-                        <p className="text-xs text-green-600 dark:text-green-400">Correct: {card.back}</p>
-                      </div>
-                    )}
+      <>
+        <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+          <div className="text-center mb-8">
+            <p className="font-heading text-6xl font-bold text-primary">{pct}%</p>
+            <p className="font-heading mt-3 text-lg font-bold text-foreground">
+              {pct >= 90 ? "Excellent!" : pct >= 70 ? "Good work!" : "Keep practicing"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground/70">{score}/{total} correct</p>
+            <p className="mt-1 text-xs text-muted-foreground/50">Results sent to challenger</p>
+          </div>
+          <div className="mb-6 flex flex-col gap-2">
+            {results.map((r, i) => {
+              const card = cards.find((c) => c.id === r.card_id);
+              if (!card) return null;
+              return (
+                <div key={i} className={`rounded-xl border px-4 py-3 ${r.correct ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+                  <div className="flex items-start gap-2 text-sm">
+                    <span className={r.correct ? "text-green-500" : "text-destructive"}>{r.correct ? "✓" : "✗"}</span>
+                    <div>
+                      <p className="font-medium text-foreground">{card.front}</p>
+                      {!r.correct && (
+                        <div className="mt-1 space-y-0.5">
+                          <p className="text-xs text-destructive/80">You answered: {r.chosen_answer}</p>
+                          <p className="text-xs text-green-600 dark:text-green-400">Correct: {card.back}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => retakeQuiz(cards)}
+            >
+              Retake quiz
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={openForkPicker}
+              disabled={forked}
+            >
+              {forked ? "Saved to collection ✓" : "Save cards to collection"}
+            </Button>
+            <Button className="w-full" onClick={() => router.push("/challenges")}>
+              Back to Challenges
+            </Button>
+          </div>
         </div>
-        <Button className="w-full" onClick={() => router.push("/challenges")}>
-          Back to Challenges
-        </Button>
-      </div>
+
+        {showFork && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowFork(false)} />
+            <div className="relative z-10 w-full max-w-sm bg-background border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+                <h3 className="text-sm font-semibold text-foreground">Save to collection</h3>
+                <button onClick={() => setShowFork(false)} className="text-muted-foreground/60 hover:text-foreground transition-colors">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="px-5 py-4 flex flex-col gap-2 max-h-64 overflow-y-auto">
+                {collectionsLoading ? (
+                  <p className="text-xs text-muted-foreground/60 text-center py-4">Loading…</p>
+                ) : collections.length === 0 ? (
+                  <p className="text-xs text-muted-foreground/60 text-center py-4">No collections yet. Create one first.</p>
+                ) : (
+                  collections.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => forkToCollection(c.id)}
+                      disabled={forking}
+                      className="w-full rounded-xl border border-border/40 px-4 py-3 text-left text-sm text-foreground hover:border-primary/30 hover:bg-muted/30 transition-colors disabled:opacity-50"
+                    >
+                      {c.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

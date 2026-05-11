@@ -27,7 +27,7 @@ type ReceivedChallenge = {
   challenges: { id: string; title: string; challenger_id: string } | null;
 };
 
-type Tab = "received" | "sent";
+type Tab = "received" | "sent" | "completed";
 
 function statusBadge(status: string) {
   const cls =
@@ -65,7 +65,7 @@ export default function ChallengesPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-xl bg-muted/30 p-1 mb-6 w-fit">
-        {(["received", "sent"] as Tab[]).map((t) => (
+        {(["received", "completed", "sent"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -85,21 +85,19 @@ export default function ChallengesPage() {
           ))}
         </div>
       ) : tab === "received" ? (
-        received.length === 0 ? (
-          <p className="text-sm text-muted-foreground/60 text-center py-12">No challenges received yet</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {received.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-xl border border-border/40 bg-card/60 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{r.challenges?.title ?? "Challenge"}</p>
-                  {r.status === "completed" && r.score !== null && r.total !== null && (
-                    <p className="text-xs text-muted-foreground/60 mt-0.5">Your score: {r.score}/{r.total}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {statusBadge(r.status)}
-                  {r.status !== "completed" && (
+        (() => {
+          const active = received.filter((r) => r.status !== "completed");
+          return active.length === 0 ? (
+            <p className="text-sm text-muted-foreground/60 text-center py-12">No active challenges</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {active.map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{r.challenges?.title ?? "Challenge"}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {statusBadge(r.status)}
                     <Link
                       href={`/challenges/${r.id}/play`}
                       className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
@@ -110,12 +108,41 @@ export default function ChallengesPage() {
                     >
                       {r.status === "in_progress" ? "Continue" : "Take quiz"}
                     </Link>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )
+              ))}
+            </div>
+          );
+        })()
+      ) : tab === "completed" ? (
+        (() => {
+          const done = received.filter((r) => r.status === "completed");
+          return done.length === 0 ? (
+            <p className="text-sm text-muted-foreground/60 text-center py-12">No completed challenges yet</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {done.map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{r.challenges?.title ?? "Challenge"}</p>
+                    {r.score !== null && r.total !== null && (
+                      <p className="text-xs text-muted-foreground/60 mt-0.5">Score: {r.score}/{r.total}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {statusBadge(r.status)}
+                    <Link
+                      href={`/challenges/${r.id}/play`}
+                      className="rounded-lg border border-border/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      Retake
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()
       ) : (
         sent.length === 0 ? (
           <p className="text-sm text-muted-foreground/60 text-center py-12">You haven&apos;t sent any challenges yet</p>

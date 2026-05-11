@@ -14,105 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      challenge_attempts: {
-        Row: {
-          card_results: Json
-          challenge_id: string
-          completed_at: string | null
-          id: string
-          score: number | null
-          started_at: string | null
-          status: string
-          total: number | null
-          user_id: string
-        }
-        Insert: {
-          card_results?: Json
-          challenge_id: string
-          completed_at?: string | null
-          id?: string
-          score?: number | null
-          started_at?: string | null
-          status?: string
-          total?: number | null
-          user_id: string
-        }
-        Update: {
-          card_results?: Json
-          challenge_id?: string
-          completed_at?: string | null
-          id?: string
-          score?: number | null
-          started_at?: string | null
-          status?: string
-          total?: number | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      challenges: {
-        Row: {
-          card_ids: string[] | null
-          challenger_id: string
-          created_at: string
-          deck_id: string | null
-          expires_at: string | null
-          id: string
-          quiz_mode: string
-          status: string
-          title: string
-        }
-        Insert: {
-          card_ids?: string[] | null
-          challenger_id: string
-          created_at?: string
-          deck_id?: string | null
-          expires_at?: string | null
-          id?: string
-          quiz_mode?: string
-          status?: string
-          title: string
-        }
-        Update: {
-          card_ids?: string[] | null
-          challenger_id?: string
-          created_at?: string
-          deck_id?: string | null
-          expires_at?: string | null
-          id?: string
-          quiz_mode?: string
-          status?: string
-          title?: string
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          payload: Json
-          read: boolean
-          type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          payload?: Json
-          read?: boolean
-          type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          payload?: Json
-          read?: boolean
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       cards: {
         Row: {
           back: string
@@ -181,6 +82,94 @@ export type Database = {
           },
         ]
       }
+      challenge_attempts: {
+        Row: {
+          card_results: Json
+          challenge_id: string
+          completed_at: string | null
+          id: string
+          score: number | null
+          started_at: string | null
+          status: string
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          card_results?: Json
+          challenge_id: string
+          completed_at?: string | null
+          id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          card_results?: Json
+          challenge_id?: string
+          completed_at?: string | null
+          id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_attempts_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          card_ids: string[] | null
+          challenger_id: string
+          created_at: string
+          deck_id: string | null
+          expires_at: string | null
+          id: string
+          quiz_mode: string
+          status: string
+          title: string
+        }
+        Insert: {
+          card_ids?: string[] | null
+          challenger_id: string
+          created_at?: string
+          deck_id?: string | null
+          expires_at?: string | null
+          id?: string
+          quiz_mode?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          card_ids?: string[] | null
+          challenger_id?: string
+          created_at?: string
+          deck_id?: string | null
+          expires_at?: string | null
+          id?: string
+          quiz_mode?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_decks: {
         Row: {
           added_at: string
@@ -236,15 +225,7 @@ export type Database = {
           name?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "collections_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       decks: {
         Row: {
@@ -330,24 +311,60 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          daily_goal: number | null
+          default_study_mode: string | null
           display_name: string | null
           id: string
+          notification_prefs: Json
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          daily_goal?: number | null
+          default_study_mode?: string | null
           display_name?: string | null
           id: string
+          notification_prefs?: Json
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          daily_goal?: number | null
+          default_study_mode?: string | null
           display_name?: string | null
           id?: string
+          notification_prefs?: Json
         }
         Relationships: []
       }

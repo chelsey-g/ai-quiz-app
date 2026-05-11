@@ -246,18 +246,18 @@ export default function ChallengPlayPage() {
           <div className="flex flex-col gap-3">
             <button
               onClick={startStudy}
-              className="w-full rounded-xl border border-border/50 bg-card px-5 py-4 text-left transition-colors hover:border-primary/30 hover:bg-muted/30"
+              className="w-full rounded-xl border px-5 py-4 text-left transition-colors"
+              style={{
+                borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                background: "color-mix(in oklch, var(--dashboard-accent-teal) 8%, transparent)",
+              }}
             >
               <p className="text-sm font-semibold text-foreground">Study first</p>
               <p className="text-xs text-muted-foreground/60 mt-0.5">Review all {cards.length} cards before the quiz</p>
             </button>
             <button
               onClick={startQuiz}
-              className="w-full rounded-xl border px-5 py-4 text-left transition-colors"
-              style={{
-                borderColor: "color-mix(in oklch, var(--primary) 40%, transparent)",
-                background: "color-mix(in oklch, var(--primary) 8%, transparent)",
-              }}
+              className="w-full rounded-xl border border-border/50 bg-card px-5 py-4 text-left transition-colors hover:bg-muted/30"
             >
               <p className="text-sm font-semibold text-foreground">Start quiz</p>
               <p className="text-xs text-muted-foreground/60 mt-0.5">Jump straight in</p>

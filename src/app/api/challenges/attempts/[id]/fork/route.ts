@@ -74,7 +74,8 @@ export async function POST(
       next_review_at: null,
       last_seen_at: null,
     }));
-    await admin.from("cards").insert(cardInserts);
+    const { error: cardErr } = await admin.from("cards").insert(cardInserts);
+    if (cardErr) return Response.json({ error: "Failed to copy cards" }, { status: 500 });
   }
 
   if (collection_id) {

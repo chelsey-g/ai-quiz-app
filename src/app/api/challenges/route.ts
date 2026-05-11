@@ -74,15 +74,27 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  // Verify all recipients exist to prevent orphaned attempts
+  // Filter out self-challenges
+  const filteredRecipients = recipient_ids.filter((id) => id !== user.id);
+  if (filteredRecipients.length === 0)
+    return Response.json({ error: "at least one recipient required" }, { status: 400 });
+
+  // Verify all recipients exist and fetch their notification prefs
   const { data: existingProfiles } = await admin
     .from("profiles")
-    .select("id")
-    .in("id", recipient_ids);
+    .select("id, notification_prefs")
+    .in("id", filteredRecipients);
   const foundIds = new Set((existingProfiles ?? []).map((p) => p.id));
-  const missing = recipient_ids.filter((id) => !foundIds.has(id));
+  const missing = filteredRecipients.filter((id) => !foundIds.has(id));
   if (missing.length > 0)
     return Response.json({ error: "one or more recipients not found" }, { status: 400 });
+
+  const prefsMap = Object.fromEntries(
+    (existingProfiles ?? []).map((p) => [
+      p.id,
+      (p.notification_prefs as Record<string, boolean> | null) ?? {},
+    ])
+  );
 
   const { data: challenge, error: challengeErr } = await admin
     .from("challenges")
@@ -106,30 +118,31 @@ export async function POST(req: NextRequest) {
 
   const challengerName = challengerProfile?.display_name ?? "Someone";
 
-  const attempts = recipient_ids.map((uid) => ({
+  const attempts = filteredRecipients.map((uid) => ({
     challenge_id: challenge.id,
     user_id: uid,
     status: "pending" as const,
     total: card_ids ? card_ids.length : null,
   }));
 
-  const notifications = recipient_ids.map((uid) => ({
-    user_id: uid,
-    type: "challenge_received" as const,
-    payload: {
-      challenge_id: challenge.id,
-      from_user_display_name: challengerName,
-      title: challenge.title,
-    },
-  }));
+  const notifications = filteredRecipients
+    .filter((uid) => prefsMap[uid]?.challenge_received !== false)
+    .map((uid) => ({
+      user_id: uid,
+      type: "challenge_received" as const,
+      payload: {
+        challenge_id: challenge.id,
+        from_user_display_name: challengerName,
+        title: challenge.title,
+      },
+    }));
 
-  const [attemptsRes, notificationsRes] = await Promise.all([
-    admin.from("challenge_attempts").insert(attempts).select(),
-    admin.from("notifications").insert(notifications),
-  ]);
-
+  const attemptsRes = await admin.from("challenge_attempts").insert(attempts).select();
   if (attemptsRes.error) return Response.json({ error: attemptsRes.error.message }, { status: 500 });
-  if (notificationsRes.error) return Response.json({ error: notificationsRes.error.message }, { status: 500 });
+
+  if (notifications.length > 0) {
+    await admin.from("notifications").insert(notifications);
+  }
 
   return Response.json({ challenge, attempts: attemptsRes.data }, { status: 201 });
 }

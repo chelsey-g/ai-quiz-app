@@ -106,24 +106,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .single();
 
     if (challenge) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", user.id)
-        .single();
+      const [profileRes, challengerPrefsRes] = await Promise.all([
+        supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+        admin.from("profiles").select("notification_prefs").eq("id", challenge.challenger_id).single(),
+      ]);
 
-      await admin.from("notifications").insert({
-        user_id: challenge.challenger_id,
-        type: "challenge_completed",
-        payload: {
-          challenge_id: attempt.challenge_id,
-          attempt_id: attempt.id,
-          from_user_display_name: profile?.display_name ?? "Someone",
-          title: challenge.title,
-          score: score ?? 0,
-          total: total ?? 0,
-        },
-      });
+      const challengerPrefs = (challengerPrefsRes.data?.notification_prefs as Record<string, boolean> | null) ?? {};
+      if (challengerPrefs.challenge_completed !== false) {
+        await admin.from("notifications").insert({
+          user_id: challenge.challenger_id,
+          type: "challenge_completed",
+          payload: {
+            challenge_id: attempt.challenge_id,
+            attempt_id: attempt.id,
+            from_user_display_name: profileRes.data?.display_name ?? "Someone",
+            title: challenge.title,
+            score: score ?? 0,
+            total: total ?? 0,
+          },
+        });
+      }
     }
   }
 

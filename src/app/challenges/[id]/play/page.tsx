@@ -100,6 +100,7 @@ export default function ChallengPlayPage() {
   const [forked, setForked] = useState(false);
 
   const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`/api/challenges/attempts/${attemptId}`)
@@ -222,12 +223,14 @@ export default function ChallengPlayPage() {
     const isLast = index + 1 >= cards.length;
     if (isLast && !savingRef.current) {
       savingRef.current = true;
+      setSaving(true);
       const score = newResults.filter((r) => r.correct).length;
       const res = await fetch(`/api/challenges/attempts/${attemptId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "completed", score, total: cards.length, card_results: newResults }),
       });
+      setSaving(false);
       if (!res.ok) setError("Failed to save your results. Please try again.");
       setPhase("done");
     } else {
@@ -548,9 +551,16 @@ export default function ChallengPlayPage() {
                 );
               })}
             </div>
-            {selected && index + 1 < cards.length && (
+            {selected && (
               <div className="mt-4">
-                <Button className="w-full" onClick={advance}>Continue →</Button>
+                {index + 1 < cards.length ? (
+                  <Button className="w-full" onClick={advance}>Continue →</Button>
+                ) : saving ? (
+                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground/60">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+                    Saving…
+                  </div>
+                ) : null}
               </div>
             )}
           </>
@@ -592,9 +602,14 @@ export default function ChallengPlayPage() {
                     <p className="mt-1 text-sm text-foreground">{card?.back}</p>
                   </div>
                 )}
-                {index + 1 < cards.length && (
+                {index + 1 < cards.length ? (
                   <Button className="w-full" onClick={advance}>Continue →</Button>
-                )}
+                ) : saving ? (
+                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground/60">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+                    Saving…
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

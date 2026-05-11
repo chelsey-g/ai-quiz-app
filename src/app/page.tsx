@@ -21,6 +21,8 @@ type DashboardStats = {
   recentDeckIds: string[];
   streakDays: number;
   streakStatus: "active" | "at_risk" | "none";
+  cardsStudiedToday: number;
+  dailyGoal: number | null;
 };
 
 function FlameIcon({ className }: { className?: string }) {
@@ -61,45 +63,76 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
       <p className="mt-0.5 text-[10px] text-amber-400/80">at risk</p>
     ) : null;
 
+  const goalPct = stats.dailyGoal
+    ? Math.min(100, Math.round((stats.cardsStudiedToday / stats.dailyGoal) * 100))
+    : null;
+  const goalMet = goalPct !== null && goalPct >= 100;
+
   return (
-    <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Total cards</p>
-        <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
-          {stats.totalCards}
-        </p>
-      </div>
-      <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Accuracy</p>
-        <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
-          {accuracy !== null ? `${accuracy}%` : "—"}
-        </p>
-      </div>
-      <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Fresh</p>
-        <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
-          {stats.freshCards}
-        </p>
-      </div>
-      <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Streak</p>
-        <div className="mt-1 flex items-baseline gap-1">
-          <FlameIcon
-            className={`h-5 w-5 flex-none ${streakColor} ${
-              stats.streakStatus === "at_risk" ? "animate-pulse" : ""
-            }`}
-          />
-          <p className={`font-heading text-2xl font-bold tabular-nums ${streakColor}`}>
-            {streakValue}
+    <div className="mb-8 space-y-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Total cards</p>
+          <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
+            {stats.totalCards}
           </p>
-          {streakLabel && (
-            <span className={`font-heading text-sm font-medium ${streakColor} opacity-70`}>
-              {streakLabel}
-            </span>
-          )}
         </div>
-        {streakSubtext}
+        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Accuracy</p>
+          <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
+            {accuracy !== null ? `${accuracy}%` : "—"}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Fresh</p>
+          <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
+            {stats.freshCards}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Streak</p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <FlameIcon
+              className={`h-5 w-5 flex-none ${streakColor} ${
+                stats.streakStatus === "at_risk" ? "animate-pulse" : ""
+              }`}
+            />
+            <p className={`font-heading text-2xl font-bold tabular-nums ${streakColor}`}>
+              {streakValue}
+            </p>
+            {streakLabel && (
+              <span className={`font-heading text-sm font-medium ${streakColor} opacity-70`}>
+                {streakLabel}
+              </span>
+            )}
+          </div>
+          {streakSubtext}
+        </div>
       </div>
+
+      {stats.dailyGoal !== null && (
+        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">
+              Daily goal
+            </p>
+            <p className={`text-[11px] font-medium tabular-nums ${goalMet ? "text-primary" : "text-muted-foreground/60"}`}>
+              {goalMet ? "Done!" : `${stats.cardsStudiedToday} / ${stats.dailyGoal} cards`}
+            </p>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: `${goalPct}%`,
+                background: goalMet
+                  ? "var(--primary)"
+                  : "color-mix(in oklch, var(--primary) 70%, var(--dashboard-accent-teal) 30%)",
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -32,6 +32,7 @@ export async function saveSession(data: SaveSessionData): Promise<void> {
     user_id: userId,
     deck_id: deckId,
     score,
+    total: results.length,
     started_at: startedAt,
     completed_at: now,
   });

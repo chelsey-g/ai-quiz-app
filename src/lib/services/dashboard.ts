@@ -10,26 +10,35 @@ export type DashboardStats = {
   recentDeckIds: string[];
   streakDays: number;
   streakStatus: StreakStatus;
+  cardsStudiedToday: number;
+  dailyGoal: number | null;
 };
 
-/**
- * Returns global study stats for the given user. Mirrors the logic in
- * GET /api/dashboard — deck IDs, card aggregates, due counts, recent sessions,
- * and current study streak.
- */
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const supabase = await createClient();
 
-  const { data: decks, error: decksError } = await supabase
-    .from("decks")
-    .select("id")
-    .eq("user_id", userId);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
-  if (decksError) {
-    throw new Error(decksError.message);
-  }
+  const [decksResult, profileResult, todaySessionsResult] = await Promise.all([
+    supabase.from("decks").select("id").eq("user_id", userId),
+    supabase.from("profiles").select("daily_goal").eq("id", userId).single(),
+    supabase
+      .from("sessions")
+      .select("total")
+      .eq("user_id", userId)
+      .gte("completed_at", todayStart.toISOString())
+      .not("completed_at", "is", null),
+  ]);
 
-  const deckIds = (decks ?? []).map((d) => d.id);
+  if (decksResult.error) throw new Error(decksResult.error.message);
+
+  const dailyGoal = profileResult.data?.daily_goal ?? null;
+  const cardsStudiedToday = (todaySessionsResult.data ?? []).reduce(
+    (sum, s) => sum + (s.total ?? 0),
+    0
+  );
+  const deckIds = (decksResult.data ?? []).map((d) => d.id);
 
   if (deckIds.length === 0) {
     return {
@@ -40,14 +49,12 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       recentDeckIds: [],
       streakDays: 0,
       streakStatus: "none",
+      cardsStudiedToday,
+      dailyGoal,
     };
   }
 
-  const [
-    { data: cards, error: cardsError },
-    { data: recentSessions, error: recentSessionsError },
-    { data: allSessionDates, error: allSessionDatesError },
-  ] = await Promise.all([
+  const [cardsResult, recentSessionsResult, allSessionDatesResult] = await Promise.all([
     supabase
       .from("cards")
       .select("deck_id, times_seen, times_correct")
@@ -66,18 +73,11 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       .not("completed_at", "is", null),
   ]);
 
-  if (cardsError) {
-    throw new Error(cardsError.message);
-  }
-  if (recentSessionsError) {
-    throw new Error(recentSessionsError.message);
-  }
-  if (allSessionDatesError) {
-    throw new Error(allSessionDatesError.message);
-  }
+  if (cardsResult.error) throw new Error(cardsResult.error.message);
+  if (recentSessionsResult.error) throw new Error(recentSessionsResult.error.message);
+  if (allSessionDatesResult.error) throw new Error(allSessionDatesResult.error.message);
 
-  const allCards = cards ?? [];
-
+  const allCards = cardsResult.data ?? [];
   const totalCards = allCards.length;
   const totalSeen = allCards.reduce((s, c) => s + c.times_seen, 0);
   const totalCorrect = allCards.reduce((s, c) => s + c.times_correct, 0);
@@ -85,14 +85,14 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 
   const seen = new Set<string>();
   const recentDeckIds: string[] = [];
-  for (const s of recentSessions ?? []) {
+  for (const s of recentSessionsResult.data ?? []) {
     if (!seen.has(s.deck_id) && recentDeckIds.length < 5) {
       seen.add(s.deck_id);
       recentDeckIds.push(s.deck_id);
     }
   }
 
-  const completedAts = (allSessionDates ?? [])
+  const completedAts = (allSessionDatesResult.data ?? [])
     .map((s) => s.completed_at)
     .filter((ts): ts is string => ts !== null);
 
@@ -106,5 +106,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     recentDeckIds,
     streakDays,
     streakStatus,
+    cardsStudiedToday,
+    dailyGoal,
   };
 }

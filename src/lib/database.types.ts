@@ -294,9 +294,9 @@ export type Database = {
           github_sha?: string | null
           id?: string
           processed_at?: string | null
-          raw_content: string
-          source_path: string
-          title: string
+          raw_content?: string
+          source_path?: string
+          title?: string
           user_id?: string | null
         }
         Update: {
@@ -375,6 +375,7 @@ export type Database = {
           id: string
           score: number | null
           started_at: string
+          total: number
           user_id: string | null
         }
         Insert: {
@@ -383,6 +384,7 @@ export type Database = {
           id?: string
           score?: number | null
           started_at?: string
+          total?: number
           user_id?: string | null
         }
         Update: {
@@ -391,6 +393,7 @@ export type Database = {
           id?: string
           score?: number | null
           started_at?: string
+          total?: number
           user_id?: string | null
         }
         Relationships: [

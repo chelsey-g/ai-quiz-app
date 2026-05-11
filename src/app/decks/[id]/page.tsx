@@ -375,7 +375,7 @@ export default function DeckPage() {
   const [activeQueue, setActiveQueue] = useState<Card[]>([]);
 
   const [showModeModal, setShowModeModal] = useState(false);
-  const [answerMode, setAnswerMode] = useState<AnswerMode>("flip");
+  const [answerMode, setAnswerMode] = useState<AnswerMode | null>(null);
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [selectedMcOption, setSelectedMcOption] = useState<string | null>(null);
@@ -419,16 +419,26 @@ export default function DeckPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/decks/${id}`);
-      if (!res.ok) {
-        const { error } = await res.json();
+      const [deckRes, profileRes] = await Promise.all([
+        fetch(`/api/decks/${id}`),
+        fetch("/api/profile"),
+      ]);
+      if (!deckRes.ok) {
+        const { error } = await deckRes.json();
         setError(error ?? "Deck not found");
       } else {
-        const { deck, cards, deckStats } = await res.json() as { deck: Deck; cards: Card[]; deckStats: DeckStatsResult };
+        const { deck, cards, deckStats } = await deckRes.json() as { deck: Deck; cards: Card[]; deckStats: DeckStatsResult };
         setDeck(deck);
         setIsPublic((deck as any).is_public ?? false);
         setAllCards(cards);
         setDeckStats(deckStats ?? null);
+      }
+      if (profileRes.ok) {
+        const profile = await profileRes.json() as { default_study_mode?: string };
+        const saved = profile.default_study_mode;
+        setAnswerMode((saved === "flip" || saved === "type") ? saved : "flip");
+      } else {
+        setAnswerMode("flip");
       }
       setLoading(false);
     }
@@ -495,7 +505,7 @@ export default function DeckPage() {
     }
   }
 
-  function startStudy(answerModeOverride: AnswerMode = answerMode) {
+  function startStudy(answerModeOverride: AnswerMode = answerMode ?? "flip") {
     const needsMc = answerModeOverride === "multiple-choice" || answerModeOverride === "random";
     const hasPending = needsMc && allCards.some(c => c.mc_status === "pending" || c.mc_status === "failed");
     if (hasPending) {
@@ -874,7 +884,7 @@ export default function DeckPage() {
                 className={`rounded-xl border p-3 text-left transition-colors ${
                   disabled
                     ? "cursor-not-allowed border-border/40 opacity-40"
-                    : answerMode === mode
+                    : (answerMode ?? "flip") === mode
                     ? "border-primary/50 bg-primary/10"
                     : "border-border hover:border-primary/30 hover:bg-muted/40 focus:outline-none"
                 }`}
@@ -887,7 +897,7 @@ export default function DeckPage() {
         </div>
 
         <button
-          onClick={() => startStudy(answerMode)}
+          onClick={() => startStudy(answerMode ?? "flip")}
           disabled={studyQueue.length === 0}
           className="mt-4 w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
         >

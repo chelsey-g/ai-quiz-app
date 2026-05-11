@@ -92,63 +92,89 @@ export default function ChallengeResultsPage() {
         <p className="text-sm text-muted-foreground/60 mt-0.5">{cards.length} card{cards.length !== 1 ? "s" : ""} · {attempts.length} recipient{attempts.length !== 1 ? "s" : ""}</p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {attempts.map((a) => {
           const profile = profileFor(a.user_id);
           const name = profile?.display_name ?? a.user_id.slice(0, 8) + "…";
           const isExpanded = expanded === a.id;
+          const pct = a.status === "completed" && a.total ? Math.round(((a.score ?? 0) / a.total) * 100) : null;
+          const correct = (a.card_results ?? []).filter((r) => r.correct).length;
+          const wrong = (a.card_results ?? []).length - correct;
+
           return (
             <div key={a.id} className="rounded-xl border border-border/40 bg-card/60 overflow-hidden">
-              <div
-                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/20 transition-colors"
-                onClick={() => setExpanded(isExpanded ? null : a.id)}
-              >
+              {/* Header row */}
+              <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
                     {name[0].toUpperCase()}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{name}</p>
-                    {a.status === "completed" && a.score !== null && (
-                      <p className="text-xs text-muted-foreground/60">{a.score}/{a.total}</p>
+                    {a.status !== "completed" && (
+                      <p className="text-xs text-muted-foreground/50 mt-0.5">Hasn&apos;t taken the quiz yet</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {statusBadge(a.status)}
-                  {a.status === "completed" && (
-                    <svg
-                      className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                  {a.status === "completed" && pct !== null ? (
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${pct >= 70 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+                        {pct}%
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/50">{a.score}/{a.total} correct</p>
+                    </div>
+                  ) : (
+                    statusBadge(a.status)
                   )}
                 </div>
               </div>
-              {isExpanded && a.status === "completed" && (
-                <div className="border-t border-border/30 px-4 py-3 flex flex-col gap-2">
-                  {(a.card_results ?? []).map((r, i) => {
-                    const card = cardFor(r.card_id);
-                    if (!card) return null;
-                    return (
-                      <div key={i} className={`rounded-lg border px-3 py-2 text-xs ${r.correct ? "border-green-500/20 bg-green-500/5" : "border-destructive/20 bg-destructive/5"}`}>
-                        <div className="flex items-start gap-1.5">
-                          <span className={r.correct ? "text-green-500" : "text-destructive"}>{r.correct ? "✓" : "✗"}</span>
-                          <div>
-                            <p className="font-medium text-foreground">{card.front}</p>
-                            {!r.correct && (
-                              <div className="mt-0.5 space-y-0.5">
-                                <p className="text-destructive/80">Chose: {r.chosen_answer}</p>
-                                <p className="text-green-600 dark:text-green-400">Correct: {card.back}</p>
+
+              {/* Right / wrong tally + expand toggle */}
+              {a.status === "completed" && (
+                <>
+                  <div className="flex items-center gap-4 px-4 pb-3">
+                    <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                      <span className="font-semibold">{correct}</span> correct
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-destructive">
+                      <span className="font-semibold">{wrong}</span> wrong
+                    </div>
+                    <button
+                      onClick={() => setExpanded(isExpanded ? null : a.id)}
+                      className="ml-auto text-[10px] text-muted-foreground/50 hover:text-foreground transition-colors"
+                    >
+                      {isExpanded ? "Hide answers ↑" : "Show answers ↓"}
+                    </button>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="border-t border-border/30 px-4 py-3 flex flex-col gap-2">
+                      {(a.card_results ?? []).map((r, i) => {
+                        const card = cardFor(r.card_id);
+                        if (!card) return null;
+                        return (
+                          <div key={i} className={`rounded-lg border px-3 py-2.5 text-xs ${r.correct ? "border-green-500/20 bg-green-500/5" : "border-destructive/20 bg-destructive/5"}`}>
+                            <div className="flex items-start gap-2">
+                              <span className={`mt-0.5 shrink-0 ${r.correct ? "text-green-500" : "text-destructive"}`}>
+                                {r.correct ? "✓" : "✗"}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="font-medium text-foreground">{card.front}</p>
+                                {!r.correct && (
+                                  <div className="mt-1 space-y-0.5">
+                                    <p className="text-destructive/80">Chose: {r.chosen_answer}</p>
+                                    <p className="text-green-600 dark:text-green-400">Correct: {card.back}</p>
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           );

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 type CardShape = { id: string; front: string; back: string };
 type Profile = { id: string; display_name: string | null; avatar_url: string | null };
@@ -41,8 +42,8 @@ export default function ChallengeResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/challenges/${challengeId}/results`)
+  const fetchResults = useCallback(() => {
+    return fetch(`/api/challenges/${challengeId}/results`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) { setError(d.error); return; }
@@ -54,6 +55,27 @@ export default function ChallengeResultsPage() {
       .catch(() => setError("Failed to load results"))
       .finally(() => setLoading(false));
   }, [challengeId]);
+
+  useEffect(() => {
+    fetchResults();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`challenge-results:${challengeId}:${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "challenge_attempts",
+          filter: `challenge_id=eq.${challengeId}`,
+        },
+        () => { fetchResults(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [challengeId, fetchResults]);
 
   function profileFor(userId: string) {
     return profiles.find((p) => p.id === userId);

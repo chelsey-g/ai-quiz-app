@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DeckCard, type DeckWithStats } from "@/components/deck-card";
 import { Button } from "@/components/ui/button";
+import { ChallengeSheet } from "@/components/challenge-sheet";
+import type { Database } from "@/lib/database.types";
+
+type Card = Database["public"]["Tables"]["cards"]["Row"];
 
 type Collection = {
   id: string;
@@ -29,6 +33,9 @@ export default function CollectionDetailPage() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState("");
+
+  const [challengeDeck, setChallengeDeck] = useState<{ id: string; title: string; cards: Card[] } | null>(null);
+  const [loadingChallengeDeckId, setLoadingChallengeDeckId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -72,6 +79,15 @@ export default function CollectionDetailPage() {
     });
     setDecks((prev) => prev.filter((d) => d.id !== deckId));
     setRemovingId(null);
+  }
+
+  async function openChallenge(deck: DeckWithStats) {
+    setMenuOpenId(null);
+    setLoadingChallengeDeckId(deck.id);
+    const res = await fetch(`/api/decks/${deck.id}`);
+    const data = await res.json();
+    setLoadingChallengeDeckId(null);
+    setChallengeDeck({ id: deck.id, title: deck.title, cards: data.cards ?? [] });
   }
 
   async function handleRenameDeck(deckId: string) {
@@ -273,6 +289,16 @@ export default function CollectionDetailPage() {
                           className="absolute right-0 top-8 z-20 min-w-[160px] rounded-xl border border-border/40 bg-card/95 py-1 shadow-lg backdrop-blur-sm"
                         >
                           <button
+                            onClick={() => openChallenge(deck)}
+                            disabled={loadingChallengeDeckId === deck.id}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-foreground/80 hover:bg-muted/40 disabled:opacity-50"
+                          >
+                            <svg className="h-3.5 w-3.5 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            {loadingChallengeDeckId === deck.id ? "Loading…" : "Challenge"}
+                          </button>
+                          <button
                             onClick={() => {
                               setMenuOpenId(null);
                               setRenameInput(deck.title);
@@ -308,6 +334,16 @@ export default function CollectionDetailPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {challengeDeck && (
+        <ChallengeSheet
+          open={Boolean(challengeDeck)}
+          onClose={() => setChallengeDeck(null)}
+          deckId={challengeDeck.id}
+          deckTitle={challengeDeck.title}
+          cards={challengeDeck.cards}
+        />
       )}
     </div>
   );

@@ -25,7 +25,28 @@ export async function GET() {
   if (sent.error) return Response.json({ error: sent.error.message }, { status: 500 });
   if (received.error) return Response.json({ error: received.error.message }, { status: 500 });
 
-  return Response.json({ sent: sent.data ?? [], received: received.data ?? [] });
+  const sentData = sent.data ?? [];
+  const receivedData = received.data ?? [];
+
+  // Collect user IDs we need display names for
+  const challengerIds = receivedData
+    .map((r) => (r.challenges as unknown as { challenger_id: string } | null)?.challenger_id)
+    .filter((id): id is string => Boolean(id));
+  const recipientIds = sentData.flatMap((s) =>
+    (s.challenge_attempts as unknown as { user_id: string }[]).map((a) => a.user_id)
+  );
+  const allIds = [...new Set([...challengerIds, ...recipientIds])];
+
+  let profiles: Record<string, { display_name: string | null }> = {};
+  if (allIds.length > 0) {
+    const { data: profileData } = await admin
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", allIds);
+    profiles = Object.fromEntries((profileData ?? []).map((p) => [p.id, p]));
+  }
+
+  return Response.json({ sent: sentData, received: receivedData, profiles });
 }
 
 export async function POST(req: NextRequest) {

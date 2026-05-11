@@ -65,6 +65,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     updates.status = "in_progress";
     updates.started_at = new Date().toISOString();
   }
+  if (status === "declined") {
+    updates.status = "declined";
+  }
   if (card_results !== undefined) updates.card_results = card_results;
   if (status === "completed") {
     updates.status = "completed";

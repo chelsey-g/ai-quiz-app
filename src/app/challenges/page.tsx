@@ -102,7 +102,11 @@ export default function ChallengesPage() {
                   {r.status !== "completed" && (
                     <Link
                       href={`/challenges/${r.id}/play`}
-                      className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                      className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+                      style={{
+                        borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                        color: "var(--dashboard-accent-teal-strong)",
+                      }}
                     >
                       {r.status === "in_progress" ? "Continue" : "Take quiz"}
                     </Link>

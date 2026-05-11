@@ -73,18 +73,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     updates.completed_at = new Date().toISOString();
   }
 
-  const { data: attempt, error } = await supabase
+  const admin = createAdminClient();
+
+  const { data: attempt, error } = await admin
     .from("challenge_attempts")
     .update(updates)
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", user.id)  // application-level auth guard
     .select()
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   if (status === "completed" && attempt) {
-    const { data: challenge } = await supabase
+    const { data: challenge } = await admin
       .from("challenges")
       .select("challenger_id, title")
       .eq("id", attempt.challenge_id)
@@ -97,7 +99,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         .eq("id", user.id)
         .single();
 
-      const admin = createAdminClient();
       await admin.from("notifications").insert({
         user_id: challenge.challenger_id,
         type: "challenge_completed",

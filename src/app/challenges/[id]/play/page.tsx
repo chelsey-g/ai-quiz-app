@@ -221,11 +221,12 @@ export default function ChallengPlayPage() {
     if (isLast && !savingRef.current) {
       savingRef.current = true;
       const score = newResults.filter((r) => r.correct).length;
-      await fetch(`/api/challenges/attempts/${attemptId}`, {
+      const res = await fetch(`/api/challenges/attempts/${attemptId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "completed", score, total: cards.length, card_results: newResults }),
       });
+      if (!res.ok) console.error("Failed to save attempt:", await res.text());
       setPhase("done");
     } else {
       await fetch(`/api/challenges/attempts/${attemptId}`, {

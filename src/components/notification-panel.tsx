@@ -128,7 +128,7 @@ export function NotificationPanel({ userId }: { userId: string }) {
       </button>
 
       {open && (
-        <div className="fixed bottom-20 left-3 z-50 w-72 rounded-xl border border-border bg-background shadow-xl overflow-hidden">
+        <div className="absolute top-full right-0 z-50 mt-2 w-72 rounded-xl border border-border bg-background shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
             <p className="text-sm font-semibold text-foreground">Notifications</p>
             {unreadCount > 0 && (

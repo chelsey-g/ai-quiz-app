@@ -11,6 +11,7 @@ type Challenge = Database["public"]["Tables"]["challenges"]["Row"];
 
 type CardResult = { card_id: string; correct: boolean; chosen_answer: string };
 type ResolvedMode = "multiple-choice" | "type";
+type Phase = "intro" | "study" | "quiz" | "done";
 
 function shuffleAnswers(correct: string, distractors: string[]): string[] {
   const ck = correct.trim().toLowerCase().replace(/\s+/g, " ");
@@ -62,6 +63,12 @@ function resolveCardModes(cards: Card[], quizMode: string): Record<string, Resol
   return modes;
 }
 
+function modeLabel(mode: string) {
+  if (mode === "type") return "Type answer";
+  if (mode === "random") return "Mixed";
+  return "Multiple choice";
+}
+
 export default function ChallengPlayPage() {
   const { id: attemptId } = useParams<{ id: string }>();
   const router = useRouter();
@@ -74,14 +81,16 @@ export default function ChallengPlayPage() {
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
 
-  const [phase, setPhase] = useState<"quiz" | "done">("quiz");
+  const [phase, setPhase] = useState<Phase>("intro");
   const [index, setIndex] = useState(0);
   const [results, setResults] = useState<CardResult[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-
-  // Type-answer state
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
+
+  // Study phase state
+  const [studyIndex, setStudyIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
 
   const savingRef = useRef(false);
 
@@ -103,21 +112,46 @@ export default function ChallengPlayPage() {
           }
         });
         setMcOptions(opts);
-        if (d.attempt.status === "completed") setPhase("done");
-        if (d.attempt.card_results && Array.isArray(d.attempt.card_results)) {
-          setResults(d.attempt.card_results as CardResult[]);
+        if (d.attempt.status === "completed") {
+          setResults(d.attempt.card_results as CardResult[] ?? []);
+          setPhase("done");
         }
       })
       .catch(() => setError("Failed to load challenge"))
       .finally(() => setLoading(false));
   }, [attemptId]);
 
+  function startStudy() {
+    setStudyIndex(0);
+    setFlipped(false);
+    setPhase("study");
+  }
+
+  function startQuiz() {
+    setIndex(0);
+    setResults([]);
+    setSelected(null);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    savingRef.current = false;
+    setPhase("quiz");
+  }
+
+  function studyNext() {
+    if (studyIndex + 1 >= cards.length) {
+      startQuiz();
+    } else {
+      setStudyIndex((i) => i + 1);
+      setFlipped(false);
+    }
+  }
+
   async function pickMC(option: string) {
     if (selected || !cards[index]) return;
     const card = cards[index];
     const correct = option === card.back;
-    await submitAnswer(card, correct, option);
     setSelected(option);
+    await submitAnswer(card, correct, option);
   }
 
   async function submitType() {
@@ -143,7 +177,6 @@ export default function ChallengPlayPage() {
     }
 
     const isLast = index + 1 >= cards.length;
-
     if (isLast && !savingRef.current) {
       savingRef.current = true;
       const score = newResults.filter((r) => r.correct).length;
@@ -169,6 +202,8 @@ export default function ChallengPlayPage() {
     setIndex((i) => i + 1);
   }
 
+  // ── Loading / error ────────────────────────────────────────────────────────
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -178,7 +213,7 @@ export default function ChallengPlayPage() {
           </div>
         </div>
         <div className="mx-auto w-full max-w-2xl px-6 py-10">
-          <div className="h-32 animate-pulse rounded-2xl border border-border/40 bg-muted/20" />
+          <div className="h-48 animate-pulse rounded-2xl border border-border/40 bg-muted/20" />
         </div>
       </div>
     );
@@ -191,6 +226,127 @@ export default function ChallengPlayPage() {
       </div>
     );
   }
+
+  // ── Intro ──────────────────────────────────────────────────────────────────
+
+  if (phase === "intro") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/50 mb-2">
+              You&apos;ve been challenged
+            </p>
+            <h1 className="font-heading text-2xl font-bold text-foreground">{challenge.title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground/70">
+              {cards.length} card{cards.length !== 1 ? "s" : ""} · {modeLabel(challenge.quiz_mode)}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={startStudy}
+              className="w-full rounded-xl border border-border/50 bg-card px-5 py-4 text-left transition-colors hover:border-primary/30 hover:bg-muted/30"
+            >
+              <p className="text-sm font-semibold text-foreground">Study first</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">Review all {cards.length} cards before the quiz</p>
+            </button>
+            <button
+              onClick={startQuiz}
+              className="w-full rounded-xl border px-5 py-4 text-left transition-colors"
+              style={{
+                borderColor: "color-mix(in oklch, var(--primary) 40%, transparent)",
+                background: "color-mix(in oklch, var(--primary) 8%, transparent)",
+              }}
+            >
+              <p className="text-sm font-semibold text-foreground">Start quiz</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">Jump straight in</p>
+            </button>
+          </div>
+
+          <button
+            onClick={() => router.push("/challenges")}
+            className="mt-6 w-full text-center text-xs text-muted-foreground/50 hover:text-foreground transition-colors"
+          >
+            Back to challenges
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Study phase ────────────────────────────────────────────────────────────
+
+  if (phase === "study") {
+    const studyCard = cards[studyIndex];
+    const studyProgress = (studyIndex + (flipped ? 1 : 0)) / cards.length;
+
+    return (
+      <div className="flex min-h-screen flex-col">
+        <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-xl">
+          <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
+            <button
+              onClick={() => setPhase("intro")}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground/60 uppercase tracking-wide">Study</span>
+              <span className="text-xs text-muted-foreground">{studyIndex + 1} / {cards.length}</span>
+              <div className="h-1.5 w-28 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary/60 transition-all duration-300" style={{ width: `${studyProgress * 100}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-2xl flex-1 flex flex-col items-center justify-center px-6 py-10 gap-4">
+          <button
+            onClick={() => setFlipped((f) => !f)}
+            className="w-full rounded-2xl border border-border bg-card px-8 py-10 text-center transition-colors hover:bg-muted/20 cursor-pointer"
+          >
+            {!flipped ? (
+              <>
+                <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">Question</p>
+                <p className="text-lg font-medium leading-relaxed text-foreground">{studyCard?.front}</p>
+                <p className="mt-6 text-[10px] text-muted-foreground/40">Tap to reveal answer</p>
+              </>
+            ) : (
+              <>
+                <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-green-600/70 dark:text-green-400/70">Answer</p>
+                <p className="text-lg font-medium leading-relaxed text-foreground">{studyCard?.back}</p>
+                <p className="mt-6 text-[10px] text-muted-foreground/40">Tap to flip back</p>
+              </>
+            )}
+          </button>
+
+          <div className="flex w-full gap-3">
+            {studyIndex > 0 && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setStudyIndex((i) => i - 1); setFlipped(false); }}
+              >
+                ← Previous
+              </Button>
+            )}
+            <Button
+              className="flex-1"
+              onClick={studyNext}
+            >
+              {studyIndex + 1 >= cards.length ? "Start quiz →" : "Next →"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Done ───────────────────────────────────────────────────────────────────
 
   if (phase === "done") {
     const score = results.filter((r) => r.correct).length;
@@ -235,6 +391,8 @@ export default function ChallengPlayPage() {
     );
   }
 
+  // ── Quiz phase ─────────────────────────────────────────────────────────────
+
   const card = cards[index];
   const cardMode: ResolvedMode = cardModes[card?.id] ?? "multiple-choice";
   const options = mcOptions[card?.id] ?? [];
@@ -242,20 +400,17 @@ export default function ChallengPlayPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Top bar */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push("/challenges")}
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Exit
-            </button>
-          </div>
+          <button
+            onClick={() => router.push("/challenges")}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Exit
+          </button>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">{index + 1} / {cards.length}</span>
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
@@ -265,14 +420,12 @@ export default function ChallengPlayPage() {
         </div>
       </div>
 
-      {/* Challenge label */}
       <div className="mx-auto w-full max-w-2xl px-6 pt-6">
         <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/50 mb-1">
           Challenge: {challenge.title}
         </p>
       </div>
 
-      {/* Question */}
       <div className="mx-auto w-full max-w-2xl flex-1 px-6 pb-10">
         {cardMode === "multiple-choice" ? (
           <>
@@ -286,15 +439,10 @@ export default function ChallengPlayPage() {
                 const isSelected = selected === option;
                 const revealed = selected !== null;
                 let cls = "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors focus:outline-none";
-                if (!revealed) {
-                  cls += " border-border text-foreground hover:border-primary/50 hover:bg-muted/50";
-                } else if (isCorrect) {
-                  cls += " border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400";
-                } else if (isSelected) {
-                  cls += " border-destructive/50 bg-destructive/10 text-destructive";
-                } else {
-                  cls += " border-border/40 text-muted-foreground opacity-50";
-                }
+                if (!revealed) cls += " border-border text-foreground hover:border-primary/50 hover:bg-muted/50";
+                else if (isCorrect) cls += " border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400";
+                else if (isSelected) cls += " border-destructive/50 bg-destructive/10 text-destructive";
+                else cls += " border-border/40 text-muted-foreground opacity-50";
                 return (
                   <button key={idx} disabled={revealed} className={cls} onClick={() => pickMC(option)}>
                     <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">{idx + 1}.</span>

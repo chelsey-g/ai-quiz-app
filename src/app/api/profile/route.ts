@@ -51,8 +51,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   if ("avatar_url" in body) {
-    const avatar_url = typeof body.avatar_url === "string" ? body.avatar_url.trim() : null;
-    if (!avatar_url) return Response.json({ error: "avatar_url is required" }, { status: 400 });
+    const avatar_url = body.avatar_url === null ? null : typeof body.avatar_url === "string" ? body.avatar_url.trim() || null : null;
     updates.avatar_url = avatar_url;
   }
 

@@ -133,10 +133,12 @@ function CardRow({
   if (isEditing) {
     return (
       <div
-        className="rounded-xl border bg-card px-4 py-3 space-y-2.5"
-        style={{
-          borderColor:
-            "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)",
+        className="rounded-xl border bg-card px-4 py-3 space-y-2"
+        style={{ borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)" }}
+        onBlur={(e) => {
+          if (!isSaving && !e.currentTarget.contains(e.relatedTarget as Node)) {
+            onEditSave(card.id);
+          }
         }}
       >
         <AutoTextarea
@@ -144,26 +146,17 @@ function CardRow({
           value={editFront}
           onChange={(e) => onEditFrontChange(e.target.value)}
           placeholder="Front (question)"
+          onKeyDown={(e) => { if (e.key === "Escape") onEditCancel(); }}
           className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
         <AutoTextarea
           value={editBack}
           onChange={(e) => onEditBackChange(e.target.value)}
           placeholder="Back (answer)"
+          onKeyDown={(e) => { if (e.key === "Escape") onEditCancel(); }}
           className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            disabled={!editFront.trim() || !editBack.trim() || isSaving}
-            onClick={() => onEditSave(card.id)}
-          >
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={onEditCancel}>
-            Cancel
-          </Button>
-        </div>
+        <p className="text-[10px] text-muted-foreground/40">Tab to switch fields · Esc to cancel · click away to save</p>
       </div>
     );
   }
@@ -587,7 +580,7 @@ export default function DeckPage() {
   }
 
   async function handleSaveEdit(cardId: string) {
-    if (!editFront.trim() || !editBack.trim()) return;
+    if (!editFront.trim() || !editBack.trim()) { cancelEdit(); return; }
     setSavingEdit(true);
     const res = await fetch(`/api/cards/${cardId}`, {
       method: "PATCH",

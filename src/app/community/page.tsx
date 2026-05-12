@@ -49,6 +49,7 @@ function PreviewModal({
   cards,
   loading,
   forkingId,
+  forkError,
   currentUserId,
   onFork,
   onClose,
@@ -57,6 +58,7 @@ function PreviewModal({
   cards: PreviewCard[];
   loading: boolean;
   forkingId: string | null;
+  forkError: string | null;
   currentUserId: string | null;
   onFork: (id: string) => void;
   onClose: () => void;
@@ -163,13 +165,18 @@ function PreviewModal({
               </span>
             </div>
           ) : (
-            <button
-              onClick={() => onFork(deck.id)}
-              disabled={forkingId === deck.id}
-              className="w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {forkingId === deck.id ? "Forking…" : "Fork to my library"}
-            </button>
+            <>
+              {forkError && (
+                <p className="mb-2 text-xs text-destructive">{forkError}</p>
+              )}
+              <button
+                onClick={() => onFork(deck.id)}
+                disabled={forkingId === deck.id}
+                className="w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {forkingId === deck.id ? "Forking…" : "Fork to my library"}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -270,6 +277,7 @@ export default function CommunityPage() {
   const [searched, setSearched] = useState(false);
 
   const [forkingId, setForkingId] = useState<string | null>(null);
+  const [forkError, setForkError] = useState<string | null>(null);
 
   const [previewDeck, setPreviewDeck] = useState<PublicDeck | null>(null);
   const [previewCards, setPreviewCards] = useState<PreviewCard[]>([]);
@@ -309,10 +317,15 @@ export default function CommunityPage() {
     setSearching(true);
     setSearched(true);
     const term = tag ?? q;
-    const res = await fetch(`/api/community?q=${encodeURIComponent(term)}`);
-    const json = await res.json();
-    setResults(json.decks ?? []);
-    setSearching(false);
+    try {
+      const res = await fetch(`/api/community?q=${encodeURIComponent(term)}`);
+      const json = await res.json();
+      setResults(json.decks ?? []);
+    } catch {
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
   }
 
   async function handleSearch(e: React.FormEvent) {
@@ -339,30 +352,43 @@ export default function CommunityPage() {
     setPreviewDeck(deck);
     setPreviewCards([]);
     setPreviewLoading(true);
-    const res = await fetch(`/api/community/${deck.id}`);
-    const json = await res.json();
-    setPreviewCards(json.cards ?? []);
-    setPreviewLoading(false);
+    try {
+      const res = await fetch(`/api/community/${deck.id}`);
+      const json = await res.json();
+      setPreviewCards(json.cards ?? []);
+    } catch {
+      setPreviewCards([]);
+    } finally {
+      setPreviewLoading(false);
+    }
   }
 
   async function handleFork(deckId: string) {
     setForkingId(deckId);
-    const res = await fetch("/api/community/fork", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deckId }),
-    });
-    if (res.status === 401) {
+    setForkError(null);
+    try {
+      const res = await fetch("/api/community/fork", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deckId }),
+      });
+      if (res.status === 401) {
+        router.push("/auth/login");
+        return;
+      }
+      if (res.ok) {
+        const { deckId: newId } = await res.json();
+        setPreviewDeck(null);
+        router.push(`/decks/${newId}`);
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      setForkError((data as { error?: string }).error ?? "Failed to fork deck");
+    } catch {
+      setForkError("Failed to fork deck");
+    } finally {
       setForkingId(null);
-      router.push("/auth/login");
-      return;
     }
-    if (res.ok) {
-      const { deckId: newId } = await res.json();
-      setPreviewDeck(null);
-      router.push(`/decks/${newId}`);
-    }
-    setForkingId(null);
   }
 
   return (
@@ -512,9 +538,10 @@ export default function CommunityPage() {
           cards={previewCards}
           loading={previewLoading}
           forkingId={forkingId}
+          forkError={forkError}
           currentUserId={currentUserId}
           onFork={handleFork}
-          onClose={() => setPreviewDeck(null)}
+          onClose={() => { setPreviewDeck(null); setForkError(null); }}
         />
       )}
     </div>

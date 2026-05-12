@@ -746,6 +746,7 @@ export default function DeckPage() {
     if (studyState !== "studying") return;
 
     function onKey(e: KeyboardEvent) {
+      if (showStudyEdit) return;
       if (currentCardMode === "flip") {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
@@ -787,6 +788,7 @@ export default function DeckPage() {
     selectedMcOption,
     mcOptions,
     currentCard,
+    showStudyEdit,
   ]);
 
   useEffect(() => {

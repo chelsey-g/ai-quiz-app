@@ -97,6 +97,7 @@ interface CardRowProps {
   isDeleting: boolean;
   isSaving: boolean;
   isDeletingInProgress: boolean;
+  isNew?: boolean;
   editFront: string;
   editBack: string;
   onEditFrontChange: (v: string) => void;
@@ -117,6 +118,7 @@ function CardRow({
   isDeleting,
   isSaving,
   isDeletingInProgress,
+  isNew = false,
   editFront,
   editBack,
   onEditFrontChange,
@@ -197,6 +199,10 @@ function CardRow({
       style={{
         borderColor:
           "color-mix(in oklch, var(--dashboard-accent-teal) 30%, transparent)",
+        boxShadow: isNew
+          ? "0 0 0 2px color-mix(in oklch, var(--dashboard-accent-teal) 65%, transparent)"
+          : "none",
+        transition: "box-shadow 0.8s ease-out",
       }}
       {...(dragListeners as React.HTMLAttributes<HTMLDivElement> | undefined)}
       {...(dragAttributes as React.HTMLAttributes<HTMLDivElement> | undefined)}
@@ -352,6 +358,10 @@ export default function DeckPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState<string | null>(null);
   const [showStudyEdit, setShowStudyEdit] = useState(false);
+
+  const [expanding, setExpanding] = useState(false);
+  const [newCardIds, setNewCardIds] = useState<Set<string>>(new Set());
+  const [expandError, setExpandError] = useState<string | null>(null);
 
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
@@ -632,6 +642,32 @@ export default function DeckPage() {
     setCardTags([]);
     setTagInput("");
     setShowAddCard(false);
+  }
+
+  async function handleExpand() {
+    if (!deck) return;
+    setExpanding(true);
+    setExpandError(null);
+    try {
+      const res = await fetch(`/api/decks/${deck.id}/expand`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setExpandError(data.error ?? "Expansion failed");
+        return;
+      }
+      const newCards: Card[] = data.cards;
+      setAllCards((prev) => [...prev, ...newCards]);
+      setDeck((prev) =>
+        prev ? { ...prev, card_count: prev.card_count + newCards.length } : prev
+      );
+      const ids = new Set<string>(newCards.map((c) => c.id));
+      setNewCardIds(ids);
+      setTimeout(() => setNewCardIds(new Set()), 2000);
+    } catch {
+      setExpandError("Expansion failed. Please try again.");
+    } finally {
+      setExpanding(false);
+    }
   }
 
   async function handleGenerateAnswer() {
@@ -1112,21 +1148,50 @@ export default function DeckPage() {
         {/* Add card section */}
         <div className="mt-8">
           {!showAddCard ? (
-            <button
-              onClick={() => { setShowAddCard(true); setAddCardError(null); }}
-              className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium transition-colors hover:bg-[oklch(0.77_0.195_68_/_0.08)]"
-              style={{
-                border:
-                  "1px solid color-mix(in oklch, var(--dashboard-accent-amber) 45%, transparent)",
-                color:
-                  "color-mix(in oklch, var(--dashboard-accent-amber) 75%, var(--foreground) 25%)",
-              }}
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add card
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => { setShowAddCard(true); setAddCardError(null); }}
+                disabled={expanding}
+                className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium transition-colors hover:bg-[oklch(0.77_0.195_68_/_0.08)] disabled:opacity-40"
+                style={{
+                  border:
+                    "1px solid color-mix(in oklch, var(--dashboard-accent-amber) 45%, transparent)",
+                  color:
+                    "color-mix(in oklch, var(--dashboard-accent-amber) 75%, var(--foreground) 25%)",
+                }}
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add card
+              </button>
+              <button
+                onClick={handleExpand}
+                disabled={expanding}
+                className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-medium transition-colors hover:bg-[oklch(0.7_0.19_173_/_0.08)] disabled:opacity-40"
+                style={{
+                  border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                  color: "color-mix(in oklch, var(--dashboard-accent-teal) 75%, var(--foreground) 25%)",
+                }}
+              >
+                {expanding ? (
+                  <>
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Generating cards…
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                    Expand with AI
+                  </>
+                )}
+              </button>
+              {expandError && (
+                <p className="w-full text-xs text-destructive">{expandError}</p>
+              )}
+            </div>
           ) : (
             <form onSubmit={handleAddCard} className="space-y-3 rounded-2xl border border-border/50 bg-card p-5">
               <p className="font-heading text-sm font-semibold text-foreground">Add a card</p>
@@ -1283,6 +1348,7 @@ export default function DeckPage() {
                         isDeleting={deletingCardId === card.id}
                         isSaving={savingEdit && editingCardId === card.id}
                         isDeletingInProgress={deletingInProgress === card.id}
+                        isNew={newCardIds.has(card.id)}
                         editFront={editFront}
                         editBack={editBack}
                         onEditFrontChange={setEditFront}

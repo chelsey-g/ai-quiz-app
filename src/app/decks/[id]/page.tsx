@@ -351,6 +351,7 @@ export default function DeckPage() {
   const [editBack, setEditBack] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState<string | null>(null);
+  const [showStudyEdit, setShowStudyEdit] = useState(false);
 
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
@@ -589,9 +590,9 @@ export default function DeckPage() {
     });
     setSavingEdit(false);
     if (res.ok) {
-      setAllCards((prev) =>
-        prev.map((c) => c.id === cardId ? { ...c, front: editFront.trim(), back: editBack.trim() } : c)
-      );
+      const updated = { front: editFront.trim(), back: editBack.trim() };
+      setAllCards((prev) => prev.map((c) => c.id === cardId ? { ...c, ...updated } : c));
+      setActiveQueue((prev) => prev.map((c) => c.id === cardId ? { ...c, ...updated } : c));
       cancelEdit();
     }
   }
@@ -1414,11 +1415,59 @@ export default function DeckPage() {
             {deck.title}
           </button>
         </div>
-        <span className="font-heading text-sm font-semibold tabular-nums text-foreground">
-          {currentIndex + 1}
-          <span className="text-muted-foreground/50 font-normal"> / {activeQueue.length}</span>
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { startEditCard(currentCard); setShowStudyEdit(true); }}
+            className="flex items-center gap-1 text-xs text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+            title="Edit this card"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+            </svg>
+            Edit
+          </button>
+          <span className="font-heading text-sm font-semibold tabular-nums text-foreground">
+            {currentIndex + 1}
+            <span className="text-muted-foreground/50 font-normal"> / {activeQueue.length}</span>
+          </span>
+        </div>
       </div>
+
+      {/* Study edit dialog */}
+      <Dialog open={showStudyEdit} onOpenChange={(open) => { if (!open) { cancelEdit(); setShowStudyEdit(false); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-base font-semibold">Edit card</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-3">
+            <AutoTextarea
+              autoFocus
+              value={editFront}
+              onChange={(e) => setEditFront(e.target.value)}
+              placeholder="Front (question)"
+              className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <AutoTextarea
+              value={editBack}
+              onChange={(e) => setEditBack(e.target.value)}
+              placeholder="Back (answer)"
+              className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button
+              size="sm"
+              disabled={!editFront.trim() || !editBack.trim() || savingEdit}
+              onClick={async () => { await handleSaveEdit(editingCardId!); setShowStudyEdit(false); }}
+            >
+              {savingEdit ? "Saving…" : "Save"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { cancelEdit(); setShowStudyEdit(false); }}>
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Progress bar */}
       <div className="mb-7 h-px w-full rounded-full bg-border/60">

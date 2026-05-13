@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -63,6 +63,8 @@ function gradeTypeAnswer(userAnswer: string, correct: string): boolean {
 
 export default function QuickQuizPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const cardLimit = Math.min(Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)), 500);
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +90,7 @@ export default function QuickQuizPage() {
   );
 
   useEffect(() => {
-    fetch("/api/cards/weak")
+    fetch(`/api/cards/weak?limit=${cardLimit}`)
       .then((r) => r.json())
       .then((data: { cards: Card[]; total: number }) => {
         setCards(data.cards ?? []);

@@ -33,7 +33,97 @@ function FlameIcon({ className }: { className?: string }) {
   );
 }
 
-function StatBanner({ stats }: { stats: DashboardStats }) {
+function StudyAllModal({
+  open,
+  onClose,
+  totalCards,
+}: {
+  open: boolean;
+  onClose: () => void;
+  totalCards: number;
+}) {
+  const router = useRouter();
+  const QUICK_PICKS = [10, 25, 50].filter((n) => n < totalCards);
+  const [selected, setSelected] = useState<number>(Math.min(20, totalCards));
+  const [custom, setCustom] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setSelected(Math.min(20, totalCards));
+      setCustom("");
+    }
+  }, [open, totalCards]);
+
+  const effectiveCount = custom
+    ? Math.min(Math.max(1, parseInt(custom, 10) || 1), totalCards)
+    : selected;
+
+  function handleStart() {
+    router.push(`/quiz/quick?limit=${effectiveCount}`);
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-base font-semibold">Study all cards</DialogTitle>
+        </DialogHeader>
+        <div className="mt-1 space-y-4">
+          <p className="text-sm text-muted-foreground/70">How many cards per session?</p>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_PICKS.map((n) => (
+              <button
+                key={n}
+                onClick={() => { setSelected(n); setCustom(""); }}
+                className="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                style={effectiveCount === n && !custom ? {
+                  background: "var(--primary)",
+                  color: "var(--primary-foreground)",
+                } : {
+                  border: "1px solid color-mix(in oklch, var(--border) 80%, transparent)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              onClick={() => { setSelected(totalCards); setCustom(""); }}
+              className="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+              style={effectiveCount === totalCards && !custom ? {
+                background: "var(--primary)",
+                color: "var(--primary-foreground)",
+              } : {
+                border: "1px solid color-mix(in oklch, var(--border) 80%, transparent)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              All ({totalCards})
+            </button>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={totalCards}
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            placeholder="Custom number"
+            className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+            <Button size="sm" onClick={handleStart} disabled={!effectiveCount || effectiveCount < 1}>
+              Start →
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function StatBanner({ stats, onStudyAll }: { stats: DashboardStats; onStudyAll: () => void }) {
   const accuracy =
     stats.totalSeen > 0
       ? Math.round((stats.totalCorrect / stats.totalSeen) * 100)
@@ -71,11 +161,20 @@ function StatBanner({ stats }: { stats: DashboardStats }) {
   return (
     <div className="mb-8 space-y-3">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+        <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3 flex flex-col">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Total cards</p>
           <p className="font-heading mt-1 text-2xl font-bold tabular-nums text-foreground">
             {stats.totalCards}
           </p>
+          {stats.totalCards > 0 && (
+            <button
+              onClick={onStudyAll}
+              className="mt-2 self-start text-[10px] font-medium transition-colors hover:opacity-80"
+              style={{ color: "var(--dashboard-accent-teal-strong)" }}
+            >
+              Study →
+            </button>
+          )}
         </div>
         <div className="rounded-xl border border-border/40 bg-card/60 px-4 py-3">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground/55">Accuracy</p>
@@ -312,6 +411,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewDeck, setShowNewDeck] = useState(false);
+  const [showStudyAll, setShowStudyAll] = useState(false);
 
   useEffect(() => {
     async function fetchAll() {
@@ -473,10 +573,18 @@ export default function HomePage() {
         }}
       />
 
+      {stats && (
+        <StudyAllModal
+          open={showStudyAll}
+          onClose={() => setShowStudyAll(false)}
+          totalCards={stats.totalCards}
+        />
+      )}
+
       {/* Main content */}
       {!loading && !error && decks.length > 0 && stats && (
         <div>
-          <StatBanner stats={stats} />
+          <StatBanner stats={stats} onStudyAll={() => setShowStudyAll(true)} />
 
           {jumpDeck && <JumpBackInCard deck={jumpDeck} />}
 

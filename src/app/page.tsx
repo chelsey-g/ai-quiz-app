@@ -59,7 +59,7 @@ function StudyAllModal({
     : selected;
 
   function handleStart() {
-    router.push(`/quiz/quick?limit=${effectiveCount}`);
+    router.push(`/quiz/quick?limit=${effectiveCount}&shuffle=true`);
     onClose();
   }
 

@@ -65,6 +65,7 @@ export default function QuickQuizPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const cardLimit = Math.min(Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)), 500);
+  const shouldShuffle = searchParams.get("shuffle") === "true";
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +90,10 @@ export default function QuickQuizPage() {
   const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
   const [saveDeckError, setSaveDeckError] = useState<string | null>(null);
 
+  // AI grading state for type-answer mode
+  const [aiGrading, setAiGrading] = useState(false);
+  const [gradeResult, setGradeResult] = useState<boolean | null>(null);
+
   const { explanations, explanationsLoading } = useWrongAnswerExplanations(
     phase === "results" ? answers : []
   );
@@ -97,7 +102,9 @@ export default function QuickQuizPage() {
     fetch(`/api/cards/weak?limit=${cardLimit}`)
       .then((r) => r.json())
       .then((data: { cards: Card[]; total: number }) => {
-        setCards(data.cards ?? []);
+        let fetched = data.cards ?? [];
+        if (shouldShuffle) fetched = [...fetched].sort(() => Math.random() - 0.5);
+        setCards(fetched);
         setLoading(false);
       })
       .catch(() => {
@@ -111,6 +118,13 @@ export default function QuickQuizPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!answerSubmitted) {
+      setGradeResult(null);
+      setAiGrading(false);
+    }
+  }, [answerSubmitted]);
 
   async function saveStats(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {
     const byDeck = new Map<string, AnswerRecord[]>();
@@ -231,6 +245,41 @@ export default function QuickQuizPage() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     setPhase("quiz");
+  }
+
+  async function handleTypeSubmit() {
+    if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
+    setAnswerSubmitted(true);
+
+    const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
+    if (heuristic) {
+      setGradeResult(true);
+      recordAnswer(currentCard, true, typedAnswer, answers, startedAt);
+      return;
+    }
+
+    // Heuristic said wrong — ask AI before recording
+    setAiGrading(true);
+    try {
+      const res = await fetch("/api/quiz/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: currentCard.front,
+          userAnswer: typedAnswer,
+          correctAnswer: currentCard.back,
+        }),
+      });
+      const data = await res.json();
+      const correct = data.correct === true;
+      setGradeResult(correct);
+      recordAnswer(currentCard, correct, typedAnswer, answers, startedAt);
+    } catch {
+      setGradeResult(false);
+      recordAnswer(currentCard, false, typedAnswer, answers, startedAt);
+    } finally {
+      setAiGrading(false);
+    }
   }
 
   async function saveToDeck() {
@@ -483,9 +532,7 @@ export default function QuickQuizPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey && typedAnswer.trim()) {
                       e.preventDefault();
-                      setAnswerSubmitted(true);
-                      const correct = gradeTypeAnswer(typedAnswer, currentCard.back);
-                      recordAnswer(currentCard, correct, typedAnswer, answers, startedAt);
+                      handleTypeSubmit();
                     }
                   }}
                   placeholder="Type your answer…"
@@ -495,21 +542,41 @@ export default function QuickQuizPage() {
                 <Button
                   className="mt-3 w-full"
                   disabled={!typedAnswer.trim()}
-                  onClick={() => {
-                    setAnswerSubmitted(true);
-                    const correct = gradeTypeAnswer(typedAnswer, currentCard.back);
-                    recordAnswer(currentCard, correct, typedAnswer, answers, startedAt);
-                  }}
+                  onClick={handleTypeSubmit}
                 >
                   Submit
                 </Button>
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className="rounded-xl bg-muted/40 px-4 py-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Your answer
-                  </p>
+                <div
+                  className={`rounded-xl px-4 py-3 transition-colors ${
+                    gradeResult === true
+                      ? "border border-green-500/30 bg-green-500/5"
+                      : gradeResult === false
+                      ? "border border-destructive/30 bg-destructive/5"
+                      : "bg-muted/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p
+                      className={`text-[10px] font-medium uppercase tracking-[0.12em] ${
+                        gradeResult === true
+                          ? "text-green-600 dark:text-green-400"
+                          : gradeResult === false
+                          ? "text-destructive/80"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {gradeResult === true ? "Your answer ✓" : gradeResult === false ? "Your answer ✗" : "Your answer"}
+                    </p>
+                    {aiGrading && (
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                        <div className="h-2.5 w-2.5 animate-spin rounded-full border border-current border-t-transparent" />
+                        Checking…
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
                 </div>
                 <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">

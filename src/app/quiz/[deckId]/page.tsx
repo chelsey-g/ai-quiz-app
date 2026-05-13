@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { CardText } from "@/components/card-text";
 import {
   Dialog,
   DialogContent,
@@ -95,6 +96,8 @@ export default function QuizPage() {
   // Per-question state
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [aiGrading, setAiGrading] = useState(false);
+  const [gradeResult, setGradeResult] = useState<boolean | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
@@ -193,6 +196,40 @@ export default function QuizPage() {
     return newAnswers;
   }
 
+  async function handleTypeSubmit() {
+    if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
+    setAnswerSubmitted(true);
+
+    const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
+    if (heuristic) {
+      setGradeResult(true);
+      recordAnswer(currentCard, true, typedAnswer, answers);
+      return;
+    }
+
+    setAiGrading(true);
+    try {
+      const res = await fetch("/api/quiz/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: currentCard.front,
+          userAnswer: typedAnswer,
+          correctAnswer: currentCard.back,
+        }),
+      });
+      const data = await res.json();
+      const correct = data.correct === true;
+      setGradeResult(correct);
+      recordAnswer(currentCard, correct, typedAnswer, answers);
+    } catch {
+      setGradeResult(false);
+      recordAnswer(currentCard, false, typedAnswer, answers);
+    } finally {
+      setAiGrading(false);
+    }
+  }
+
   function advanceToNext(
     currentQuizCards: Card[],
     currentAnswers: AnswerRecord[],
@@ -207,6 +244,8 @@ export default function QuizPage() {
       setCurrentIndex((i) => i + 1);
       setTypedAnswer("");
       setAnswerSubmitted(false);
+      setAiGrading(false);
+      setGradeResult(null);
       setSelectedOption(null);
     }
   }
@@ -220,6 +259,8 @@ export default function QuizPage() {
     setCurrentIndex(prevIndex);
     setTypedAnswer("");
     setAnswerSubmitted(false);
+    setAiGrading(false);
+    setGradeResult(null);
     setSelectedOption(null);
     if (phase === "results") setPhase("quiz");
   }
@@ -317,7 +358,7 @@ export default function QuizPage() {
   const currentCardMode: ResolvedMode = currentCard
     ? (cardModes[currentCard.id] ?? "type")
     : "type";
-  const progress = answers.length / quizCards.length;
+  const progress = quizCards.length > 0 ? Math.min(1, currentIndex / quizCards.length) : 0;
   const correctCount = answers.filter((a) => a.correct).length;
   const scorePercent =
     answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0;
@@ -442,7 +483,7 @@ export default function QuizPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">{answers.length + 1} / {quizCards.length}</span>
+            <span className="text-xs text-muted-foreground">{currentIndex + 1} / {quizCards.length}</span>
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary transition-all duration-300"
@@ -464,9 +505,7 @@ export default function QuizPage() {
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                 Question
               </p>
-              <p className="text-lg font-medium leading-relaxed text-foreground">
-                {currentCard.front}
-              </p>
+              <CardText text={currentCard.front} className="text-lg font-medium leading-relaxed text-foreground" />
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               {(mcOptions[currentCard.id] ?? []).map((option, idx) => {
@@ -518,9 +557,7 @@ export default function QuizPage() {
             <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
               Question
             </p>
-            <p className="text-center text-lg font-medium leading-relaxed text-foreground">
-              {currentCard.front}
-            </p>
+            <CardText text={currentCard.front} className="text-center text-lg font-medium leading-relaxed text-foreground" />
             {!answerSubmitted ? (
               <div className="mt-6">
                 <textarea
@@ -530,9 +567,7 @@ export default function QuizPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey && typedAnswer.trim()) {
                       e.preventDefault();
-                      setAnswerSubmitted(true);
-                      const correct = gradeTypeAnswer(typedAnswer, currentCard.back);
-                      recordAnswer(currentCard, correct, typedAnswer, answers);
+                      handleTypeSubmit();
                     }
                   }}
                   placeholder="Type your answer…"
@@ -542,29 +577,48 @@ export default function QuizPage() {
                 <Button
                   className="mt-3 w-full"
                   disabled={!typedAnswer.trim()}
-                  onClick={() => {
-                    setAnswerSubmitted(true);
-                    const correct = gradeTypeAnswer(typedAnswer, currentCard.back);
-                    recordAnswer(currentCard, correct, typedAnswer, answers);
-                  }}
+                  onClick={handleTypeSubmit}
                 >
                   Submit
                 </Button>
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className={`rounded-xl px-4 py-3 ${gradeTypeAnswer(typedAnswer, currentCard.back) ? "border border-green-500/30 bg-green-500/5" : "border border-destructive/30 bg-destructive/5"}`}>
-                  <p className={`text-[10px] font-medium uppercase tracking-[0.12em] ${gradeTypeAnswer(typedAnswer, currentCard.back) ? "text-green-600 dark:text-green-400" : "text-destructive/80"}`}>
-                    Your answer
+                <div
+                  className="rounded-xl px-4 py-3 transition-colors"
+                  style={{
+                    background: gradeResult === true
+                      ? "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)"
+                      : gradeResult === false
+                      ? "color-mix(in oklch, var(--destructive) 10%, transparent)"
+                      : "color-mix(in oklch, var(--muted) 40%, transparent)",
+                    border: gradeResult === true
+                      ? "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)"
+                      : gradeResult === false
+                      ? "1px solid color-mix(in oklch, var(--destructive) 40%, transparent)"
+                      : "1px solid transparent",
+                  }}
+                >
+                  <p
+                    className="text-[10px] font-medium uppercase tracking-[0.12em]"
+                    style={{
+                      color: gradeResult === true
+                        ? "var(--dashboard-accent-teal-strong)"
+                        : gradeResult === false
+                        ? "var(--destructive)"
+                        : "var(--muted-foreground)",
+                    }}
+                  >
+                    {aiGrading ? "Checking…" : gradeResult === true ? "Correct" : gradeResult === false ? "Incorrect" : "Your answer"}
                   </p>
                   <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
                 </div>
-                {!gradeTypeAnswer(typedAnswer, currentCard.back) && (
+                {gradeResult === false && (
                   <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3">
                     <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-green-600 dark:text-green-400">
                       Correct answer
                     </p>
-                    <p className="mt-1 text-sm text-foreground">{currentCard.back}</p>
+                    <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
                   </div>
                 )}
                 <Button className="w-full" onClick={() => advanceToNext(quizCards, answers, startedAt)}>
@@ -662,14 +716,14 @@ export default function QuizPage() {
                   {answer.correct ? "✓" : "✗"}
                 </span>
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">{answer.card.front}</p>
+                  <CardText text={answer.card.front} className="font-medium text-foreground" />
                   {!answer.correct && (
                     <div className="mt-1.5 space-y-2">
                       <p className="text-destructive/80">
                         Your answer: {answer.userAnswer}
                       </p>
-                      <p className="text-green-600 dark:text-green-400">
-                        Correct: {answer.card.back}
+                      <p className="text-green-600 dark:text-green-400 text-sm">
+                        Correct: <CardText text={answer.card.back} />
                       </p>
                       <div className="mt-2 rounded-lg bg-muted/40 px-3 py-2">
                         <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60">

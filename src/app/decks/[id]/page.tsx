@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef, useId } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { CardText } from "@/components/card-text";
 import { Button } from "@/components/ui/button";
 import { ChallengeSheet } from "@/components/challenge-sheet";
 import {
@@ -91,6 +92,15 @@ function isFresh(card: Card): boolean {
   return card.times_seen === 0;
 }
 
+function gradeTypeAnswer(userAnswer: string, correct: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase();
+  return (
+    norm(userAnswer) === norm(correct) ||
+    norm(correct).includes(norm(userAnswer)) ||
+    norm(userAnswer).includes(norm(correct))
+  );
+}
+
 interface CardRowProps {
   card: Card;
   isEditing: boolean;
@@ -169,8 +179,8 @@ function CardRow({
         className="rounded-xl border bg-card px-4 py-3"
         style={{ borderColor: "oklch(0.55 0.2 27 / 0.35)" }}
       >
-        <p className="text-sm font-medium text-foreground break-words">{card.front}</p>
-        <p className="mt-1.5 text-sm text-muted-foreground/80 break-words">{card.back}</p>
+        <CardText text={card.front} className="text-sm font-medium text-foreground break-words" />
+        <CardText text={card.back} className="mt-1.5 text-sm text-muted-foreground/80 break-words" />
         <div className="mt-3 flex items-center gap-2.5">
           <p className="text-xs text-muted-foreground/70">Delete this card?</p>
           <button
@@ -208,8 +218,8 @@ function CardRow({
       {...(dragAttributes as React.HTMLAttributes<HTMLDivElement> | undefined)}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground break-words">{card.front}</p>
-        <p className="mt-1.5 text-sm text-muted-foreground/80 break-words">{card.back}</p>
+        <CardText text={card.front} className="text-sm font-medium text-foreground break-words" />
+        <CardText text={card.back} className="mt-1.5 text-sm text-muted-foreground/80 break-words" />
       </div>
       <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
         <button
@@ -382,6 +392,8 @@ export default function DeckPage() {
   const [answerMode, setAnswerMode] = useState<AnswerMode | null>(null);
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [typeAiGrading, setTypeAiGrading] = useState(false);
+  const [typeGradeResult, setTypeGradeResult] = useState<boolean | null>(null);
   const [selectedMcOption, setSelectedMcOption] = useState<string | null>(null);
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
@@ -493,13 +505,47 @@ export default function DeckPage() {
     setFlipped(false);
     setTypedAnswer("");
     setAnswerSubmitted(false);
+    setTypeAiGrading(false);
+    setTypeGradeResult(null);
     setSelectedMcOption(null);
     if (studyState === "done") setStudyState("studying");
+  }
+
+  async function handleTypeSubmit() {
+    if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
+    setAnswerSubmitted(true);
+
+    const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
+    if (heuristic) {
+      setTypeGradeResult(true);
+      return;
+    }
+
+    setTypeAiGrading(true);
+    try {
+      const res = await fetch("/api/quiz/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: currentCard.front,
+          userAnswer: typedAnswer,
+          correctAnswer: currentCard.back,
+        }),
+      });
+      const data = await res.json();
+      setTypeGradeResult(data.correct === true);
+    } catch {
+      setTypeGradeResult(false);
+    } finally {
+      setTypeAiGrading(false);
+    }
   }
 
   function advance() {
     setTypedAnswer("");
     setAnswerSubmitted(false);
+    setTypeAiGrading(false);
+    setTypeGradeResult(null);
     setSelectedMcOption(null);
     if (currentIndex + 1 >= activeQueue.length) {
       setStudyState("done");
@@ -531,6 +577,8 @@ export default function DeckPage() {
     setStartedAt(new Date().toISOString());
     setTypedAnswer("");
     setAnswerSubmitted(false);
+    setTypeAiGrading(false);
+    setTypeGradeResult(null);
     setSelectedMcOption(null);
     setAnswerMode(answerModeOverride);
     setShowModeModal(false);
@@ -1560,7 +1608,7 @@ export default function DeckPage() {
               {flipped && (
                 <>
                   <p className="mb-4 text-[10px]">placeholder</p>
-                  <p className="text-lg leading-relaxed break-words">{currentCard.back}</p>
+                  <CardText text={currentCard.back} className="text-lg leading-relaxed break-words" />
                 </>
               )}
             </div>
@@ -1581,9 +1629,7 @@ export default function DeckPage() {
                 <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                   Question
                 </p>
-                <p className="w-full text-lg font-medium leading-relaxed text-foreground break-words">
-                  {currentCard.front}
-                </p>
+                <CardText text={currentCard.front} className="w-full text-lg font-medium leading-relaxed text-foreground break-words" />
                 <p className="mt-auto pt-4 w-full text-[10px] text-muted-foreground/50">
                   tap or press space to reveal
                 </p>
@@ -1596,7 +1642,7 @@ export default function DeckPage() {
                 <p className="mb-4 w-full text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                   Answer
                 </p>
-                <p className="w-full text-lg leading-relaxed text-foreground break-words">{currentCard.back}</p>
+                <CardText text={currentCard.back} className="w-full text-lg leading-relaxed text-foreground break-words" />
               </div>
             </div>
           </div>
@@ -1653,9 +1699,7 @@ export default function DeckPage() {
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>
-            <p className="text-lg font-medium leading-relaxed text-foreground text-center">
-              {currentCard.front}
-            </p>
+            <CardText text={currentCard.front} className="text-lg font-medium leading-relaxed text-foreground text-center" />
 
             {!answerSubmitted ? (
               <div className="mt-6">
@@ -1666,7 +1710,7 @@ export default function DeckPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (typedAnswer.trim()) setAnswerSubmitted(true);
+                      if (typedAnswer.trim()) handleTypeSubmit();
                     }
                   }}
                   placeholder="Type your answer…"
@@ -1676,16 +1720,39 @@ export default function DeckPage() {
                 <Button
                   className="mt-3 w-full"
                   disabled={!typedAnswer.trim()}
-                  onClick={() => setAnswerSubmitted(true)}
+                  onClick={handleTypeSubmit}
                 >
                   Submit
                 </Button>
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className="rounded-xl bg-muted/40 px-4 py-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Your answer
+                <div
+                  className="rounded-xl px-4 py-3 transition-colors"
+                  style={{
+                    background: typeGradeResult === true
+                      ? "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)"
+                      : typeGradeResult === false
+                      ? "color-mix(in oklch, var(--destructive) 10%, transparent)"
+                      : "color-mix(in oklch, var(--muted) 40%, transparent)",
+                    border: typeGradeResult === true
+                      ? "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)"
+                      : typeGradeResult === false
+                      ? "1px solid color-mix(in oklch, var(--destructive) 40%, transparent)"
+                      : "1px solid transparent",
+                  }}
+                >
+                  <p
+                    className="text-[10px] font-medium uppercase tracking-[0.12em]"
+                    style={{
+                      color: typeGradeResult === true
+                        ? "var(--dashboard-accent-teal-strong)"
+                        : typeGradeResult === false
+                        ? "var(--destructive)"
+                        : "var(--muted-foreground)",
+                    }}
+                  >
+                    {typeAiGrading ? "Checking…" : typeGradeResult === true ? "Correct" : typeGradeResult === false ? "Incorrect" : "Your answer"}
                   </p>
                   <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
                 </div>
@@ -1693,7 +1760,7 @@ export default function DeckPage() {
                   <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
                     Correct answer
                   </p>
-                  <p className="mt-1 text-sm text-foreground">{currentCard.back}</p>
+                  <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
                 </div>
               </div>
             )}
@@ -1751,9 +1818,7 @@ export default function DeckPage() {
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>
-            <p className="text-lg font-medium leading-relaxed text-foreground text-center">
-              {currentCard.front}
-            </p>
+            <CardText text={currentCard.front} className="text-lg font-medium leading-relaxed text-foreground text-center" />
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-2">

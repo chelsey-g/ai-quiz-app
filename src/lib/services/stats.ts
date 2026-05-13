@@ -79,9 +79,17 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
   // Totals
   const totalSessions = completedSessions.length;
 
-  let studyTimeMs = 0;
+  // Deduplicate sessions that share the same started_at — multi-deck quick quiz
+  // saves one record per deck with identical start times, which would inflate the total.
+  const latestCompletedByStart = new Map<string, number>();
   for (const s of completedSessions) {
-    studyTimeMs += new Date(s.completed_at).getTime() - new Date(s.started_at).getTime();
+    const completedMs = new Date(s.completed_at).getTime();
+    const prev = latestCompletedByStart.get(s.started_at) ?? 0;
+    if (completedMs > prev) latestCompletedByStart.set(s.started_at, completedMs);
+  }
+  let studyTimeMs = 0;
+  for (const [startedAt, completedMs] of latestCompletedByStart) {
+    studyTimeMs += completedMs - new Date(startedAt).getTime();
   }
   const studyTimeMinutes = Math.round(studyTimeMs / 60000);
 

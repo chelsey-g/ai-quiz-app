@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +16,8 @@ interface GenerateResult {
 }
 
 export default function GeneratePage() {
-  const [topic, setTopic] = useState("");
+  const searchParams = useSearchParams();
+  const [topic, setTopic] = useState(searchParams.get("topic") ?? "");
   const [state, setState] = useState<PageState>("idle");
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

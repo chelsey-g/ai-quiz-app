@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { CardText } from "@/components/card-text";
 import {
   Dialog,
   DialogContent,
@@ -382,7 +383,7 @@ export default function QuickQuizPage() {
   const currentCardMode: ResolvedMode = currentCard
     ? (cardModes[currentCard.id] ?? "type")
     : "type";
-  const progress = answers.length / cards.length;
+  const progress = cards.length > 0 ? Math.min(1, currentIndex / cards.length) : 0;
   const correctCount = answers.filter((a) => a.correct).length;
   const scorePercent =
     answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0;
@@ -449,7 +450,7 @@ export default function QuickQuizPage() {
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
           <span className="text-xs text-muted-foreground">
-            {answers.length + 1} / {cards.length}
+            {currentIndex + 1} / {cards.length}
           </span>
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
@@ -473,9 +474,7 @@ export default function QuickQuizPage() {
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                 Question
               </p>
-              <p className="text-lg font-medium leading-relaxed text-foreground">
-                {currentCard.front}
-              </p>
+              <CardText text={currentCard.front} className="text-lg font-medium leading-relaxed text-foreground" />
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               {(mcOptions[currentCard.id] ?? []).map((option, idx) => {
@@ -520,9 +519,7 @@ export default function QuickQuizPage() {
             <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
               Question
             </p>
-            <p className="text-center text-lg font-medium leading-relaxed text-foreground">
-              {currentCard.front}
-            </p>
+            <CardText text={currentCard.front} className="text-center text-lg font-medium leading-relaxed text-foreground" />
             {!answerSubmitted ? (
               <div className="mt-6">
                 <textarea
@@ -583,7 +580,7 @@ export default function QuickQuizPage() {
                   <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
                     Correct answer
                   </p>
-                  <p className="mt-1 text-sm text-foreground">{currentCard.back}</p>
+                  <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
                 </div>
               </div>
             )}
@@ -692,12 +689,12 @@ export default function QuickQuizPage() {
                   {answer.correct ? "✓" : "✗"}
                 </span>
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">{answer.card.front}</p>
+                  <CardText text={answer.card.front} className="font-medium text-foreground" />
                   {!answer.correct && (
                     <div className="mt-1.5 space-y-2">
                       <p className="text-destructive/80">Your answer: {answer.userAnswer}</p>
-                      <p className="text-green-600 dark:text-green-400">
-                        Correct: {answer.card.back}
+                      <p className="text-green-600 dark:text-green-400 text-sm">
+                        Correct: <CardText text={answer.card.back} />
                       </p>
                       <div className="mt-2 rounded-lg bg-muted/40 px-3 py-2">
                         <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60">

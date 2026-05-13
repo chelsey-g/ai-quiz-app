@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  Layers, FileCode2, LayoutGrid, ShieldCheck,
+  Database, Network, Container, GitBranch,
+  Workflow, Puzzle, KeyRound, Lock,
+} from "lucide-react";
 
 type PublicDeck = {
   id: string;
@@ -263,9 +268,46 @@ function DeckCard({
   );
 }
 
+type EngineeringTopic = { topic: string; category: string; color: string; Icon: React.ElementType };
+
+const ALL_ENGINEERING_TOPICS: EngineeringTopic[] = [
+  { topic: "React Hooks",           category: "Frontend",  color: "var(--dashboard-accent-teal)",        Icon: Layers },
+  { topic: "TypeScript",            category: "Frontend",  color: "var(--dashboard-accent-teal)",        Icon: FileCode2 },
+  { topic: "Next.js App Router",    category: "Frontend",  color: "var(--dashboard-accent-teal)",        Icon: Layers },
+  { topic: "CSS Grid & Flexbox",    category: "Frontend",  color: "var(--dashboard-accent-teal)",        Icon: LayoutGrid },
+  { topic: "Web Accessibility",     category: "Frontend",  color: "var(--dashboard-accent-teal)",        Icon: ShieldCheck },
+  { topic: "System Design",         category: "Systems",   color: "var(--dashboard-accent-rose)",        Icon: Network },
+  { topic: "Data Structures",       category: "Systems",   color: "var(--dashboard-accent-rose)",        Icon: LayoutGrid },
+  { topic: "Algorithms",            category: "Systems",   color: "var(--dashboard-accent-rose)",        Icon: Puzzle },
+  { topic: "Design Patterns",       category: "Systems",   color: "var(--dashboard-accent-rose)",        Icon: Puzzle },
+  { topic: "Computer Networks",     category: "Systems",   color: "var(--dashboard-accent-rose)",        Icon: Network },
+  { topic: "Operating Systems",     category: "Systems",   color: "var(--dashboard-accent-rose)",        Icon: Container },
+  { topic: "SQL Fundamentals",      category: "Data",      color: "var(--dashboard-accent-coral)",       Icon: Database },
+  { topic: "Database Indexing",     category: "Data",      color: "var(--dashboard-accent-coral)",       Icon: Database },
+  { topic: "NoSQL & MongoDB",       category: "Data",      color: "var(--dashboard-accent-coral)",       Icon: Database },
+  { topic: "Redis & Caching",       category: "Data",      color: "var(--dashboard-accent-coral)",       Icon: Database },
+  { topic: "REST API Design",       category: "Backend",   color: "var(--dashboard-accent-amber)",       Icon: Workflow },
+  { topic: "GraphQL",               category: "Backend",   color: "var(--dashboard-accent-amber)",       Icon: Workflow },
+  { topic: "Node.js & Express",     category: "Backend",   color: "var(--dashboard-accent-amber)",       Icon: FileCode2 },
+  { topic: "Authentication & JWT",  category: "Backend",   color: "var(--dashboard-accent-amber)",       Icon: KeyRound },
+  { topic: "Microservices",         category: "Backend",   color: "var(--dashboard-accent-amber)",       Icon: Layers },
+  { topic: "Docker & Containers",   category: "DevOps",    color: "var(--dashboard-accent-teal-strong)", Icon: Container },
+  { topic: "Kubernetes",            category: "DevOps",    color: "var(--dashboard-accent-teal-strong)", Icon: Container },
+  { topic: "Git & Version Control", category: "DevOps",    color: "var(--dashboard-accent-teal-strong)", Icon: GitBranch },
+  { topic: "CI/CD Pipelines",       category: "DevOps",    color: "var(--dashboard-accent-teal-strong)", Icon: Workflow },
+  { topic: "AWS Fundamentals",      category: "DevOps",    color: "var(--dashboard-accent-teal-strong)", Icon: Network },
+  { topic: "Web Security (OWASP)",  category: "DevOps",    color: "var(--dashboard-accent-teal-strong)", Icon: Lock },
+];
+
+function pickRandomTopics(n: number): EngineeringTopic[] {
+  return [...ALL_ENGINEERING_TOPICS].sort(() => Math.random() - 0.5).slice(0, n);
+}
+
 export default function CommunityPage() {
   const router = useRouter();
 
+  const [engineeringTopics] = useState<EngineeringTopic[]>(() => pickRandomTopics(12));
+  const [generatingTopic, setGeneratingTopic] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [recentDecks, setRecentDecks] = useState<PublicDeck[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
@@ -391,6 +433,25 @@ export default function CommunityPage() {
     }
   }
 
+  async function handleGenerateTopic(topic: string) {
+    if (generatingTopic) return;
+    setGeneratingTopic(topic);
+    try {
+      const res = await fetch("/api/generate-topic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic }),
+      });
+      if (res.status === 401) { router.push("/auth/login"); return; }
+      const data = await res.json();
+      if (data.deckId) router.push(`/decks/${data.deckId}`);
+    } catch {
+      // silently reset — user can retry
+    } finally {
+      setGeneratingTopic(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       {/* Header */}
@@ -457,6 +518,57 @@ export default function CommunityPage() {
           )}
         </div>
       )}
+
+      {/* Engineering study ideas */}
+      <div className="mt-8">
+        <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
+          Generate a deck from an engineering topic
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {engineeringTopics.map(({ topic, category, color, Icon }) => {
+            const isGenerating = generatingTopic === topic;
+            const isDisabled = !!generatingTopic;
+            return (
+              <button
+                key={topic}
+                onClick={() => handleGenerateTopic(topic)}
+                disabled={isDisabled}
+                className="group flex flex-col justify-between rounded-xl border bg-card p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ borderColor: `color-mix(in oklch, ${color} 25%, var(--border))` }}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span
+                    className="text-[9px] font-semibold uppercase tracking-widest"
+                    style={{ color: `color-mix(in oklch, ${color} 70%, var(--muted-foreground))` }}
+                  >
+                    {category}
+                  </span>
+                  {isGenerating ? (
+                    <div
+                      className="h-3.5 w-3.5 animate-spin rounded-full border border-current border-t-transparent"
+                      style={{ color }}
+                    />
+                  ) : (
+                    <Icon
+                      className="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100"
+                      style={{ color }}
+                    />
+                  )}
+                </div>
+                <span className="text-xs font-medium leading-snug text-foreground">
+                  {topic}
+                </span>
+                <span
+                  className="mt-2 text-[10px] opacity-0 transition-opacity group-hover:opacity-100"
+                  style={{ color }}
+                >
+                  {isGenerating ? "Generating…" : "Generate →"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Section */}
       <div className="mt-8">

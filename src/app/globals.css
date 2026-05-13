@@ -206,3 +206,27 @@
 .animate-fade-up {
   animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* sugar-high syntax token colors — light mode */
+.sh-keyword   { color: oklch(0.40 0.15 210); }   /* teal — const, let, return */
+.sh-string    { color: oklch(0.44 0.13 142); }   /* green — "strings" */
+.sh-comment   { color: oklch(0.55 0.01 80); font-style: italic; }
+.sh-class     { color: oklch(0.46 0.14 280); }   /* violet — ClassName */
+.sh-property  { color: oklch(0.48 0.13 210); }   /* cyan-teal — .prop */
+.sh-entity    { color: oklch(0.50 0.16 52); }    /* orange — function names */
+.sh-jsxliterals { color: oklch(0.44 0.13 142); } /* green — JSX attr values */
+.sh-sign      { color: oklch(0.42 0.02 55); }    /* dark gray — operators */
+.sh-deleted   { color: oklch(0.50 0.20 25); }
+.sh-inserted  { color: oklch(0.44 0.13 142); }
+
+/* sugar-high syntax token colors — dark mode */
+.dark .sh-keyword   { color: oklch(0.78 0.14 205); }  /* bright teal */
+.dark .sh-string    { color: oklch(0.75 0.14 142); }  /* lime green */
+.dark .sh-comment   { color: oklch(0.55 0.02 80); font-style: italic; }
+.dark .sh-class     { color: oklch(0.82 0.12 78); }   /* amber */
+.dark .sh-property  { color: oklch(0.73 0.14 205); }  /* teal */
+.dark .sh-entity    { color: oklch(0.78 0.17 52); }   /* warm orange */
+.dark .sh-jsxliterals { color: oklch(0.75 0.14 142); }
+.dark .sh-sign      { color: oklch(0.65 0.02 80); }
+.dark .sh-deleted   { color: oklch(0.72 0.18 22); }
+.dark .sh-inserted  { color: oklch(0.75 0.14 142); }

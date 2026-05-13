@@ -85,6 +85,10 @@ export default function QuickQuizPage() {
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
 
+  const [savingDeck, setSavingDeck] = useState(false);
+  const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
+  const [saveDeckError, setSaveDeckError] = useState<string | null>(null);
+
   const { explanations, explanationsLoading } = useWrongAnswerExplanations(
     phase === "results" ? answers : []
   );
@@ -227,6 +231,46 @@ export default function QuickQuizPage() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     setPhase("quiz");
+  }
+
+  async function saveToDeck() {
+    if (savingDeck || savedDeckId) return;
+    setSavingDeck(true);
+    setSaveDeckError(null);
+    try {
+      const dateLabel = new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+      const deckRes = await fetch("/api/decks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: `Study Session – ${dateLabel}` }),
+      });
+      if (!deckRes.ok) {
+        const d = await deckRes.json();
+        setSaveDeckError(d.error ?? "Failed to create deck");
+        return;
+      }
+      const newDeck = await deckRes.json();
+      const cardsPayload = answers.map((a) => ({ front: a.card.front, back: a.card.back }));
+      const bulkRes = await fetch(`/api/decks/${newDeck.id}/cards/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cards: cardsPayload }),
+      });
+      if (!bulkRes.ok) {
+        const d = await bulkRes.json();
+        setSaveDeckError(d.error ?? "Failed to save cards");
+        return;
+      }
+      setSavedDeckId(newDeck.id);
+    } catch {
+      setSaveDeckError("Something went wrong. Please try again.");
+    } finally {
+      setSavingDeck(false);
+    }
   }
 
   if (loading) {
@@ -526,15 +570,40 @@ export default function QuickQuizPage() {
         </p>
       </div>
 
-      <div className="mb-8 flex gap-3">
-        {answers.some((a) => !a.correct) && (
-          <Button className="flex-1" onClick={retryMissed}>
-            Retry missed
+      <div className="mb-8 space-y-3">
+        <div className="flex gap-3">
+          {answers.some((a) => !a.correct) && (
+            <Button className="flex-1" onClick={retryMissed}>
+              Retry missed
+            </Button>
+          )}
+          <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>
+            Back to decks
           </Button>
-        )}
-        <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>
-          Back to decks
-        </Button>
+        </div>
+        <div className="flex flex-col gap-2">
+          {savedDeckId ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push(`/decks/${savedDeckId}`)}
+            >
+              View saved deck →
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={saveToDeck}
+              disabled={savingDeck}
+            >
+              {savingDeck ? "Saving…" : "Save cards to deck"}
+            </Button>
+          )}
+          {saveDeckError && (
+            <p className="text-center text-xs text-destructive">{saveDeckError}</p>
+          )}
+        </div>
       </div>
 
       <div>

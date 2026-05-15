@@ -14,6 +14,7 @@ type Props = {
   deckId: string;
   deckTitle: string;
   cards: Card[];
+  initialRecipients?: UserResult[];
 };
 
 type Step = "cards" | "recipients" | "confirm";
@@ -25,7 +26,7 @@ const QUIZ_MODES: { value: QuizMode; label: string; description: string }[] = [
   { value: "random", label: "Random", description: "Mix of both" },
 ];
 
-export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Props) {
+export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards, initialRecipients }: Props) {
   const [step, setStep] = useState<Step>("cards");
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set(cards.map((c) => c.id)));
   const [query, setQuery] = useState("");
@@ -42,7 +43,7 @@ export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Prop
       setSelectedCardIds(new Set(cards.map((c) => c.id)));
       setQuery("");
       setSearchResults([]);
-      setRecipients([]);
+      setRecipients(initialRecipients ?? []);
       setQuizMode("multiple-choice");
       setSent(false);
     }
@@ -258,12 +259,12 @@ export function ChallengeSheet({ open, onClose, deckId, deckTitle, cards }: Prop
         {!sent && (
           <div className="px-6 py-4 border-t border-border/50 flex gap-2 shrink-0">
             {step !== "cards" && (
-              <Button variant="outline" className="flex-1" onClick={() => setStep(step === "confirm" ? "recipients" : "cards")}>
+              <Button variant="outline" className="flex-1" onClick={() => setStep(step === "confirm" ? (initialRecipients?.length ? "cards" : "recipients") : "cards")}>
                 Back
               </Button>
             )}
             {step === "cards" && (
-              <Button className="flex-1" disabled={selectedCardIds.size === 0} onClick={() => setStep("recipients")}>
+              <Button className="flex-1" disabled={selectedCardIds.size === 0} onClick={() => setStep(initialRecipients?.length ? "confirm" : "recipients")}>
                 Next: Pick recipients
               </Button>
             )}

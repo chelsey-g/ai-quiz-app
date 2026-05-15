@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest } from "next/server";
+import { isValidUsername, USERNAME_ERROR } from "@/lib/utils/username";
 
 type NotificationPrefs = {
   challenge_received: boolean;
@@ -14,7 +15,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url, default_study_mode, daily_goal, notification_prefs")
+    .select("display_name, avatar_url, default_study_mode, daily_goal, notification_prefs, username")
     .eq("id", user.id)
     .single();
 
@@ -31,6 +32,7 @@ export async function GET() {
       challenge_received: true,
       challenge_completed: true,
     },
+    username: (data as { username?: string | null } | null)?.username ?? null,
     email: user.email ?? "",
   });
 }
@@ -75,6 +77,15 @@ export async function PATCH(req: NextRequest) {
       challenge_received: Boolean((body.notification_prefs as NotificationPrefs).challenge_received ?? true),
       challenge_completed: Boolean((body.notification_prefs as NotificationPrefs).challenge_completed ?? true),
     };
+  }
+
+  if ("username" in body) {
+    const username =
+      typeof body.username === "string" ? body.username.trim().toLowerCase() : null;
+    if (!username || !isValidUsername(username)) {
+      return Response.json({ error: USERNAME_ERROR }, { status: 400 });
+    }
+    (updates as Record<string, unknown>).username = username;
   }
 
   if (Object.keys(updates).length === 0) {

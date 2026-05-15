@@ -347,6 +347,7 @@ export type Database = {
           display_name: string | null
           id: string
           notification_prefs: Json
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -356,6 +357,7 @@ export type Database = {
           display_name?: string | null
           id: string
           notification_prefs?: Json
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           notification_prefs?: Json
+          username?: string | null
         }
         Relationships: []
       }

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isValidUsername, USERNAME_ERROR } from "@/lib/utils/username";
 
 function getEmailRedirectTo() {
   const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
@@ -34,6 +35,12 @@ export async function signIn(formData: FormData) {
 export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const username = ((formData.get("username") as string | null) ?? "").trim().toLowerCase();
+  const displayName = ((formData.get("display_name") as string | null) ?? "").trim();
+
+  if (!isValidUsername(username)) {
+    redirect(`/auth/signup?error=${encodeURIComponent(USERNAME_ERROR)}`);
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -46,11 +53,29 @@ export async function signUp(formData: FormData) {
     redirect(`/auth/signup?error=${encodeURIComponent(error.message)}`);
   }
 
+  if (data.user) {
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: data.user.id,
+      username,
+      display_name: displayName || null,
+    });
+
+    if (profileError) {
+      const msg =
+        profileError.code === "23505"
+          ? "That username is already taken."
+          : profileError.message;
+      redirect(`/auth/signup?error=${encodeURIComponent(msg)}`);
+    }
+  }
+
   if (data.session) {
     redirect("/");
   }
 
-  redirect(`/auth/signup?message=${encodeURIComponent("Check your email to confirm your account.")}`);
+  redirect(
+    `/auth/signup?message=${encodeURIComponent("Check your email to confirm your account.")}`
+  );
 }
 
 export async function sendMagicLink(formData: FormData) {

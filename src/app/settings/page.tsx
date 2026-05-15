@@ -19,6 +19,7 @@ type ProfileData = {
   daily_goal: number | null;
   notification_prefs: NotificationPrefs;
   email: string;
+  username: string | null;
 };
 
 const DAILY_GOAL_OPTIONS = [5, 10, 15, 20, 25, 30] as const;
@@ -69,6 +70,11 @@ export default function SettingsPage() {
     challenge_completed: true,
   });
 
+  const [username, setUsername] = useState("");
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameSaved, setUsernameSaved] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -88,6 +94,7 @@ export default function SettingsPage() {
         setNotifPrefs(
           d.notification_prefs ?? { challenge_received: true, challenge_completed: true }
         );
+        setUsername(d.username ?? "");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -102,6 +109,25 @@ export default function SettingsPage() {
     setStudySaving(false);
     setStudySaved(true);
     setTimeout(() => setStudySaved(false), 2000);
+  }
+
+  async function saveUsername() {
+    setUsernameSaving(true);
+    setUsernameError(null);
+    setUsernameSaved(false);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username.trim().toLowerCase() }),
+    });
+    const data = await res.json();
+    setUsernameSaving(false);
+    if (!res.ok) {
+      setUsernameError(data.error ?? "Failed to save");
+    } else {
+      setUsernameSaved(true);
+      setTimeout(() => setUsernameSaved(false), 2000);
+    }
   }
 
   async function toggleNotifPref(key: keyof NotificationPrefs) {
@@ -155,6 +181,39 @@ export default function SettingsPage() {
             initialAvatarUrl={profile.avatar_url}
           />
         )}
+        {/* Username */}
+        <div className="mt-5 space-y-2">
+          <label className="block text-xs font-medium text-foreground/70">
+            Username
+            <span className="ml-1 text-muted-foreground/40">(3–20 chars, lowercase, underscores ok)</span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex flex-1 items-center rounded-xl border border-border/60 bg-muted/20 px-3 py-2 focus-within:ring-2 focus-within:ring-ring/70 transition-all">
+              <span className="mr-1 text-sm text-muted-foreground/50">@</span>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => { setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")); setUsernameSaved(false); setUsernameError(null); }}
+                placeholder="yourname"
+                maxLength={20}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={saveUsername}
+              disabled={usernameSaving || username.length < 3}
+              className="rounded-xl border border-border/50 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/40 disabled:opacity-50"
+            >
+              {usernameSaving ? "Saving…" : usernameSaved ? "Saved ✓" : "Save"}
+            </button>
+          </div>
+          {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
+          {username.length >= 3 && !usernameError && !usernameSaving && (
+            <p className="text-xs text-muted-foreground/50">
+              Your profile: <span className="font-mono">/u/{username.trim().toLowerCase()}</span>
+            </p>
+          )}
+        </div>
       </section>
 
       {/* Appearance */}

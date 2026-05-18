@@ -6,15 +6,16 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
+  const displayName = decodeURIComponent(username);
   const supabase = await createClient();
 
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("id, display_name, avatar_url, username, created_at")
-    .eq("username", username.toLowerCase())
-    .single();
+    .ilike("display_name", displayName)
+    .maybeSingle();
 
-  if (error || !profile) {
+  if (error || !profile || !profile.display_name) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 

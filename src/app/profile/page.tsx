@@ -61,11 +61,11 @@ export default async function ProfilePage() {
 
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("username")
+    .select("display_name")
     .eq("id", user.id)
     .single();
 
-  const username = (profileData as { username?: string | null } | null)?.username ?? null;
+  const displayName = (profileData as { display_name?: string | null } | null)?.display_name ?? null;
 
   const [stats, collectionsResult] = await Promise.all([
     getGlobalStats(user.id),
@@ -88,9 +88,9 @@ export default async function ProfilePage() {
       <div className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">Profile</h1>
-          {username ? (
+          {displayName ? (
             <Link
-              href={`/u/${username}`}
+              href={`/u/${encodeURIComponent(displayName)}`}
               className="rounded-xl border border-border/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               View public profile →
@@ -100,7 +100,7 @@ export default async function ProfilePage() {
               href="/settings"
               className="rounded-xl border border-border/50 px-4 py-2 text-sm font-medium text-muted-foreground/60 transition-colors hover:text-foreground"
             >
-              Set username to get public profile
+              Set display name to get public profile
             </Link>
           )}
         </div>

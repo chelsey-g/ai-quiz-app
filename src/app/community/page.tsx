@@ -102,12 +102,12 @@ function PreviewModal({
                 <Link href="/profile" className="hover:text-foreground transition-colors" onClick={onClose}>
                   {deck.publisher_name}
                 </Link>
-              ) : deck.publisher_username ? (
-                <Link href={`/u/${deck.publisher_username}`} className="hover:text-foreground transition-colors" onClick={onClose}>
-                  {deck.publisher_name ?? deck.publisher_username}
+              ) : deck.publisher_name ? (
+                <Link href={`/u/${encodeURIComponent(deck.publisher_name)}`} className="hover:text-foreground transition-colors" onClick={onClose}>
+                  {deck.publisher_name}
                 </Link>
               ) : (
-                deck.publisher_name ?? "Anonymous"
+                "Anonymous"
               )}
               {" · "}{deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
             </p>
@@ -227,12 +227,12 @@ function DeckCard({
             <Link href="/profile" className="hover:text-foreground transition-colors">
               {deck.publisher_name}
             </Link>
-          ) : deck.publisher_username ? (
-            <Link href={`/u/${deck.publisher_username}`} className="hover:text-foreground transition-colors">
-              {deck.publisher_name ?? deck.publisher_username}
+          ) : deck.publisher_name ? (
+            <Link href={`/u/${encodeURIComponent(deck.publisher_name)}`} className="hover:text-foreground transition-colors">
+              {deck.publisher_name}
             </Link>
           ) : (
-            deck.publisher_name ?? "Anonymous"
+            "Anonymous"
           )}
         </p>
         {deck.topic_tags.length > 0 && (

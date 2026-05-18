@@ -14,13 +14,14 @@ export default async function PublicProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  const displayName = decodeURIComponent(username);
   const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, display_name, avatar_url, username, created_at")
-    .eq("username", username.toLowerCase())
-    .single();
+    .ilike("display_name", displayName)
+    .maybeSingle();
 
   if (!profile) notFound();
 
@@ -39,7 +40,7 @@ export default async function PublicProfilePage({
   } = await supabase.auth.getUser();
   const isOwnProfile = user?.id === profile.id;
 
-  const initial = (profile.display_name ?? profile.username ?? "?").charAt(0).toUpperCase();
+  const initial = (profile.display_name ?? "?").charAt(0).toUpperCase();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -60,11 +61,8 @@ export default async function PublicProfilePage({
           </div>
           <div>
             <h1 className="font-heading text-xl font-bold text-foreground">
-              {profile.display_name ?? `@${profile.username}`}
+              {profile.display_name}
             </h1>
-            {profile.display_name && (
-              <p className="text-sm text-muted-foreground/60">@{profile.username}</p>
-            )}
             <p className="mt-0.5 text-xs text-muted-foreground/40">
               Joined {formatJoinDate(profile.created_at)}
             </p>

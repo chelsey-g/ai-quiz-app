@@ -60,14 +60,22 @@ describe("buildAccuracyByDay", () => {
 
   it("excludes sessions with null score", () => {
     const result = buildAccuracyByDay([
-      { completed_at: daysAgo(0), score: null },
+      { completed_at: daysAgo(0), score: null, total: 10 },
+    ]);
+    expect(result).toHaveLength(0);
+  });
+
+  it("excludes sessions with null or zero total", () => {
+    const result = buildAccuracyByDay([
+      { completed_at: daysAgo(0), score: 8, total: null },
+      { completed_at: daysAgo(0), score: 8, total: 0 },
     ]);
     expect(result).toHaveLength(0);
   });
 
   it("computes correct percentage for a single session", () => {
     const result = buildAccuracyByDay([
-      { completed_at: daysAgo(0), score: 0.8 },
+      { completed_at: daysAgo(0), score: 8, total: 10 },
     ]);
     expect(result).toHaveLength(1);
     expect(result[0].pct).toBe(80);
@@ -76,8 +84,8 @@ describe("buildAccuracyByDay", () => {
   it("averages multiple sessions on the same day", () => {
     const ts = daysAgo(0);
     const result = buildAccuracyByDay([
-      { completed_at: ts, score: 1.0 },
-      { completed_at: ts, score: 0.5 },
+      { completed_at: ts, score: 10, total: 10 },
+      { completed_at: ts, score: 5, total: 10 },
     ]);
     expect(result).toHaveLength(1);
     expect(result[0].pct).toBe(75);
@@ -85,17 +93,17 @@ describe("buildAccuracyByDay", () => {
 
   it("returns one entry per distinct day", () => {
     const result = buildAccuracyByDay([
-      { completed_at: daysAgo(0), score: 1.0 },
-      { completed_at: daysAgo(2), score: 0.5 },
+      { completed_at: daysAgo(0), score: 10, total: 10 },
+      { completed_at: daysAgo(2), score: 5, total: 10 },
     ]);
     expect(result).toHaveLength(2);
   });
 
   it("returns results sorted ascending by date", () => {
     const result = buildAccuracyByDay([
-      { completed_at: daysAgo(5), score: 0.6 },
-      { completed_at: daysAgo(0), score: 0.9 },
-      { completed_at: daysAgo(2), score: 0.7 },
+      { completed_at: daysAgo(5), score: 6, total: 10 },
+      { completed_at: daysAgo(0), score: 9, total: 10 },
+      { completed_at: daysAgo(2), score: 7, total: 10 },
     ]);
     for (let i = 1; i < result.length; i++) {
       expect(result[i].date >= result[i - 1].date).toBe(true);
@@ -104,14 +112,14 @@ describe("buildAccuracyByDay", () => {
 
   it("excludes sessions older than 30 days", () => {
     const result = buildAccuracyByDay([
-      { completed_at: daysAgo(31), score: 1.0 },
+      { completed_at: daysAgo(31), score: 10, total: 10 },
     ]);
     expect(result).toHaveLength(0);
   });
 
   it("rounds percentage to nearest integer", () => {
     const result = buildAccuracyByDay([
-      { completed_at: daysAgo(0), score: 1 / 3 },
+      { completed_at: daysAgo(0), score: 1, total: 3 },
     ]);
     expect(Number.isInteger(result[0].pct)).toBe(true);
   });

@@ -54,7 +54,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
   const [{ data: sessions }, { data: cards }] = await Promise.all([
     supabase
       .from("sessions")
-      .select("id, deck_id, score, started_at, completed_at")
+      .select("id, deck_id, score, total, started_at, completed_at")
       .eq("user_id", userId)
       .not("completed_at", "is", null),
     supabase
@@ -67,6 +67,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
     id: string;
     deck_id: string;
     score: number | null;
+    total: number | null;
     started_at: string;
     completed_at: string;
   }[];
@@ -203,21 +204,21 @@ export function buildActivityByWeek(completedAts: string[]): { week: string; cou
 }
 
 export function buildAccuracyByDay(
-  sessions: { completed_at: string; score: number | null }[]
+  sessions: { completed_at: string; score: number | null; total: number | null }[]
 ): { date: string; pct: number }[] {
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setUTCDate(now.getUTCDate() - 30);
 
   const recent = sessions.filter(
-    (s) => new Date(s.completed_at) >= thirtyDaysAgo && s.score !== null
+    (s) => new Date(s.completed_at) >= thirtyDaysAgo && s.score !== null && s.total
   );
 
   const byDay = new Map<string, number[]>();
   for (const s of recent) {
     const date = s.completed_at.slice(0, 10);
     if (!byDay.has(date)) byDay.set(date, []);
-    byDay.get(date)!.push(Math.round((s.score ?? 0) * 100));
+    byDay.get(date)!.push(Math.round(((s.score ?? 0) / s.total!) * 100));
   }
 
   return Array.from(byDay.entries())

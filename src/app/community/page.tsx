@@ -18,6 +18,7 @@ type PublicDeck = {
   user_id: string | null;
   publisher_name: string | null;
   publisher_avatar_url: string | null;
+  publisher_username: string | null;
   already_forked: boolean;
 };
 
@@ -100,6 +101,10 @@ function PreviewModal({
               {deck.user_id === currentUserId && deck.publisher_name ? (
                 <Link href="/profile" className="hover:text-foreground transition-colors" onClick={onClose}>
                   {deck.publisher_name}
+                </Link>
+              ) : deck.publisher_username ? (
+                <Link href={`/u/${deck.publisher_username}`} className="hover:text-foreground transition-colors" onClick={onClose}>
+                  {deck.publisher_name ?? deck.publisher_username}
                 </Link>
               ) : (
                 deck.publisher_name ?? "Anonymous"
@@ -223,6 +228,14 @@ function DeckCard({
               onClick={(e) => e.stopPropagation()}
             >
               {deck.publisher_name}
+            </Link>
+          ) : deck.publisher_username ? (
+            <Link
+              href={`/u/${deck.publisher_username}`}
+              className="hover:text-foreground transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {deck.publisher_name ?? deck.publisher_username}
             </Link>
           ) : (
             deck.publisher_name ?? "Anonymous"

@@ -25,14 +25,16 @@ export async function GET(req: NextRequest) {
 
   const profileMap = new Map<string, string | null>();
   const avatarMap = new Map<string, string | null>();
+  const usernameMap = new Map<string, string | null>();
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_url")
+      .select("id, display_name, avatar_url, username")
       .in("id", userIds);
     for (const p of profiles ?? []) {
       profileMap.set(p.id, p.display_name);
       avatarMap.set(p.id, p.avatar_url ?? null);
+      usernameMap.set(p.id, (p as { username?: string | null }).username ?? null);
     }
   }
 
@@ -55,6 +57,7 @@ export async function GET(req: NextRequest) {
     ...d,
     publisher_name: d.user_id ? (profileMap.get(d.user_id) ?? null) : null,
     publisher_avatar_url: d.user_id ? (avatarMap.get(d.user_id) ?? null) : null,
+    publisher_username: d.user_id ? (usernameMap.get(d.user_id) ?? null) : null,
     already_forked: forkedSet.has(d.id),
   }));
 

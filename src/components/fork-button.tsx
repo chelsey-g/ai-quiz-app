@@ -7,7 +7,7 @@ type Props = { deckId: string };
 
 export function ForkButton({ deckId }: Props) {
   const router = useRouter();
-  const [state, setState] = useState<"idle" | "forking" | "done">("idle");
+  const [state, setState] = useState<"idle" | "forking" | "error">("idle");
 
   async function handleFork() {
     setState("forking");
@@ -27,12 +27,22 @@ export function ForkButton({ deckId }: Props) {
         return;
       }
     } catch {
-      // fall through
+      // fall through to error state
     }
-    setState("idle");
+    setState("error");
   }
 
-  if (state === "done") return <span className="text-xs text-primary">Saved ✓</span>;
+  if (state === "error") {
+    return (
+      <button
+        onClick={() => setState("idle")}
+        className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/5"
+        title="Fork failed — click to retry"
+      >
+        Failed, retry?
+      </button>
+    );
+  }
 
   return (
     <button

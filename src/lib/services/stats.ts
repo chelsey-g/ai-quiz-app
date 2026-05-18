@@ -172,7 +172,7 @@ export async function getDeckStats(deckId: string, userId: string): Promise<Deck
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function buildActivityByWeek(completedAts: string[]): { week: string; count: number }[] {
+export function buildActivityByWeek(completedAts: string[]): { week: string; count: number }[] {
   const now = new Date();
   const dayOfWeek = now.getUTCDay();
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -202,7 +202,7 @@ function buildActivityByWeek(completedAts: string[]): { week: string; count: num
   return weeks;
 }
 
-function buildAccuracyByDay(
+export function buildAccuracyByDay(
   sessions: { completed_at: string; score: number | null }[]
 ): { date: string; pct: number }[] {
   const now = new Date();

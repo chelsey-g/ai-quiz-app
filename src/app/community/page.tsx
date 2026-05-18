@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -308,6 +308,7 @@ export default function CommunityPage() {
 
   const [engineeringTopics] = useState<EngineeringTopic[]>(() => pickRandomTopics(12));
   const [generatingTopic, setGeneratingTopic] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [recentDecks, setRecentDecks] = useState<PublicDeck[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
@@ -317,6 +318,12 @@ export default function CommunityPage() {
   const [results, setResults] = useState<PublicDeck[]>([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownResults, setDropdownResults] = useState<PublicDeck[]>([]);
+  const [dropdownLoading, setDropdownLoading] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [forkingId, setForkingId] = useState<string | null>(null);
   const [forkError, setForkError] = useState<string | null>(null);
@@ -345,6 +352,41 @@ export default function CommunityPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [previewDeck]);
+
+  // Debounced dropdown search
+  useEffect(() => {
+    if (!query.trim()) {
+      setDropdownOpen(false);
+      setDropdownResults([]);
+      return;
+    }
+    setDropdownOpen(true);
+    setDropdownLoading(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/community?q=${encodeURIComponent(query.trim())}`);
+        const json = await res.json();
+        setDropdownResults((json.decks ?? []).slice(0, 5));
+      } catch {
+        setDropdownResults([]);
+      } finally {
+        setDropdownLoading(false);
+      }
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
 
   const tags = popularTags(recentDecks);
   const isFiltering = searched || activeTag !== null;
@@ -436,6 +478,7 @@ export default function CommunityPage() {
   async function handleGenerateTopic(topic: string) {
     if (generatingTopic) return;
     setGeneratingTopic(topic);
+    setGenerateError(null);
     try {
       const res = await fetch("/api/generate-topic", {
         method: "POST",
@@ -444,9 +487,13 @@ export default function CommunityPage() {
       });
       if (res.status === 401) { router.push("/auth/login"); return; }
       const data = await res.json();
-      if (data.deckId) router.push(`/decks/${data.deckId}`);
+      if (data.deckId) {
+        router.push(`/decks/${data.deckId}`);
+      } else {
+        setGenerateError(data.error ?? "Generation failed — please try again.");
+      }
     } catch {
-      // silently reset — user can retry
+      setGenerateError("Generation failed — please try again.");
     } finally {
       setGeneratingTopic(null);
     }
@@ -463,22 +510,70 @@ export default function CommunityPage() {
       </div>
 
       {/* Search bar */}
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by topic or title…"
-          className="flex-1 rounded-xl border border-border/50 bg-muted/20 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-        />
-        <button
-          type="submit"
-          disabled={searching}
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {searching ? "Searching…" : "Search"}
-        </button>
-      </form>
+      <div ref={searchRef} className="relative">
+        <form onSubmit={(e) => { setDropdownOpen(false); handleSearch(e); }} className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => query.trim() && setDropdownOpen(true)}
+            placeholder="Search by topic or title…"
+            className="flex-1 rounded-xl border border-border/50 bg-muted/20 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+          />
+          <button
+            type="submit"
+            disabled={searching}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {searching ? "Searching…" : "Search"}
+          </button>
+        </form>
+
+        {/* Live search dropdown */}
+        {dropdownOpen && query.trim() && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-border/60 bg-card shadow-xl">
+            {dropdownLoading ? (
+              <div className="px-4 py-3 text-xs text-muted-foreground/50">Searching…</div>
+            ) : dropdownResults.length > 0 ? (
+              <>
+                {dropdownResults.map((deck) => (
+                  <button
+                    key={deck.id}
+                    onMouseDown={(e) => { e.preventDefault(); setDropdownOpen(false); handlePreview(deck); }}
+                    className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span className="truncate text-sm font-medium text-foreground">{deck.title}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground/50">{deck.card_count} cards</span>
+                  </button>
+                ))}
+                <div className="mx-4 border-t border-border/40" />
+              </>
+            ) : (
+              <div className="px-4 py-2.5 text-xs text-muted-foreground/50">No matching decks</div>
+            )}
+            <button
+              onMouseDown={(e) => { e.preventDefault(); setDropdownOpen(false); handleGenerateTopic(query.trim()); }}
+              disabled={!!generatingTopic}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-primary/5 disabled:opacity-50"
+              style={{ color: "var(--primary)" }}
+            >
+              {generatingTopic === query.trim() ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border border-current border-t-transparent" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Generate deck from &ldquo;{query.trim()}&rdquo;
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Popular tags */}
       {tags.length > 0 && (
@@ -524,6 +619,12 @@ export default function CommunityPage() {
         <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
           Generate a deck from an engineering topic
         </p>
+        {generateError && (
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-2.5">
+            <p className="text-xs text-destructive">{generateError}</p>
+            <button onClick={() => setGenerateError(null)} className="ml-3 text-xs text-destructive/60 hover:text-destructive">✕</button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {engineeringTopics.map(({ topic, category, color, Icon }) => {
             const isGenerating = generatingTopic === topic;

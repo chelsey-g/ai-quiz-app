@@ -62,7 +62,9 @@ export default async function PublicProfilePage({
             <h1 className="font-heading text-xl font-bold text-foreground">
               {profile.display_name ?? `@${profile.username}`}
             </h1>
-            <p className="text-sm text-muted-foreground/60">@{profile.username}</p>
+            {profile.display_name && (
+              <p className="text-sm text-muted-foreground/60">@{profile.username}</p>
+            )}
             <p className="mt-0.5 text-xs text-muted-foreground/40">
               Joined {formatJoinDate(profile.created_at)}
             </p>

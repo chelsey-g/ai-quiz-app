@@ -159,9 +159,15 @@ export default function ChallengPlayPage() {
   const openForkPicker = useCallback(async () => {
     setShowFork(true);
     setCollectionsLoading(true);
-    const data = await fetch("/api/collections").then((r) => r.json());
-    setCollections(data.collections ?? []);
-    setCollectionsLoading(false);
+    try {
+      const res = await fetch("/api/collections");
+      const data = await res.json();
+      setCollections(data.collections ?? []);
+    } catch {
+      setCollections([]);
+    } finally {
+      setCollectionsLoading(false);
+    }
   }, []);
 
   async function forkToCollection(collectionId: string) {

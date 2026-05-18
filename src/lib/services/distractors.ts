@@ -9,7 +9,7 @@ const SINGLE_SYSTEM_PROMPT =
   "(1) Each distractor must answer THE SAME QUESTION as the correct answer — just incorrectly. Never answer a different question or go on a tangent.\n" +
   "(2) Each distractor must be wrong for a DIFFERENT reason: aim for one common misconception, one related-but-incorrect fact, and one partial truth that misses the key point.\n" +
   "(3) A student who has fully mastered the material must immediately see all 3 as wrong. A student still learning should find them plausible.\n" +
-  "(4) Match the format and approximate length of the correct answer.\n" +
+  "(4) LENGTH AND FORM — CRITICAL: Count the words in the correct answer. Every distractor must be within ±2 words of that count. Mirror the grammatical form exactly: if the correct answer is a noun phrase, each distractor is a noun phrase; if it's a number, each distractor is a number; if it's a full sentence, each distractor is a full sentence; if it uses technical terminology, each distractor uses equally specific technical terminology. A distractor that is noticeably shorter, vaguer, or less specific than the correct answer is a failure.\n" +
   "(5) Never copy, rephrase, or echo the correct answer. Never produce a distractor that is also correct or could be argued as correct.";
 
 const BATCH_SYSTEM_PROMPT =
@@ -19,7 +19,7 @@ const BATCH_SYSTEM_PROMPT =
   "(2) CRITICAL: Never use or paraphrase text from another card's correct answer in this batch as a distractor for a different card.\n" +
   "(3) Each distractor must be wrong for a DIFFERENT reason: aim for one common misconception, one related-but-incorrect fact, and one partial truth that misses the key point.\n" +
   "(4) A student who has fully mastered the material must immediately see all 3 as wrong. A student still learning should find them plausible.\n" +
-  "(5) Match the format and approximate length of the correct answer.\n" +
+  "(5) LENGTH AND FORM — CRITICAL: Count the words in the correct answer. Every distractor must be within ±2 words of that count. Mirror the grammatical form exactly: if the correct answer is a noun phrase, each distractor is a noun phrase; if it's a number, each distractor is a number; if it's a full sentence, each distractor is a full sentence; if it uses technical terminology, each distractor uses equally specific technical terminology. A distractor that is noticeably shorter, vaguer, or less specific than the correct answer is a failure.\n" +
   "(6) Never copy, rephrase, or echo the correct answer. Never produce a distractor that is also correct or could be argued as correct.\n" +
   "Return one entry per cardId, in any order.";
 
@@ -40,7 +40,7 @@ function norm(s: string) {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function cleanDistractors(back: string, raw: string[]): string[] {
+export function cleanDistractors(back: string, raw: string[]): string[] {
   const ck = norm(back);
   const seen = new Set([ck]);
   const out: string[] = [];

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidUsername, USERNAME_ERROR } from "@/lib/utils/username";
 
 function getEmailRedirectTo() {
@@ -42,6 +43,19 @@ export async function signUp(formData: FormData) {
     redirect(`/auth/signup?error=${encodeURIComponent(USERNAME_ERROR)}`);
   }
 
+  // Check username availability before creating the auth user so we don't
+  // orphan an auth account when the profile upsert would fail with 23505.
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (existing) {
+    redirect(`/auth/signup?error=${encodeURIComponent("That username is already taken.")}`);
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -61,6 +75,8 @@ export async function signUp(formData: FormData) {
     });
 
     if (profileError) {
+      // Clean up the orphaned auth user so the email can be reused.
+      await admin.auth.admin.deleteUser(data.user.id).catch(() => {});
       const msg =
         profileError.code === "23505"
           ? "That username is already taken."

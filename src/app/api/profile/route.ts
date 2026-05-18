@@ -96,7 +96,12 @@ export async function PATCH(req: NextRequest) {
     .from("profiles")
     .upsert({ id: user.id, ...updates });
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (error.code === "23505") {
+      return Response.json({ error: "That username is already taken." }, { status: 409 });
+    }
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ ok: true });
 }
 

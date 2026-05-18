@@ -71,16 +71,16 @@ export function CardText({
   const match = EXAMPLE_RE.exec(text);
 
   if (!match) {
-    return <span className={className}>{tokenize(text)}</span>;
+    return <p className={className}>{tokenize(text)}</p>;
   }
 
   const before = text.slice(0, match.index).trim();
   const example = text.slice(match.index + match[0].length).trim();
 
   return (
-    <span className={className}>
+    <p className={className}>
       {before && <>{tokenize(before)}<br /></>}
       <CodeBlock code={example} />
-    </span>
+    </p>
   );
 }

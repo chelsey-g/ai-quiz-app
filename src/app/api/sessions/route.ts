@@ -25,6 +25,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  const { data: deck } = await supabase
+    .from("decks")
+    .select("id")
+    .eq("id", deckId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!deck) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     await saveSession({
       userId: user.id,

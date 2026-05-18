@@ -28,9 +28,20 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  // Note: card ownership is not verified here — updateCardStats uses the service-role key.
-  // This matches the same pattern in POST /api/sessions. Ownership enforcement should be
-  // added via RLS on the cards table once user_id is scoped on decks consistently.
+  const cardIds = body.results.map((r) => r.cardId).filter(Boolean);
+
+  if (cardIds.length > 0) {
+    const { data: ownedCards } = await supabase
+      .from("cards")
+      .select("id")
+      .in("id", cardIds)
+      .eq("decks.user_id", user.id)
+      .select("id, decks!inner(user_id)");
+
+    const ownedIds = new Set((ownedCards ?? []).map((c) => c.id));
+    body.results = body.results.filter((r) => ownedIds.has(r.cardId));
+  }
+
   try {
     await updateCardStats(body.results);
     return Response.json({ ok: true });

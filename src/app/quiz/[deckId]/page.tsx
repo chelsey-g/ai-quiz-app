@@ -722,9 +722,9 @@ export default function QuizPage() {
                       <p className="text-destructive/80">
                         Your answer: {answer.userAnswer}
                       </p>
-                      <p className="text-green-600 dark:text-green-400 text-sm">
+                      <div className="text-green-600 dark:text-green-400 text-sm">
                         Correct: <CardText text={answer.card.back} />
-                      </p>
+                      </div>
                       <div className="mt-2 rounded-lg bg-muted/40 px-3 py-2">
                         <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/60">
                           Why

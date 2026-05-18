@@ -18,6 +18,7 @@ export function ChallengeButton({ targetUserId, targetDisplayName, targetAvatarU
   const [phase, setPhase] = useState<"idle" | "picking" | "challenging">("idle");
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loadingDecks, setLoadingDecks] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [deckCards, setDeckCards] = useState<Card[]>([]);
   const [loadingCards, setLoadingCards] = useState(false);
@@ -30,11 +31,15 @@ export function ChallengeButton({ targetUserId, targetDisplayName, targetAvatarU
 
   async function handleOpen() {
     setPhase("picking");
+    setFetchError(null);
     setLoadingDecks(true);
     try {
       const res = await fetch("/api/decks");
+      if (!res.ok) throw new Error("Failed to load decks");
       const data = await res.json();
       setDecks(Array.isArray(data) ? data : []);
+    } catch {
+      setFetchError("Couldn't load your decks. Please try again.");
     } finally {
       setLoadingDecks(false);
     }
@@ -42,19 +47,25 @@ export function ChallengeButton({ targetUserId, targetDisplayName, targetAvatarU
 
   async function handlePickDeck(deck: Deck) {
     setSelectedDeck(deck);
+    setFetchError(null);
     setLoadingCards(true);
     try {
       const res = await fetch(`/api/decks/${deck.id}`);
+      if (!res.ok) throw new Error("Failed to load cards");
       const data = await res.json();
       setDeckCards(data.cards ?? []);
+      setPhase("challenging");
+    } catch {
+      setFetchError("Couldn't load deck cards. Please try again.");
+      setSelectedDeck(null);
     } finally {
       setLoadingCards(false);
-      setPhase("challenging");
     }
   }
 
   function handleClose() {
     setPhase("idle");
+    setFetchError(null);
     setSelectedDeck(null);
     setDeckCards([]);
   }
@@ -82,7 +93,9 @@ export function ChallengeButton({ targetUserId, targetDisplayName, targetAvatarU
             <p className="mb-4 text-xs text-muted-foreground/60">
               Challenging {targetDisplayName ?? "this user"}
             </p>
-            {loadingDecks ? (
+            {fetchError ? (
+              <p className="py-6 text-center text-xs text-destructive">{fetchError}</p>
+            ) : loadingDecks ? (
               <p className="py-6 text-center text-xs text-muted-foreground/50">Loading…</p>
             ) : decks.length === 0 ? (
               <p className="py-6 text-center text-xs text-muted-foreground/50">

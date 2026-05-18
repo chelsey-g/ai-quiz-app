@@ -878,7 +878,7 @@ export default function DeckPage() {
   useEffect(() => {
     if (studyState !== "done" || !deck || !startedAt || sessionSavedRef.current) return;
     sessionSavedRef.current = true;
-    const score = activeQueue.length > 0 ? Math.round((known.size / activeQueue.length) * 100) : 0;
+    const score = known.size;
     const results = activeQueue
       .filter((c) => known.has(c.id) || unknown.has(c.id))
       .map((c) => ({ cardId: c.id, correct: known.has(c.id) }));

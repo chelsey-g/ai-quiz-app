@@ -132,7 +132,7 @@ export default function QuizPage() {
   // ── Session save ──────────────────────────────────────────────────────────
 
   async function saveQuizSession(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {
-    const score = answersSnapshot.filter((a) => a.correct).length / answersSnapshot.length;
+    const score = answersSnapshot.filter((a) => a.correct).length;
     await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

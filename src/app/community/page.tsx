@@ -211,30 +211,24 @@ function DeckCard({
 }) {
   return (
     <div className="flex flex-col justify-between rounded-2xl border border-border/50 bg-card p-5 transition-all duration-200 hover:border-primary/30 hover:shadow-[0_8px_24px_-8px_oklch(0.77_0.195_68_/_0.15)]">
-      <button
-        type="button"
-        className="text-left"
-        onClick={() => onPreview(deck)}
-      >
-        <h3 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
-          {deck.title}
-        </h3>
+      <div>
+        <button
+          type="button"
+          className="w-full text-left"
+          onClick={() => onPreview(deck)}
+        >
+          <h3 className="font-heading text-base font-bold leading-snug text-foreground line-clamp-2">
+            {deck.title}
+          </h3>
+        </button>
         <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground/55">
           <PublisherAvatar name={deck.publisher_name} avatarUrl={deck.publisher_avatar_url} />
           {deck.user_id === currentUserId && deck.publisher_name ? (
-            <Link
-              href="/profile"
-              className="hover:text-foreground transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link href="/profile" className="hover:text-foreground transition-colors">
               {deck.publisher_name}
             </Link>
           ) : deck.publisher_username ? (
-            <Link
-              href={`/u/${deck.publisher_username}`}
-              className="hover:text-foreground transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link href={`/u/${deck.publisher_username}`} className="hover:text-foreground transition-colors">
               {deck.publisher_name ?? deck.publisher_username}
             </Link>
           ) : (
@@ -246,7 +240,7 @@ function DeckCard({
             {deck.topic_tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                onClick={(e) => { e.stopPropagation(); onTagClick(tag); }}
+                onClick={() => onTagClick(tag)}
                 className="cursor-pointer rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground/65 transition-colors hover:border-primary/30 hover:text-primary"
               >
                 {tag}
@@ -254,7 +248,7 @@ function DeckCard({
             ))}
           </div>
         )}
-      </button>
+      </div>
       <div className="mt-4 flex items-center justify-between">
         <button
           type="button"

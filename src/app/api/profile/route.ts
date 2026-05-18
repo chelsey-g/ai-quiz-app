@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest } from "next/server";
-import { isValidUsername, USERNAME_ERROR } from "@/lib/utils/username";
 
 type NotificationPrefs = {
   challenge_received: boolean;
@@ -79,15 +78,6 @@ export async function PATCH(req: NextRequest) {
     };
   }
 
-  if ("username" in body) {
-    const username =
-      typeof body.username === "string" ? body.username.trim().toLowerCase() : null;
-    if (!username || !isValidUsername(username)) {
-      return Response.json({ error: USERNAME_ERROR }, { status: 400 });
-    }
-    (updates as Record<string, unknown>).username = username;
-  }
-
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: "No valid fields to update" }, { status: 400 });
   }
@@ -98,7 +88,7 @@ export async function PATCH(req: NextRequest) {
 
   if (error) {
     if (error.code === "23505") {
-      return Response.json({ error: "That username is already taken." }, { status: 409 });
+      return Response.json({ error: "That display name is already taken." }, { status: 409 });
     }
     return Response.json({ error: error.message }, { status: 500 });
   }

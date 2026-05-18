@@ -52,30 +52,12 @@ export default async function SignupPage({
                 id="display_name"
                 name="display_name"
                 type="text"
+                required
                 autoComplete="name"
                 placeholder="Your name"
                 maxLength={30}
                 className="w-full rounded-xl border border-input/70 bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring/70 transition-all"
               />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="username" className="text-xs font-medium text-foreground/70">
-                Username <span className="text-muted-foreground/40">(3–20 chars, lowercase)</span>
-              </label>
-              <div className="flex items-center rounded-xl border border-input/70 bg-background/50 px-3 py-2 focus-within:ring-2 focus-within:ring-ring/70 transition-all">
-                <span className="mr-1 text-sm text-muted-foreground/50">@</span>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  autoComplete="username"
-                  placeholder="yourname"
-                  maxLength={20}
-                  pattern="[a-z0-9_]{3,20}"
-                  className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground/40 focus:outline-none"
-                />
-              </div>
             </div>
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-xs font-medium text-foreground/70">

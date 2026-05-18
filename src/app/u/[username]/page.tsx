@@ -23,7 +23,7 @@ export default async function PublicProfilePage({
     .ilike("display_name", displayName)
     .maybeSingle();
 
-  if (!profile) notFound();
+  if (!profile || !profile.display_name) notFound();
 
   const { data: decks } = await supabase
     .from("decks")

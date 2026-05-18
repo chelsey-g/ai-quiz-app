@@ -98,6 +98,7 @@ export default function ChallengPlayPage() {
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [forking, setForking] = useState(false);
   const [forked, setForked] = useState(false);
+  const [forkError, setForkError] = useState<string | null>(null);
 
   const savingRef = useRef(false);
   const [saving, setSaving] = useState(false);
@@ -172,6 +173,7 @@ export default function ChallengPlayPage() {
 
   async function forkToCollection(collectionId: string) {
     setForking(true);
+    setForkError(null);
     try {
       const res = await fetch(`/api/challenges/attempts/${attemptId}/fork`, {
         method: "POST",
@@ -181,7 +183,12 @@ export default function ChallengPlayPage() {
       if (res.ok) {
         setForked(true);
         setShowFork(false);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setForkError(d.error ?? "Failed to save deck. Please try again.");
       }
+    } catch {
+      setForkError("Failed to save deck. Please try again.");
     } finally {
       setForking(false);
     }
@@ -473,6 +480,9 @@ export default function ChallengPlayPage() {
                 </button>
               </div>
               <div className="px-5 py-4 flex flex-col gap-2 max-h-64 overflow-y-auto">
+                {forkError && (
+                  <p className="text-xs text-destructive text-center py-2">{forkError}</p>
+                )}
                 {collectionsLoading ? (
                   <p className="text-xs text-muted-foreground/60 text-center py-4">Loading…</p>
                 ) : collections.length === 0 ? (

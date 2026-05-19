@@ -1,3 +1,4 @@
+npm warn exec The following package was not found and will be installed: supabase@2.100.1
 export type Json =
   | string
   | number
@@ -232,6 +233,7 @@ export type Database = {
           card_count: number
           created_at: string
           id: string
+          is_code_deck: boolean
           is_public: boolean
           note_id: string | null
           source_deck_id: string | null
@@ -243,6 +245,7 @@ export type Database = {
           card_count?: number
           created_at?: string
           id?: string
+          is_code_deck?: boolean
           is_public?: boolean
           note_id?: string | null
           source_deck_id?: string | null
@@ -254,6 +257,7 @@ export type Database = {
           card_count?: number
           created_at?: string
           id?: string
+          is_code_deck?: boolean
           is_public?: boolean
           note_id?: string | null
           source_deck_id?: string | null
@@ -278,6 +282,62 @@ export type Database = {
           },
         ]
       }
+      kata_attempts: {
+        Row: {
+          created_at: string
+          deck_id: string
+          difficulty: string
+          function_stub: string
+          id: string
+          passed_count: number
+          problem_description: string
+          problem_title: string
+          results: Json | null
+          test_cases: Json
+          total_count: number
+          user_code: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          difficulty?: string
+          function_stub: string
+          id?: string
+          passed_count?: number
+          problem_description: string
+          problem_title: string
+          results?: Json | null
+          test_cases: Json
+          total_count?: number
+          user_code?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          difficulty?: string
+          function_stub?: string
+          id?: string
+          passed_count?: number
+          problem_description?: string
+          problem_title?: string
+          results?: Json | null
+          test_cases?: Json
+          total_count?: number
+          user_code?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kata_attempts_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           created_at: string
@@ -294,9 +354,9 @@ export type Database = {
           github_sha?: string | null
           id?: string
           processed_at?: string | null
-          raw_content?: string
-          source_path?: string
-          title?: string
+          raw_content: string
+          source_path: string
+          title: string
           user_id?: string | null
         }
         Update: {
@@ -547,3 +607,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.100.1 (currently installed v)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

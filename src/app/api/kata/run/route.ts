@@ -73,15 +73,15 @@ process.stdout.write(JSON.stringify(__results));
   }> = [];
 
   // networkPolicy: "deny-all" — no network access from within the sandbox
-  const sandbox = await Sandbox.create({ runtime: "node24", networkPolicy: "deny-all" });
-
+  let sandbox: Awaited<ReturnType<typeof Sandbox.create>> | undefined;
   try {
+    sandbox = await Sandbox.create({ runtime: "node24", networkPolicy: "deny-all" });
     await sandbox.writeFiles([{ path: "solution.js", content: Buffer.from(harness) }]);
     const result = await sandbox.runCommand("node", ["solution.js"]);
     const stdout = await result.stdout();
     results = JSON.parse(stdout);
   } catch {
-    // If sandbox execution or JSON parse fails, return all-failed results
+    // If sandbox provisioning, execution, or JSON parse fails, return all-failed results
     results = testCases.map((t) => ({
       passed: false,
       input: t.input,
@@ -89,7 +89,7 @@ process.stdout.write(JSON.stringify(__results));
       error: "Execution error",
     }));
   } finally {
-    await sandbox.stop();
+    await sandbox?.stop();
   }
 
   const passed_count = results.filter((r) => r.passed).length;

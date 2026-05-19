@@ -14,8 +14,15 @@ export async function POST(req: NextRequest) {
 
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
-  const deckId = typeof body.deckId === "string" ? body.deckId : null;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const deckId = typeof (body as Record<string, unknown>).deckId === "string"
+    ? (body as Record<string, unknown>).deckId as string
+    : null;
   if (!deckId) return Response.json({ error: "deckId is required" }, { status: 400 });
 
   const { data: deck } = await supabase

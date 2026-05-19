@@ -304,23 +304,6 @@ export function DeckCard({
             </div>
           </div>
 
-          {deck.is_code_deck && (
-            <div className="mt-3 pt-3" style={{ borderTop: "1px solid oklch(1 0 0 / 0.06)" }}>
-              <Link
-                href={`/kata/${deck.id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
-                style={{
-                  background: "oklch(0.62 0.19 142 / 0.08)",
-                  borderColor: "oklch(0.62 0.19 142 / 0.22)",
-                  color: "#4ade80",
-                }}
-              >
-                <span>&lt;/&gt;</span>
-                <span>Code</span>
-              </Link>
-            </div>
-          )}
         </div>
       </div>
       </div>

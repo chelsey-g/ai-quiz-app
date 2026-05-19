@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getDecks } from "@/lib/services/decks";
 import { NextRequest } from "next/server";
+import { classifyCodeDeck } from "@/app/api/decks/[id]/classify-code/route";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -22,6 +23,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !deck) return Response.json({ error: error?.message ?? "Insert failed" }, { status: 500 });
+
+  // Fire-and-forget — classify in background, doesn't block response
+  classifyCodeDeck(deck.id).catch(() => {});
 
   return Response.json(deck, { status: 201 });
 }

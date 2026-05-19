@@ -93,9 +93,10 @@ export default function KataWorkspace({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ attempt_id: kata.id, user_code: userCode }),
       });
+      if (!res.ok) throw new Error("Run failed");
       const data = await res.json();
-      setResults(data.results);
-      setPassedCount(data.passed_count);
+      setResults(data.results ?? null);
+      setPassedCount(data.passed_count ?? 0);
     } catch {
       // silently fail
     } finally {

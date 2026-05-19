@@ -57,11 +57,13 @@ export default function KataWorkspace({
   const [passedCount, setPassedCount] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [generateError, setGenerateError] = useState(false);
 
   const generate = useCallback(async () => {
     setIsGenerating(true);
     setKata(null);
     setResults(null);
+    setGenerateError(false);
     try {
       const res = await fetch("/api/kata/generate", {
         method: "POST",
@@ -73,7 +75,7 @@ export default function KataWorkspace({
       setKata(data);
       setUserCode(data.function_stub);
     } catch {
-      // silently leave kata null — user sees skeleton
+      setGenerateError(true);
     } finally {
       setIsGenerating(false);
     }
@@ -189,10 +191,24 @@ export default function KataWorkspace({
         >
           {isGenerating || !kata ? (
             <div className="space-y-3">
-              <div className="h-3 w-1/3 animate-pulse rounded bg-muted/40" />
-              <div className="h-3 w-full animate-pulse rounded bg-muted/30" />
-              <div className="h-3 w-4/5 animate-pulse rounded bg-muted/30" />
-              <div className="h-3 w-full animate-pulse rounded bg-muted/30" />
+              {generateError ? (
+                <p className="text-sm text-muted-foreground/60">
+                  Generation failed.{" "}
+                  <button
+                    onClick={generate}
+                    className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  >
+                    Try again
+                  </button>
+                </p>
+              ) : (
+                <>
+                  <div className="h-3 w-1/3 animate-pulse rounded bg-muted/40" />
+                  <div className="h-3 w-full animate-pulse rounded bg-muted/30" />
+                  <div className="h-3 w-4/5 animate-pulse rounded bg-muted/30" />
+                  <div className="h-3 w-full animate-pulse rounded bg-muted/30" />
+                </>
+              )}
             </div>
           ) : (
             <>

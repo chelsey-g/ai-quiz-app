@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "attempt_id and user_code are required" }, { status: 400 });
   }
 
+  if (user_code.length > 50_000) {
+    return Response.json({ error: "Code too large" }, { status: 400 });
+  }
+
   // Fetch attempt — includes test_cases (never sent to client)
   const { data: attempt } = await supabase
     .from("kata_attempts")
@@ -75,7 +79,7 @@ process.stdout.write(JSON.stringify(__results));
   // networkPolicy: "deny-all" — no network access from within the sandbox
   let sandbox: Awaited<ReturnType<typeof Sandbox.create>> | undefined;
   try {
-    sandbox = await Sandbox.create({ runtime: "node24", networkPolicy: "deny-all" });
+    sandbox = await Sandbox.create({ runtime: "node24", networkPolicy: "deny-all", timeout: 10_000 });
     await sandbox.writeFiles([{ path: "solution.js", content: Buffer.from(harness) }]);
     const result = await sandbox.runCommand("node", ["solution.js"]);
     const stdout = await result.stdout();
@@ -95,10 +99,13 @@ process.stdout.write(JSON.stringify(__results));
   const passed_count = results.filter((r) => r.passed).length;
   const total_count = results.length;
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("kata_attempts")
     .update({ user_code, results: results as unknown as Json, passed_count, total_count })
-    .eq("id", attempt_id);
+    .eq("id", attempt_id)
+    .eq("user_id", user.id);
+
+  if (updateError) console.error("[kata/run] Failed to persist attempt:", updateError.message);
 
   return Response.json({ results, passed_count, total_count });
 }

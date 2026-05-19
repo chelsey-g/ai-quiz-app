@@ -19,6 +19,15 @@ const NAV_LINKS = [
     ),
   },
   {
+    href: "/collections",
+    label: "Collections",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v8.25" />
+      </svg>
+    ),
+  },
+  {
     href: "/create",
     label: "Create",
     icon: (
@@ -28,11 +37,11 @@ const NAV_LINKS = [
     ),
   },
   {
-    href: "/collections",
-    label: "Collections",
+    href: "/stats",
+    label: "Stats",
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v8.25" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5V19a1 1 0 001 1h3a1 1 0 001-1v-5.5M9 8.5V19a1 1 0 001 1h3a1 1 0 001-1V8.5M15 11V19a1 1 0 001 1h3a1 1 0 001-1v-8" />
       </svg>
     ),
   },

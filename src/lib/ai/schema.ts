@@ -37,15 +37,24 @@ export const KataSchema = z.object({
       "Complete JSDoc-annotated JavaScript function signature with empty body — no implementation. Must start with a JSDoc comment and a `function` declaration."
     ),
   test_cases: z
-    .array(
-      z.object({
-        input: z.unknown().describe("Single argument to pass to the function"),
-        expected: z.unknown().describe("Expected return value"),
-      })
-    )
-    .min(3)
-    .max(5)
-    .describe("3–5 test cases; first 1–2 should be simple, last 1–2 should be edge cases"),
+    .preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          try { return JSON.parse(val); } catch { return val; }
+        }
+        return val;
+      },
+      z
+        .array(
+          z.object({
+            input: z.unknown().describe("Single argument to pass to the function"),
+            expected: z.unknown().describe("Expected return value"),
+          })
+        )
+        .min(3)
+        .max(5)
+        .describe("3–5 test cases; first 1–2 should be simple, last 1–2 should be edge cases")
+    ),
   difficulty: z.enum(["easy", "medium", "hard"]),
 });
 

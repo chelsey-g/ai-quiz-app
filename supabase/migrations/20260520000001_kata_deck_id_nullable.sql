@@ -1,0 +1,1 @@
+ALTER TABLE kata_attempts ALTER COLUMN deck_id DROP NOT NULL;

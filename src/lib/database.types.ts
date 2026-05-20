@@ -284,7 +284,7 @@ export type Database = {
       kata_attempts: {
         Row: {
           created_at: string
-          deck_id: string
+          deck_id: string | null
           difficulty: string
           function_stub: string
           id: string
@@ -299,7 +299,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          deck_id: string
+          deck_id?: string | null
           difficulty?: string
           function_stub: string
           id?: string
@@ -314,7 +314,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          deck_id?: string
+          deck_id?: string | null
           difficulty?: string
           function_stub?: string
           id?: string
@@ -606,3 +606,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.100.1 (currently installed v)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

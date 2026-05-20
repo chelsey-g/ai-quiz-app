@@ -111,6 +111,7 @@ export default function KataPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [generateError, setGenerateError] = useState(false);
+  const [runError, setRunError] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
@@ -174,6 +175,7 @@ export default function KataPage() {
     if (!kata || isRunning) return;
     setIsRunning(true);
     setResults(null);
+    setRunError(false);
     try {
       const res = await fetch("/api/kata/run", {
         method: "POST",
@@ -186,6 +188,7 @@ export default function KataPage() {
       setPassedCount(data.passed_count ?? 0);
       fetchHistory();
     } catch {
+      setRunError(true);
     } finally {
       setIsRunning(false);
     }
@@ -443,6 +446,11 @@ export default function KataPage() {
                   style={{ color: allPassed ? "#4ade80" : "#f87171" }}
                 >
                   {passedCount} / {results.length} tests passed
+                </span>
+              )}
+              {runError && results === null && (
+                <span className="ml-auto text-[11px]" style={{ color: "#f87171" }}>
+                  Run failed. Try again.
                 </span>
               )}
             </div>

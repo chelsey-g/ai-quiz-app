@@ -62,26 +62,32 @@ export async function POST(req: NextRequest) {
       ? "intermediate"
       : "advanced";
 
-  const { object } = await generateObject({
-    model: gateway("openai/gpt-4o-mini"),
-    providerOptions: {
-      gateway: {
-        models: [
-          "anthropic/claude-haiku-4.5",
-          "anthropic/claude-sonnet-4-6",
-          "openai/gpt-4o",
-        ],
+  let object: Awaited<ReturnType<typeof generateObject<typeof KataSchema>>>["object"];
+  try {
+    ({ object } = await generateObject({
+      model: gateway("openai/gpt-4o-mini"),
+      providerOptions: {
+        gateway: {
+          models: [
+            "anthropic/claude-haiku-4.5",
+            "anthropic/claude-sonnet-4-6",
+            "openai/gpt-4o",
+          ],
+        },
       },
-    },
-    schema: KataSchema,
-    system:
-      "You are a coding challenge author. Create a single self-contained JavaScript coding kata. " +
-      "The function stub must use a standard `function` declaration (not an arrow function) so it can be called by name. " +
-      "Include a JSDoc comment above the function with @param and @returns types. " +
-      "The body must be empty (just a comment `// your code here`). " +
-      "Test cases must cover the happy path and at least one edge case (empty input, single element, zero, etc.).",
-    prompt: `Generate a JavaScript coding kata at ${difficultyLabel} level covering these topics: ${topics.join(", ")}.`,
-  });
+      schema: KataSchema,
+      system:
+        "You are a coding challenge author. Create a single self-contained JavaScript coding kata. " +
+        "The function stub must use a standard `function` declaration (not an arrow function) so it can be called by name. " +
+        "Include a JSDoc comment above the function with @param and @returns types. " +
+        "The body must be empty (just a comment `// your code here`). " +
+        "Test cases must cover the happy path and at least one edge case (empty input, single element, zero, etc.).",
+      prompt: `Generate a JavaScript coding kata at ${difficultyLabel} level covering these topics: ${topics.join(", ")}.`,
+    }));
+  } catch (err) {
+    console.error("[kata/generate] AI generation failed:", err);
+    return Response.json({ error: "Failed to generate kata" }, { status: 500 });
+  }
 
   const { data: attempt, error } = await supabase
     .from("kata_attempts")

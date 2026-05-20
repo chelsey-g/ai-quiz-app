@@ -214,17 +214,20 @@ export function buildAccuracyByDay(
     (s) => new Date(s.completed_at) >= thirtyDaysAgo && s.score !== null && s.total
   );
 
-  const byDay = new Map<string, number[]>();
+  const byDay = new Map<string, { correct: number; total: number }>();
   for (const s of recent) {
     const date = s.completed_at.slice(0, 10);
-    if (!byDay.has(date)) byDay.set(date, []);
-    byDay.get(date)!.push(Math.round(((s.score ?? 0) / s.total!) * 100));
+    const existing = byDay.get(date) ?? { correct: 0, total: 0 };
+    byDay.set(date, {
+      correct: existing.correct + (s.score ?? 0),
+      total: existing.total + s.total!,
+    });
   }
 
   return Array.from(byDay.entries())
-    .map(([date, scores]) => ({
+    .map(([date, { correct, total }]) => ({
       date,
-      pct: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+      pct: Math.round((correct / total) * 100),
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }

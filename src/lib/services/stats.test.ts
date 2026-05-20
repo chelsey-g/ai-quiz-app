@@ -91,6 +91,16 @@ describe("buildAccuracyByDay", () => {
     expect(result[0].pct).toBe(75);
   });
 
+  it("weights sessions by card count, not session count", () => {
+    const ts = daysAgo(0);
+    const result = buildAccuracyByDay([
+      { completed_at: ts, score: 9, total: 10 }, // 90%
+      { completed_at: ts, score: 1, total: 1 },  // 100%
+    ]);
+    // Correct: 10/11 = 91%; naive average of percentages: (90+100)/2 = 95%
+    expect(result[0].pct).toBe(91);
+  });
+
   it("returns one entry per distinct day", () => {
     const result = buildAccuracyByDay([
       { completed_at: daysAgo(0), score: 10, total: 10 },

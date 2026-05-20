@@ -112,6 +112,8 @@ export default function KataPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [generateError, setGenerateError] = useState(false);
   const [runError, setRunError] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
+  const [isLoadingHint, setIsLoadingHint] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
@@ -151,6 +153,7 @@ export default function KataPage() {
     setIsGenerating(true);
     setKata(null);
     setResults(null);
+    setHint(null);
     setGenerateError(false);
     setPickerOpen(false);
     try {
@@ -193,6 +196,26 @@ export default function KataPage() {
       setIsRunning(false);
     }
   }, [kata, userCode, isRunning, fetchHistory]);
+
+  const getHint = useCallback(async () => {
+    if (!kata || isLoadingHint) return;
+    setIsLoadingHint(true);
+    setHint(null);
+    try {
+      const res = await fetch("/api/kata/hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attempt_id: kata.id }),
+      });
+      if (!res.ok) throw new Error("Hint failed");
+      const data = await res.json();
+      setHint(data.hint ?? null);
+    } catch {
+      setHint("Couldn't load a hint right now. Try again.");
+    } finally {
+      setIsLoadingHint(false);
+    }
+  }, [kata, isLoadingHint]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -393,13 +416,46 @@ export default function KataPage() {
                 <div className="h-3 w-full animate-pulse rounded bg-muted/30" />
               </div>
             ) : (
-              <div>
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#a78bfa]">
-                  Problem
-                </p>
-                <p className="text-sm leading-relaxed text-foreground/90">
-                  {kata.problem_description}
-                </p>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#a78bfa]">
+                    Problem
+                  </p>
+                  <p className="text-sm leading-relaxed text-foreground/90">
+                    {kata.problem_description}
+                  </p>
+                </div>
+
+                {/* Hint */}
+                <div>
+                  <button
+                    onClick={getHint}
+                    disabled={isLoadingHint}
+                    className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                    style={{
+                      background: "oklch(0.75 0.17 60 / 0.08)",
+                      borderColor: "oklch(0.75 0.17 60 / 0.25)",
+                      color: "#fbbf24",
+                    }}
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m1.636-6.364l.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M12 21v-1m0-16a6 6 0 016 6c0 2.21-1.197 4.14-3 5.197V17a1 1 0 01-1 1h-4a1 1 0 01-1-1v-.803C7.197 15.14 6 13.21 6 11a6 6 0 016-6z" />
+                    </svg>
+                    {isLoadingHint ? "Getting hint…" : "Get a hint"}
+                  </button>
+                  {hint && (
+                    <p
+                      className="mt-2 rounded-lg border px-3 py-2 text-xs leading-relaxed"
+                      style={{
+                        background: "oklch(0.75 0.17 60 / 0.06)",
+                        borderColor: "oklch(0.75 0.17 60 / 0.2)",
+                        color: "oklch(0.85 0.08 60)",
+                      }}
+                    >
+                      {hint}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -5,6 +5,17 @@ import { gateway } from "@ai-sdk/gateway";
 import { createClient } from "@/lib/supabase/server";
 import { KataSchema } from "@/lib/ai/schema";
 
+const ALLOWED_TOPICS = [
+  "JavaScript",
+  "React",
+  "TypeScript",
+  "Node.js",
+  "Data Structures",
+  "Algorithms",
+  "CSS / DOM",
+];
+const ALLOWED_DIFFICULTIES = ["easy", "medium", "hard"];
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
 
@@ -20,28 +31,36 @@ export async function POST(req: NextRequest) {
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const deckId = typeof (body as Record<string, unknown>).deckId === "string"
-    ? (body as Record<string, unknown>).deckId as string
+
+  const b = body as Record<string, unknown>;
+  const topics = Array.isArray(b.topics)
+    ? (b.topics as unknown[]).filter((t): t is string => typeof t === "string")
     : null;
-  if (!deckId) return Response.json({ error: "deckId is required" }, { status: 400 });
+  const difficulty = typeof b.difficulty === "string" ? b.difficulty : null;
 
-  const { data: deck } = await supabase
-    .from("decks")
-    .select("title, topic_tags")
-    .eq("id", deckId)
-    .single();
+  if (
+    !topics ||
+    topics.length === 0 ||
+    !topics.every((t) => ALLOWED_TOPICS.includes(t))
+  ) {
+    return Response.json(
+      { error: "topics must be a non-empty array of allowed values" },
+      { status: 400 }
+    );
+  }
+  if (!difficulty || !ALLOWED_DIFFICULTIES.includes(difficulty)) {
+    return Response.json(
+      { error: "difficulty must be easy, medium, or hard" },
+      { status: 400 }
+    );
+  }
 
-  if (!deck) return Response.json({ error: "Deck not found" }, { status: 404 });
-
-  const { data: cards } = await supabase
-    .from("cards")
-    .select("front, back")
-    .eq("deck_id", deckId)
-    .limit(8);
-
-  const cardSamples = (cards ?? [])
-    .map((c) => `Q: ${c.front}\nA: ${c.back}`)
-    .join("\n\n");
+  const difficultyLabel =
+    difficulty === "easy"
+      ? "beginner"
+      : difficulty === "medium"
+      ? "intermediate"
+      : "advanced";
 
   const { object } = await generateObject({
     model: gateway("openai/gpt-4o-mini"),
@@ -56,18 +75,18 @@ export async function POST(req: NextRequest) {
     },
     schema: KataSchema,
     system:
-      "You are a coding challenge author. Given a JavaScript study deck, create a single self-contained coding kata. " +
+      "You are a coding challenge author. Create a single self-contained JavaScript coding kata. " +
       "The function stub must use a standard `function` declaration (not an arrow function) so it can be called by name. " +
       "Include a JSDoc comment above the function with @param and @returns types. " +
       "The body must be empty (just a comment `// your code here`). " +
-      "Test cases must cover happy path and at least one edge case (empty input, single element, zero, etc.).",
-    prompt: `Deck title: ${deck.title}\nTags: ${(deck.topic_tags ?? []).join(", ")}\n\nSample cards:\n${cardSamples}`,
+      "Test cases must cover the happy path and at least one edge case (empty input, single element, zero, etc.).",
+    prompt: `Generate a JavaScript coding kata at ${difficultyLabel} level covering these topics: ${topics.join(", ")}.`,
   });
 
   const { data: attempt, error } = await supabase
     .from("kata_attempts")
     .insert({
-      deck_id: deckId,
+      deck_id: null,
       user_id: user.id,
       problem_title: object.problem_title,
       problem_description: object.problem_description,
@@ -84,7 +103,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Failed to save kata" }, { status: 500 });
   }
 
-  // Never send test_cases to the client
   const { test_cases: _hidden, ...clientKata } = attempt;
   return Response.json(clientKata, { status: 201 });
 }

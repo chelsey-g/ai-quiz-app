@@ -26,5 +26,22 @@ export async function GET(
 
   if (cardsErr) return Response.json({ error: cardsErr.message }, { status: 500 });
 
-  return Response.json({ deck, cards: cards ?? [] });
+  const { data: sessionStats } = await supabase
+    .from("sessions")
+    .select("score, total, user_id")
+    .eq("deck_id", id)
+    .not("completed_at", "is", null)
+    .gt("total", 0);
+
+  let avgPct: number | null = null;
+  let learnerCount = 0;
+  if (sessionStats && sessionStats.length > 0) {
+    const uniqueUsers = new Set(sessionStats.map((s) => s.user_id)).size;
+    const totalCorrect = sessionStats.reduce((sum, s) => sum + (s.score ?? 0), 0);
+    const totalAnswers = sessionStats.reduce((sum, s) => sum + (s.total ?? 0), 0);
+    avgPct = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : null;
+    learnerCount = uniqueUsers;
+  }
+
+  return Response.json({ deck, cards: cards ?? [], avgPct, learnerCount });
 }

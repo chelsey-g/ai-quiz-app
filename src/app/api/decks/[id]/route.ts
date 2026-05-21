@@ -45,7 +45,7 @@ export async function PATCH(
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const updates: { title?: string; is_public?: boolean } = {};
+  const updates: { title?: string; is_public?: boolean; description?: string | null } = {};
 
   if (typeof body.title === "string") {
     const title = body.title.trim();
@@ -55,6 +55,10 @@ export async function PATCH(
 
   if (typeof body.is_public === "boolean") {
     updates.is_public = body.is_public;
+  }
+
+  if ("description" in body) {
+    updates.description = typeof body.description === "string" ? body.description.trim() || null : null;
   }
 
   if (Object.keys(updates).length === 0) {

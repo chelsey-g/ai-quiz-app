@@ -381,6 +381,9 @@ export default function DeckPage() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
 
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionInput, setDescriptionInput] = useState("");
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
@@ -761,6 +764,20 @@ export default function DeckPage() {
     }
   }
 
+  async function handleSaveDescription() {
+    const description = descriptionInput.trim() || null;
+    setEditingDescription(false);
+    if (!deck || description === deck.description) return;
+    const res = await fetch(`/api/decks/${deck.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description }),
+    });
+    if (res.ok) {
+      setDeck((prev) => prev ? { ...prev, description } : prev);
+    }
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -1124,7 +1141,7 @@ export default function DeckPage() {
 
         {/* Tags */}
         {allTags.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2">
+          <div className="mb-4 flex flex-wrap gap-2">
             {allTags.map((tag) => (
               <Link
                 key={tag}
@@ -1140,6 +1157,40 @@ export default function DeckPage() {
             ))}
           </div>
         )}
+
+        {/* Description */}
+        <div className="mb-6">
+          {editingDescription ? (
+            <textarea
+              autoFocus
+              value={descriptionInput}
+              onChange={(e) => setDescriptionInput(e.target.value)}
+              onBlur={handleSaveDescription}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setEditingDescription(false);
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSaveDescription(); }
+              }}
+              rows={3}
+              placeholder="Add a description…"
+              className="w-full max-w-xl resize-none rounded-lg border border-primary/30 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          ) : (
+            <div
+              className="group flex cursor-pointer items-start gap-2"
+              onClick={() => { setDescriptionInput(deck.description ?? ""); setEditingDescription(true); }}
+            >
+              <p className={`max-w-xl text-sm leading-relaxed ${deck.description ? "text-muted-foreground/70" : "text-muted-foreground/30 italic"}`}>
+                {deck.description ?? "Add a description…"}
+              </p>
+              <svg
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+              </svg>
+            </div>
+          )}
+        </div>
 
         {/* Cards for selected tag */}
         <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">

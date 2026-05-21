@@ -27,13 +27,44 @@ export default async function PublicProfilePage({
 
   const { data: decks } = await supabase
     .from("decks")
-    .select("id, title, topic_tags, card_count, created_at")
+    .select("id, title, topic_tags, card_count, description, created_at")
     .eq("user_id", profile.id)
     .eq("is_public", true)
     .order("created_at", { ascending: false });
 
   const publicDecks = decks ?? [];
   const totalCards = publicDecks.reduce((sum, d) => sum + (d.card_count ?? 0), 0);
+
+  // Fetch public collections
+  const { data: rawCollections } = await supabase
+    .from("collections")
+    .select("id, name, description, created_at")
+    .eq("user_id", profile.id)
+    .eq("is_public", true)
+    .order("created_at", { ascending: false });
+
+  const publicCollections = rawCollections ?? [];
+
+  // For each collection, get deck count
+  let collectionsWithCount: { id: string; name: string; description: string | null; deckCount: number }[] = [];
+  if (publicCollections.length > 0) {
+    const { data: collectionDecks } = await supabase
+      .from("collection_decks")
+      .select("collection_id")
+      .in("collection_id", publicCollections.map((c) => c.id));
+
+    const countByCollection: Record<string, number> = {};
+    for (const row of collectionDecks ?? []) {
+      countByCollection[row.collection_id] = (countByCollection[row.collection_id] ?? 0) + 1;
+    }
+
+    collectionsWithCount = publicCollections.map((c) => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      deckCount: countByCollection[c.id] ?? 0,
+    }));
+  }
 
   const {
     data: { user },
@@ -110,7 +141,46 @@ export default async function PublicProfilePage({
           </p>
           <p className="text-xs text-muted-foreground/55">total cards</p>
         </div>
+        {collectionsWithCount.length > 0 && (
+          <div>
+            <p className="font-heading text-2xl font-bold tabular-nums text-foreground">
+              {collectionsWithCount.length}
+            </p>
+            <p className="text-xs text-muted-foreground/55">collections</p>
+          </div>
+        )}
       </div>
+
+      {/* Collections section */}
+      {collectionsWithCount.length > 0 && (
+        <div className="mb-10">
+          <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
+            Collections
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {collectionsWithCount.map((col) => (
+              <Link
+                key={col.id}
+                href={`/c/${col.id}`}
+                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card/80"
+              >
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+                <h3 className="font-heading text-sm font-semibold text-foreground group-hover:text-primary/90 transition-colors line-clamp-1">
+                  {col.name}
+                </h3>
+                {col.description && (
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground/60 line-clamp-2">
+                    {col.description}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground/50">
+                  {col.deckCount} {col.deckCount === 1 ? "deck" : "decks"}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Decks section */}
       <div>
@@ -125,17 +195,23 @@ export default async function PublicProfilePage({
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {publicDecks.map((deck) => (
-              <div
+              <Link
                 key={deck.id}
-                className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4"
+                href={`/p/${deck.id}`}
+                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card/80"
               >
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
                 <div className="mb-3 flex items-start justify-between gap-2">
-                  <h3 className="font-heading text-sm font-semibold leading-snug text-foreground line-clamp-2">
+                  <h3 className="font-heading text-sm font-semibold leading-snug text-foreground group-hover:text-primary/90 transition-colors line-clamp-2">
                     {deck.title}
                   </h3>
                   {!isOwnProfile && <ForkButton deckId={deck.id} />}
                 </div>
+                {deck.description && (
+                  <p className="mb-2 text-xs leading-relaxed text-muted-foreground/60 line-clamp-2">
+                    {deck.description}
+                  </p>
+                )}
                 {deck.topic_tags && deck.topic_tags.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-1">
                     {(deck.topic_tags as string[]).slice(0, 3).map((tag) => (
@@ -149,7 +225,7 @@ export default async function PublicProfilePage({
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground/50">{deck.card_count} cards</p>
-              </div>
+              </Link>
             ))}
           </div>
         )}

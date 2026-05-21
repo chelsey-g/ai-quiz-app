@@ -206,6 +206,7 @@ export type Database = {
       collections: {
         Row: {
           created_at: string
+          description: string | null
           id: string
           is_public: boolean
           name: string
@@ -213,6 +214,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
           is_public?: boolean
           name: string
@@ -220,6 +222,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
           is_public?: boolean
           name?: string
@@ -231,6 +234,7 @@ export type Database = {
         Row: {
           card_count: number
           created_at: string
+          description: string | null
           id: string
           is_code_deck: boolean
           is_public: boolean
@@ -243,6 +247,7 @@ export type Database = {
         Insert: {
           card_count?: number
           created_at?: string
+          description?: string | null
           id?: string
           is_code_deck?: boolean
           is_public?: boolean
@@ -255,6 +260,7 @@ export type Database = {
         Update: {
           card_count?: number
           created_at?: string
+          description?: string | null
           id?: string
           is_code_deck?: boolean
           is_public?: boolean

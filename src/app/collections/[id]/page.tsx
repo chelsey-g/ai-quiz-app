@@ -12,6 +12,7 @@ type Card = Database["public"]["Tables"]["cards"]["Row"];
 type Collection = {
   id: string;
   name: string;
+  description: string | null;
   is_public: boolean;
   created_at: string;
 };
@@ -27,8 +28,11 @@ export default function CollectionDetailPage() {
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionInput, setDescriptionInput] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const [togglingPublic, setTogglingPublic] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
@@ -63,6 +67,31 @@ export default function CollectionDetailPage() {
       body: JSON.stringify({ name }),
     });
     setCollection((prev) => (prev ? { ...prev, name } : prev));
+  }
+
+  async function handleTogglePublic() {
+    if (!collection) return;
+    setTogglingPublic(true);
+    const next = !collection.is_public;
+    await fetch(`/api/collections/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_public: next }),
+    });
+    setCollection((prev) => (prev ? { ...prev, is_public: next } : prev));
+    setTogglingPublic(false);
+  }
+
+  async function handleSaveDescription() {
+    const description = descriptionInput.trim() || null;
+    setEditingDescription(false);
+    if (!collection || description === collection.description) return;
+    await fetch(`/api/collections/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description }),
+    });
+    setCollection((prev) => (prev ? { ...prev, description } : prev));
   }
 
   async function handleDelete() {
@@ -173,9 +202,59 @@ export default function CollectionDetailPage() {
           <p className="mt-1.5 text-sm text-muted-foreground/60">
             {decks.length} {decks.length === 1 ? "deck" : "decks"}
           </p>
+
+          {editingDescription ? (
+            <textarea
+              autoFocus
+              value={descriptionInput}
+              onChange={(e) => setDescriptionInput(e.target.value)}
+              onBlur={handleSaveDescription}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setEditingDescription(false);
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSaveDescription(); }
+              }}
+              rows={3}
+              placeholder="Add a description…"
+              className="mt-3 w-full max-w-lg resize-none rounded-lg border border-primary/30 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          ) : (
+            <div
+              className="group mt-3 flex items-start gap-2 cursor-pointer"
+              onClick={() => { setDescriptionInput(collection.description ?? ""); setEditingDescription(true); }}
+            >
+              <p className={`max-w-lg text-sm leading-relaxed ${collection.description ? "text-muted-foreground/70" : "text-muted-foreground/30 italic"}`}>
+                {collection.description ?? "Add a description…"}
+              </p>
+              <svg
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+              </svg>
+            </div>
+          )}
         </div>
 
-        <div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleTogglePublic}
+            disabled={togglingPublic}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+              collection.is_public
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/50 bg-muted/30 text-muted-foreground hover:border-primary/30 hover:text-foreground"
+            }`}
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {collection.is_public ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+              )}
+            </svg>
+            {collection.is_public ? "Public" : "Private"}
+          </button>
+
           {showDeleteConfirm ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground/70">Delete collection?</span>

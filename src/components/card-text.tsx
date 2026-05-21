@@ -1,65 +1,7 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
 import { highlight } from "sugar-high";
-import type { ReactNode } from "react";
-
-const EXAMPLE_RE = /\bExample:\s*/i;
-
-// Matches backtick-wrapped tokens OR camelCase identifiers (at least 2 humps)
-const INLINE_CODE_RE = /`[^`]+`|\b[a-z][a-z0-9]*(?:[A-Z][a-z0-9]*)+[a-z0-9]*\b/g;
-
-function InlineToken({ children }: { children: string }) {
-  return (
-    <code
-      className="inline-block font-mono text-[0.82em] rounded px-[0.35em] py-[0.1em] mx-[0.1em] leading-none"
-      style={{
-        background: "color-mix(in oklch, var(--dashboard-accent-teal) 12%, var(--muted) 50%)",
-        color: "var(--dashboard-accent-teal-strong)",
-      }}
-    >
-      {children}
-    </code>
-  );
-}
-
-function tokenize(text: string): ReactNode[] {
-  const parts: ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  INLINE_CODE_RE.lastIndex = 0;
-
-  while ((match = INLINE_CODE_RE.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    const raw = match[0];
-    const code = raw.startsWith("`") ? raw.slice(1, -1) : raw;
-    parts.push(<InlineToken key={match.index}>{code}</InlineToken>);
-    lastIndex = match.index + raw.length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
-}
-
-function CodeBlock({ code }: { code: string }) {
-  const html = highlight(code);
-  return (
-    <span className="mt-2 block">
-      <span className="block text-[10px] font-semibold uppercase tracking-wider opacity-40 mb-1.5">
-        Example
-      </span>
-      <code
-        className="block whitespace-pre-wrap rounded-lg px-3 py-2.5 font-mono text-[0.78rem] leading-relaxed"
-        style={{ background: "color-mix(in oklch, var(--muted) 60%, transparent)" }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    </span>
-  );
-}
 
 export function CardText({
   text,
@@ -68,19 +10,55 @@ export function CardText({
   text: string;
   className?: string;
 }) {
-  const match = EXAMPLE_RE.exec(text);
-
-  if (!match) {
-    return <p className={className}>{tokenize(text)}</p>;
-  }
-
-  const before = text.slice(0, match.index).trim();
-  const example = text.slice(match.index + match[0].length).trim();
-
   return (
-    <p className={className}>
-      {before && <>{tokenize(before)}<br /></>}
-      <CodeBlock code={example} />
-    </p>
+    <div className={className}>
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          h1: ({ children }) => <h1 className="font-heading text-lg font-bold mb-1">{children}</h1>,
+          h2: ({ children }) => <h2 className="font-heading text-base font-semibold mb-1">{children}</h2>,
+          h3: ({ children }) => <h3 className="font-heading text-sm font-semibold mb-1">{children}</h3>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-0.5">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal space-y-0.5">{children}</ol>,
+          li: ({ children }) => <li className="text-[0.95em]">{children}</li>,
+          code: ({ children, className: cls }) => {
+            const isBlock = cls?.startsWith("language-");
+            const code = String(children).replace(/\n$/, "");
+            if (isBlock) {
+              const html = highlight(code);
+              return (
+                <code
+                  className="block whitespace-pre-wrap rounded-lg px-3 py-2.5 font-mono text-[0.78rem] leading-relaxed my-2"
+                  style={{ background: "color-mix(in oklch, var(--muted) 60%, transparent)" }}
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
+              );
+            }
+            return (
+              <code
+                className="inline-block font-mono text-[0.82em] rounded px-[0.35em] py-[0.1em] mx-[0.1em] leading-none"
+                style={{
+                  background: "color-mix(in oklch, var(--dashboard-accent-teal) 12%, var(--muted) 50%)",
+                  color: "var(--dashboard-accent-teal-strong)",
+                }}
+              >
+                {code}
+              </code>
+            );
+          },
+          pre: ({ children }) => <>{children}</>,
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-border/60 pl-3 italic text-muted-foreground/70 my-2">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <hr className="my-3 border-border/40" />,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
   );
 }

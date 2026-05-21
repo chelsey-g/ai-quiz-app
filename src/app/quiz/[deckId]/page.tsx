@@ -19,6 +19,7 @@ type Card = Database["public"]["Tables"]["cards"]["Row"];
 type QuizMode = "multiple-choice" | "type" | "random";
 type ResolvedMode = "multiple-choice" | "type";
 type QuizPhase = "mode-select" | "quiz" | "results";
+type CardLimit = 5 | 10 | 20 | "all";
 
 type AnswerRecord = {
   cardId: string;
@@ -27,13 +28,14 @@ type AnswerRecord = {
   card: Card;
 };
 
-function selectWeakCards(cards: Card[], limit = 10): Card[] {
+function selectWeakCards(cards: Card[], limit: CardLimit = 10): Card[] {
   if (cards.length === 0) return [];
   const unseen = cards.filter((c) => c.times_seen === 0);
   const seen = cards
     .filter((c) => c.times_seen > 0)
     .sort((a, b) => a.times_correct / a.times_seen - b.times_correct / b.times_seen);
-  return [...seen, ...unseen].slice(0, limit);
+  const ordered = [...seen, ...unseen];
+  return limit === "all" ? ordered : ordered.slice(0, limit);
 }
 
 function shuffleAnswers(correct: string, distractors: string[]): string[] {
@@ -82,6 +84,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [cardLimit, setCardLimit] = useState<CardLimit>(10);
   const [phase, setPhase] = useState<QuizPhase>("mode-select");
   const [quizMode, setQuizMode] = useState<QuizMode>("multiple-choice");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -112,7 +115,7 @@ export default function QuizPage() {
       .then((data) => {
         setDeck(data.deck);
         setAllCards(data.cards);
-        setQuizCards(selectWeakCards(data.cards));
+        setQuizCards(selectWeakCards(data.cards, 10));
         setLoading(false);
       })
       .catch(() => {
@@ -120,6 +123,10 @@ export default function QuizPage() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (allCards.length > 0) setQuizCards(selectWeakCards(allCards, cardLimit));
+  }, [allCards, cardLimit]);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -373,6 +380,23 @@ export default function QuizPage() {
             How do you want to answer?
           </DialogTitle>
         </DialogHeader>
+        <div className="flex flex-wrap gap-2">
+          {([5, 10, 20, "all"] as CardLimit[])
+            .filter((n) => n === "all" || (n as number) <= allCards.length)
+            .map((n) => (
+              <button
+                key={n}
+                onClick={() => setCardLimit(n)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  cardLimit === n
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                {n === "all" ? `All ${allCards.length}` : n}
+              </button>
+            ))}
+        </div>
         <p className="text-xs text-muted-foreground/70">
           Quizzing {quizCards.length} card{quizCards.length !== 1 ? "s" : ""} — your weakest first.
         </p>

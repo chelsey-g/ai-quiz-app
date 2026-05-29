@@ -67,6 +67,7 @@ export default function QuickQuizPage() {
   const searchParams = useSearchParams();
   const cardLimit = Math.min(Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)), 500);
   const shouldShuffle = searchParams.get("shuffle") === "true";
+  const deckFilter = searchParams.get("decks") ?? null;
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +101,8 @@ export default function QuickQuizPage() {
   );
 
   useEffect(() => {
-    fetch(`/api/cards/weak?limit=${cardLimit}`)
+    const apiUrl = `/api/cards/weak?limit=${cardLimit}${deckFilter ? `&decks=${deckFilter}` : ""}`;
+    fetch(apiUrl)
       .then((r) => r.json())
       .then((data: { cards: Card[]; total: number }) => {
         let fetched = data.cards ?? [];

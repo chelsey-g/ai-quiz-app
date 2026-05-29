@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DeckCard, type DeckWithStats } from "@/components/deck-card";
 import { CollectionPopover } from "@/components/collection-popover";
 
@@ -19,6 +20,7 @@ type DashboardStats = {
 };
 
 export default function AllDecksPage() {
+  const router = useRouter();
   const [decks, setDecks] = useState<DeckWithStats[]>([]);
   const [recentDeckIds, setRecentDeckIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -256,7 +258,7 @@ export default function AllDecksPage() {
 
       {/* Floating action bar */}
       {selectMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-[max(2rem,env(safe-area-inset-bottom,0px)+0.5rem)] left-1/2 z-50 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[420px]">
+        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[420px]">
           <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/95 px-5 py-3.5 shadow-xl backdrop-blur-md select-none">
             {confirmDelete ? (
               <>
@@ -288,6 +290,19 @@ export default function AllDecksPage() {
                   <span className="font-heading font-semibold text-foreground">{selectedIds.size}</span>{" "}
                   {selectedIds.size === 1 ? "deck" : "decks"} selected
                 </p>
+                <button
+                  onClick={() => {
+                    const ids = Array.from(selectedIds).join(",");
+                    router.push(`/quiz/quick?decks=${ids}&limit=200`);
+                  }}
+                  className="rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
+                  style={{
+                    border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 65%, transparent)",
+                    color: "var(--dashboard-accent-teal-strong)",
+                  }}
+                >
+                  Create Quiz
+                </button>
                 <button
                   onClick={() => setConfirmDelete(true)}
                   className="rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"

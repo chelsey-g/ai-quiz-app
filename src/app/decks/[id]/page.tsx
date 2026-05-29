@@ -307,9 +307,9 @@ function DeckStatsBar({ stats, totalCards }: { stats: DeckStatsResult; totalCard
             </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Mastered</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Seen</p>
             <p className="font-heading mt-0.5 text-lg font-bold tabular-nums text-foreground">
-              {stats.mastered} / {totalCards}
+              {stats.seen} / {totalCards}
             </p>
           </div>
           <div>

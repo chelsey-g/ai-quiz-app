@@ -230,3 +230,15 @@
 .dark .sh-sign      { color: oklch(0.65 0.02 80); }
 .dark .sh-deleted   { color: oklch(0.72 0.18 22); }
 .dark .sh-inserted  { color: oklch(0.75 0.14 142); }
+
+/* code-editor block: always use bright token colors against dark bg */
+.code-editor .sh-keyword   { color: oklch(0.78 0.14 205); }
+.code-editor .sh-string    { color: oklch(0.75 0.14 142); }
+.code-editor .sh-comment   { color: oklch(0.58 0.02 80); font-style: italic; }
+.code-editor .sh-class     { color: oklch(0.82 0.12 78); }
+.code-editor .sh-property  { color: oklch(0.73 0.14 205); }
+.code-editor .sh-entity    { color: oklch(0.78 0.17 52); }
+.code-editor .sh-jsxliterals { color: oklch(0.75 0.14 142); }
+.code-editor .sh-sign      { color: oklch(0.65 0.02 80); }
+.code-editor .sh-deleted   { color: oklch(0.72 0.18 22); }
+.code-editor .sh-inserted  { color: oklch(0.75 0.14 142); }

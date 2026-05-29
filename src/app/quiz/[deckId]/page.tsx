@@ -548,21 +548,31 @@ export default function QuizPage() {
                   cls += " border-border/40 text-muted-foreground opacity-50";
                 }
                 return (
-                  <button
+                  <div
                     key={idx}
-                    disabled={revealed}
-                    className={cls}
+                    role="button"
+                    tabIndex={revealed ? -1 : 0}
+                    aria-disabled={revealed}
+                    className={cls + (revealed ? " cursor-default" : " cursor-pointer")}
                     onClick={() => {
                       if (revealed) return;
                       setSelectedOption(option);
                       recordAnswer(currentCard, isCorrect, option, answers);
                     }}
+                    onKeyDown={(e) => {
+                      if (revealed) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedOption(option);
+                        recordAnswer(currentCard, isCorrect, option, answers);
+                      }
+                    }}
                   >
-                    <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">
+                    <span className="mb-1 block text-[10px] font-semibold text-muted-foreground/60">
                       {idx + 1}.
                     </span>
-                    {option}
-                  </button>
+                    <CardText text={option} className="text-sm" />
+                  </div>
                 );
               })}
             </div>

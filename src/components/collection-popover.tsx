@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 type CollectionMeta = {
   id: string;
@@ -17,6 +18,7 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [toggling, setToggling] = useState<Set<string>>(new Set());
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -125,6 +127,13 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (!open && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownPos({
+              top: rect.bottom + window.scrollY + 8,
+              right: window.innerWidth - rect.right,
+            });
+          }
           setOpen((v) => !v);
         }}
         aria-label="Add to collection"
@@ -146,10 +155,11 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
         </svg>
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
           ref={popoverRef}
-          className="absolute top-full right-0 mt-2 z-50 w-56 rounded-xl border border-border bg-card shadow-xl"
+          className="fixed z-[9999] w-72 rounded-xl border border-border bg-card shadow-xl"
+          style={{ top: dropdownPos.top, right: dropdownPos.right }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="px-3 pt-3 pb-1">
@@ -166,7 +176,7 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
             ) : collections.length === 0 ? (
               <p className="pb-2 text-xs text-muted-foreground/50">No collections yet</p>
             ) : (
-              <ul className="space-y-0.5 pb-1 max-h-48 overflow-y-auto">
+              <ul className="space-y-0.5 pb-1 max-h-64 overflow-y-auto">
                 {collections.map((col) => (
                   <li key={col.id}>
                     <button
@@ -204,7 +214,7 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
                           </svg>
                         )}
                       </span>
-                      <span className="flex-1 truncate text-foreground/80">{col.name}</span>
+                      <span className="flex-1 break-words text-foreground/80">{col.name}</span>
                       <span className="text-[10px] text-muted-foreground/40 tabular-nums">
                         {col.deck_count}
                       </span>
@@ -225,7 +235,8 @@ export function CollectionPopover({ deckId }: { deckId: string }) {
               className="w-full rounded-lg bg-muted/30 px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/40 disabled:opacity-50"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

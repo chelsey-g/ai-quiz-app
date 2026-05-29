@@ -8,7 +8,7 @@ export type GlobalStats = {
     sessions: number;
     studyTimeMinutes: number;
     accuracy: number | null;
-    cardsMastered: number;
+    cardsSeen: number;
     streakDays: number;
     streakStatus: StreakStatus;
   };
@@ -19,7 +19,7 @@ export type GlobalStats = {
     title: string;
     sessions: number;
     accuracy: number | null;
-    mastered: number;
+    seen: number;
     total: number;
     lastStudied: string | null;
   }[];
@@ -28,7 +28,7 @@ export type GlobalStats = {
 export type DeckStatsResult = {
   sessions: number;
   accuracy: number | null;
-  mastered: number;
+  seen: number;
   lastStudied: string | null;
 };
 
@@ -42,7 +42,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
 
   if (!decks || decks.length === 0) {
     return {
-      totals: { sessions: 0, studyTimeMinutes: 0, accuracy: null, cardsMastered: 0, streakDays: 0, streakStatus: "none" },
+      totals: { sessions: 0, studyTimeMinutes: 0, accuracy: null, cardsSeen: 0, streakDays: 0, streakStatus: "none" },
       activityByWeek: buildActivityByWeek([]),
       accuracyByDay: [],
       deckStats: [],
@@ -97,7 +97,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
   const totalSeen = allCards.reduce((sum, c) => sum + c.times_seen, 0);
   const totalCorrect = allCards.reduce((sum, c) => sum + c.times_correct, 0);
   const accuracy = totalSeen > 0 ? Math.round((totalCorrect / totalSeen) * 100) : null;
-  const cardsMastered = allCards.filter((c) => c.times_seen >= 3 && c.times_correct / c.times_seen >= 0.8).length;
+  const cardsSeen = allCards.filter((c) => c.times_seen > 0).length;
 
   const { streakDays, streakStatus } = computeStreak(
     completedSessions.map((s) => s.completed_at)
@@ -110,7 +110,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
     const deckSeen = deckCards.reduce((sum, c) => sum + c.times_seen, 0);
     const deckCorrect = deckCards.reduce((sum, c) => sum + c.times_correct, 0);
     const deckAccuracy = deckSeen > 0 ? Math.round((deckCorrect / deckSeen) * 100) : null;
-    const mastered = deckCards.filter((c) => c.times_seen >= 3 && c.times_correct / c.times_seen >= 0.8).length;
+    const seen = deckCards.filter((c) => c.times_seen > 0).length;
     const sortedSessions = [...deckSessions].sort((a, b) =>
       b.completed_at.localeCompare(a.completed_at)
     );
@@ -121,7 +121,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
       title: deck.title,
       sessions: deckSessions.length,
       accuracy: deckAccuracy,
-      mastered,
+      seen,
       total: deckCards.length,
       lastStudied,
     };
@@ -135,7 +135,7 @@ export async function getGlobalStats(userId: string): Promise<GlobalStats> {
   });
 
   return {
-    totals: { sessions: totalSessions, studyTimeMinutes, accuracy, cardsMastered, streakDays, streakStatus },
+    totals: { sessions: totalSessions, studyTimeMinutes, accuracy, cardsSeen, streakDays, streakStatus },
     activityByWeek: buildActivityByWeek(completedSessions.map((s) => s.completed_at)),
     accuracyByDay: buildAccuracyByDay(completedSessions),
     deckStats,
@@ -165,10 +165,10 @@ export async function getDeckStats(deckId: string, userId: string): Promise<Deck
   const totalSeen = deckCards.reduce((sum, c) => sum + c.times_seen, 0);
   const totalCorrect = deckCards.reduce((sum, c) => sum + c.times_correct, 0);
   const accuracy = totalSeen > 0 ? Math.round((totalCorrect / totalSeen) * 100) : null;
-  const mastered = deckCards.filter((c) => c.times_seen >= 3 && c.times_correct / c.times_seen >= 0.8).length;
+  const seen = deckCards.filter((c) => c.times_seen > 0).length;
   const lastStudied = completedSessions[0]?.completed_at ?? null;
 
-  return { sessions: completedSessions.length, accuracy, mastered, lastStudied };
+  return { sessions: completedSessions.length, accuracy, seen, lastStudied };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

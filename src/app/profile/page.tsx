@@ -118,7 +118,7 @@ export default async function ProfilePage() {
             label="Accuracy"
             value={stats.totals.accuracy !== null ? `${stats.totals.accuracy}%` : "—"}
           />
-          <Tile label="Mastered" value={stats.totals.cardsMastered.toString()} />
+          <Tile label="Cards seen" value={stats.totals.cardsSeen.toString()} />
           <StreakTile streakDays={stats.totals.streakDays} streakStatus={stats.totals.streakStatus} />
         </div>
         <StatsCharts activityByWeek={stats.activityByWeek} accuracyByDay={stats.accuracyByDay} />
@@ -178,7 +178,7 @@ export default async function ProfilePage() {
                       {d.accuracy !== null ? `${d.accuracy}%` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                      {d.mastered} / {d.total}
+                      {d.seen} / {d.total}
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground">
                       {d.lastStudied ? formatDate(d.lastStudied) : "Never"}

@@ -91,6 +91,7 @@ export default function QuickQuizPage() {
   const [savingDeck, setSavingDeck] = useState(false);
   const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
   const [saveDeckError, setSaveDeckError] = useState<string | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // AI grading state for type-answer mode
   const [aiGrading, setAiGrading] = useState(false);
@@ -128,6 +129,25 @@ export default function QuickQuizPage() {
       setAiGrading(false);
     }
   }, [answerSubmitted]);
+
+  function exitQuiz() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setShowExitConfirm(false);
+    router.push("/collections");
+  }
+
+  function goBack() {
+    if (answers.length === 0 && currentIndex === 0) return;
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    setAnswers((prev) => prev.slice(0, -1));
+    setCurrentIndex(prevIndex);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setAiGrading(false);
+    setGradeResult(null);
+    setSelectedOption(null);
+    if (phase === "results") setPhase("quiz");
+  }
 
   async function saveStats(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {
     const byDeck = new Map<string, AnswerRecord[]>();
@@ -189,30 +209,23 @@ export default function QuickQuizPage() {
     setPhase("quiz");
   }
 
-  function recordAnswer(
-    card: Card,
-    correct: boolean,
-    userAnswer: string,
-    currentAnswers: AnswerRecord[],
-    currentStartedAt: string | null,
-  ) {
+  function recordAnswer(card: Card, correct: boolean, userAnswer: string, currentAnswers: AnswerRecord[]) {
     const newAnswers = [...currentAnswers, { cardId: card.id, correct, userAnswer, card }];
     setAnswers(newAnswers);
+  }
+
+  function advanceToNext() {
     const isLast = currentIndex + 1 >= cards.length;
-    setTimeout(() => {
-      if (isLast) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        if (currentStartedAt) {
-          saveStats(newAnswers, currentStartedAt);
-        }
-        setPhase("results");
-      } else {
-        setCurrentIndex((i) => i + 1);
-        setTypedAnswer("");
-        setAnswerSubmitted(false);
-        setSelectedOption(null);
-      }
-    }, correct ? 700 : 1500);
+    if (isLast) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (startedAt) saveStats(answers, startedAt);
+      setPhase("results");
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setTypedAnswer("");
+      setAnswerSubmitted(false);
+      setSelectedOption(null);
+    }
   }
 
   function retryMissed() {
@@ -257,7 +270,7 @@ export default function QuickQuizPage() {
     const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
     if (heuristic) {
       setGradeResult(true);
-      recordAnswer(currentCard, true, typedAnswer, answers, startedAt);
+      recordAnswer(currentCard, true, typedAnswer, answers);
       return;
     }
 
@@ -276,10 +289,10 @@ export default function QuickQuizPage() {
       const data = await res.json();
       const correct = data.correct === true;
       setGradeResult(correct);
-      recordAnswer(currentCard, correct, typedAnswer, answers, startedAt);
+      recordAnswer(currentCard, correct, typedAnswer, answers);
     } catch {
       setGradeResult(false);
-      recordAnswer(currentCard, false, typedAnswer, answers, startedAt);
+      recordAnswer(currentCard, false, typedAnswer, answers);
     } finally {
       setAiGrading(false);
     }
@@ -448,13 +461,58 @@ export default function QuickQuizPage() {
 
   const quizPhase = phase === "quiz" && currentCard && (
     <div className="flex min-h-screen flex-col">
+      {/* Exit confirmation */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <h2 className="font-heading text-base font-semibold text-foreground">Exit quiz?</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground/70">
+              You&apos;ve answered {answers.length} of {cards.length} questions. Progress won&apos;t be saved.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowExitConfirm(false)}>
+                Keep going
+              </Button>
+              <Button variant="outline" className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/5" onClick={exitQuiz}>
+                Exit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-6">
-          <span className="text-xs text-muted-foreground">
-            {currentIndex + 1} / {cards.length}
-          </span>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => answers.length > 0 ? setShowExitConfirm(true) : exitQuiz()}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-destructive/5"
+              style={{ border: "1px solid oklch(0.55 0.2 27 / 0.5)", color: "oklch(0.55 0.2 27 / 0.9)" }}
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Exit
+            </button>
+            {(answers.length > 0 || currentIndex > 0) && (
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+                style={{
+                  border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)",
+                  color: "var(--dashboard-accent-teal-strong)",
+                }}
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Undo
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">{currentIndex + 1} / {cards.length}</span>
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary transition-all duration-300"
@@ -502,7 +560,7 @@ export default function QuickQuizPage() {
                     onClick={() => {
                       if (revealed) return;
                       setSelectedOption(option);
-                      recordAnswer(currentCard, isCorrect, option, answers, startedAt);
+                      recordAnswer(currentCard, isCorrect, option, answers);
                     }}
                   >
                     <span className="mr-2 text-[10px] font-semibold text-muted-foreground/60">
@@ -513,6 +571,13 @@ export default function QuickQuizPage() {
                 );
               })}
             </div>
+            {selectedOption && (
+              <div className="mt-4">
+                <Button className="w-full" onClick={advanceToNext}>
+                  Continue →
+                </Button>
+              </div>
+            )}
           </>
         )}
 
@@ -547,44 +612,53 @@ export default function QuickQuizPage() {
                 </Button>
               </div>
             ) : (
-              <div className="mt-6 space-y-3">
-                <div
-                  className={`rounded-xl px-4 py-3 transition-colors ${
-                    gradeResult === true
-                      ? "border border-green-500/30 bg-green-500/5"
-                      : gradeResult === false
-                      ? "border border-destructive/30 bg-destructive/5"
-                      : "bg-muted/40"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p
-                      className={`text-[10px] font-medium uppercase tracking-[0.12em] ${
-                        gradeResult === true
-                          ? "text-green-600 dark:text-green-400"
-                          : gradeResult === false
-                          ? "text-destructive/80"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {gradeResult === true ? "Your answer ✓" : gradeResult === false ? "Your answer ✗" : "Your answer"}
-                    </p>
-                    {aiGrading && (
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                        <div className="h-2.5 w-2.5 animate-spin rounded-full border border-current border-t-transparent" />
-                        Checking…
-                      </span>
-                    )}
+              <>
+                <div className="mt-6 space-y-3">
+                  <div
+                    className={`rounded-xl px-4 py-3 transition-colors ${
+                      gradeResult === true
+                        ? "border border-green-500/30 bg-green-500/5"
+                        : gradeResult === false
+                        ? "border border-destructive/30 bg-destructive/5"
+                        : "bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p
+                        className={`text-[10px] font-medium uppercase tracking-[0.12em] ${
+                          gradeResult === true
+                            ? "text-green-600 dark:text-green-400"
+                            : gradeResult === false
+                            ? "text-destructive/80"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {gradeResult === true ? "Your answer ✓" : gradeResult === false ? "Your answer ✗" : "Your answer"}
+                      </p>
+                      {aiGrading && (
+                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                          <div className="h-2.5 w-2.5 animate-spin rounded-full border border-current border-t-transparent" />
+                          Checking…
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
                   </div>
-                  <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
+                  <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
+                      Correct answer
+                    </p>
+                    <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
+                  </div>
                 </div>
-                <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
-                    Correct answer
-                  </p>
-                  <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
-                </div>
-              </div>
+                {!aiGrading && gradeResult !== null && (
+                  <div className="mt-4">
+                    <Button className="w-full" onClick={advanceToNext}>
+                      Continue →
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

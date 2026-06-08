@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type CollectionMeta = {
   id: string;
@@ -20,6 +21,7 @@ function FolderIcon({ className, style }: { className?: string; style?: React.CS
 }
 
 export default function CollectionsPage() {
+  const router = useRouter();
   const [collections, setCollections] = useState<CollectionMeta[]>([]);
   const [totalDecks, setTotalDecks] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,33 @@ export default function CollectionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [quizzing, setQuizzing] = useState(false);
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleCreateQuiz() {
+    if (selectedIds.size === 0 || quizzing) return;
+    setQuizzing(true);
+    const results = await Promise.all(
+      Array.from(selectedIds).map((id) =>
+        fetch(`/api/collections/${id}`).then((r) => r.ok ? r.json() : null)
+      )
+    );
+    const deckIds = [...new Set(
+      results.flatMap((r) => (r?.decks ?? []).map((d: { id: string }) => d.id))
+    )];
+    setQuizzing(false);
+    if (deckIds.length === 0) return;
+    router.push(`/quiz/quick?decks=${deckIds.join(",")}&limit=200`);
+  }
 
   useEffect(() => {
     async function load() {
@@ -103,13 +132,63 @@ export default function CollectionsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 animate-fade-up">
-      <div className="mb-8">
-        <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
-          Collections
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground/70">
-          Organize your decks into groups
-        </p>
+      {/* Floating quiz bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[420px]">
+          <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/95 px-5 py-3.5 shadow-xl backdrop-blur-md select-none">
+            <p className="flex-1 text-sm font-medium text-muted-foreground">
+              <span className="font-heading font-semibold text-foreground">{selectedIds.size}</span>{" "}
+              {selectedIds.size === 1 ? "collection" : "collections"} selected
+            </p>
+            <button
+              onClick={handleCreateQuiz}
+              disabled={quizzing}
+              className="rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
+              style={{
+                border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 65%, transparent)",
+                color: "var(--dashboard-accent-teal-strong)",
+              }}
+            >
+              {quizzing ? "Loading…" : "Create Quiz"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-8 flex items-end justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
+            Collections
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground/70">
+            Organize your decks into groups
+          </p>
+        </div>
+        {!loading && collections.length > 0 && (
+          selectMode ? (
+            <button
+              onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+              className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
+              style={{
+                borderColor: "color-mix(in oklch, var(--border) 80%, transparent)",
+                color: "color-mix(in oklch, var(--foreground) 62%, var(--muted-foreground) 38%)",
+              }}
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              onClick={() => setSelectMode(true)}
+              className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
+              style={{
+                borderColor: "color-mix(in oklch, var(--dashboard-accent-coral) 45%, transparent)",
+                color: "var(--dashboard-accent-coral)",
+              }}
+            >
+              Select
+            </button>
+          )
+        )}
       </div>
 
       {loading ? (
@@ -144,7 +223,54 @@ export default function CollectionsPage() {
           {/* User collections */}
           {collections.map((col) => (
             <div key={col.id} className="group relative h-full">
-              {renamingId === col.id ? (
+              {selectMode && renamingId !== col.id && deletingId !== col.id ? (
+                <button
+                  onClick={() => toggleSelect(col.id)}
+                  className="w-full h-full text-left"
+                >
+                  <div
+                    className="dashboard-card-hover h-full rounded-2xl border bg-card p-5 transition-colors"
+                    style={{
+                      borderColor: selectedIds.has(col.id)
+                        ? "var(--dashboard-accent-teal)"
+                        : undefined,
+                      background: selectedIds.has(col.id)
+                        ? "color-mix(in oklch, var(--dashboard-accent-teal) 8%, var(--card) 92%)"
+                        : undefined,
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border"
+                        style={{
+                          borderColor: "color-mix(in oklch, var(--dashboard-accent-coral) 40%, transparent)",
+                          background: "color-mix(in oklch, var(--dashboard-accent-coral) 10%, transparent)",
+                        }}
+                      >
+                        <FolderIcon className="h-4 w-4" style={{ color: "var(--dashboard-accent-coral)" }} />
+                      </div>
+                      <span
+                        className="flex h-5 w-5 flex-none items-center justify-center rounded border transition-all"
+                        style={
+                          selectedIds.has(col.id)
+                            ? { background: "var(--dashboard-accent-teal)", borderColor: "var(--dashboard-accent-teal)" }
+                            : { background: "transparent", borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 45%, transparent)" }
+                        }
+                      >
+                        {selectedIds.has(col.id) && (
+                          <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="var(--dashboard-accent-ink)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M2 6l3 3 5-5" />
+                          </svg>
+                        )}
+                      </span>
+                    </div>
+                    <h3 className="font-heading mt-3 text-base font-bold text-foreground">{col.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground/60">
+                      {col.deck_count} {col.deck_count === 1 ? "deck" : "decks"}
+                    </p>
+                  </div>
+                </button>
+              ) : renamingId === col.id ? (
                 <div className="h-full rounded-2xl border border-primary/40 bg-card p-5">
                   <div
                     className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl border"

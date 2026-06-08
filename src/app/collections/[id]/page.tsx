@@ -38,6 +38,23 @@ export default function CollectionDetailPage() {
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState("");
 
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleSelectMode() {
+    setSelectMode((v) => !v);
+    setSelectedIds(new Set());
+  }
+
+  function toggleDeck(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   const [challengeDeck, setChallengeDeck] = useState<{ id: string; title: string; cards: Card[] } | null>(null);
   const [loadingChallengeDeckId, setLoadingChallengeDeckId] = useState<string | null>(null);
 
@@ -236,6 +253,29 @@ export default function CollectionDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {selectMode ? (
+            <button
+              onClick={toggleSelectMode}
+              className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/40"
+              style={{
+                borderColor: "color-mix(in oklch, var(--border) 80%, transparent)",
+                color: "color-mix(in oklch, var(--foreground) 62%, var(--muted-foreground) 38%)",
+              }}
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              onClick={() => setSelectMode(true)}
+              className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10"
+              style={{
+                borderColor: "color-mix(in oklch, var(--dashboard-accent-coral) 45%, transparent)",
+                color: "var(--dashboard-accent-coral)",
+              }}
+            >
+              Select
+            </button>
+          )}
           <button
             onClick={handleTogglePublic}
             disabled={togglingPublic}
@@ -344,10 +384,15 @@ export default function CollectionDetailPage() {
                     </div>
                   </div>
                 ) : (
-                  <DeckCard deck={deck} />
+                  <DeckCard
+                    deck={deck}
+                    selectMode={selectMode}
+                    selected={selectedIds.has(deck.id)}
+                    onSelect={() => toggleDeck(deck.id)}
+                  />
                 )}
 
-                {renamingDeckId !== deck.id && (
+                {renamingDeckId !== deck.id && !selectMode && (
                   <div className="absolute right-2 top-2 z-10">
                     <button
                       onClick={() => setMenuOpenId(menuOpenId === deck.id ? null : deck.id)}
@@ -412,6 +457,30 @@ export default function CollectionDetailPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[420px]">
+          <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/95 px-5 py-3.5 shadow-xl backdrop-blur-md select-none">
+            <p className="flex-1 text-sm font-medium text-muted-foreground">
+              <span className="font-heading font-semibold text-foreground">{selectedIds.size}</span>{" "}
+              {selectedIds.size === 1 ? "deck" : "decks"} selected
+            </p>
+            <button
+              onClick={() => {
+                const ids = Array.from(selectedIds).join(",");
+                router.push(`/quiz/quick?decks=${ids}&limit=200`);
+              }}
+              className="rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:opacity-90"
+              style={{
+                border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 65%, transparent)",
+                color: "var(--dashboard-accent-teal-strong)",
+              }}
+            >
+              Create Quiz
+            </button>
+          </div>
         </div>
       )}
 

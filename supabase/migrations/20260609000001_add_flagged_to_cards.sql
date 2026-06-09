@@ -1,0 +1,1 @@
+ALTER TABLE cards ADD COLUMN IF NOT EXISTS flagged boolean NOT NULL DEFAULT false;

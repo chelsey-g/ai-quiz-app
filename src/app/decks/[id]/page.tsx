@@ -61,6 +61,28 @@ function AutoTextarea({ value, onChange, className, ...props }: React.TextareaHT
   );
 }
 
+function FlagButton({ flagged, onToggle }: { flagged: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-muted/40"
+      title={flagged ? "Remove flag" : "Flag for review"}
+    >
+      <svg
+        className="h-4 w-4 transition-colors"
+        viewBox="0 0 24 24"
+        fill={flagged ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={2}
+        style={{ color: flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.4)" }}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+      </svg>
+    </button>
+  );
+}
+
 function shuffleAnswers(correct: string, distractors: string[]): string[] {
   const ck = correct.trim().toLowerCase().replace(/\s+/g, " ");
   const seen = new Set([ck]);
@@ -373,6 +395,8 @@ export default function DeckPage() {
   const [newCardIds, setNewCardIds] = useState<Set<string>>(new Set());
   const [expandError, setExpandError] = useState<string | null>(null);
 
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
 
@@ -450,6 +474,7 @@ export default function DeckPage() {
         setDeck(deck);
         setIsPublic((deck as any).is_public ?? false);
         setAllCards(cards);
+        setFlaggedIds(new Set(cards.filter((c: Card) => c.flagged).map((c: Card) => c.id)));
         setDeckStats(deckStats ?? null);
       }
       if (profileRes.ok) {
@@ -512,6 +537,20 @@ export default function DeckPage() {
     setTypeGradeResult(null);
     setSelectedMcOption(null);
     if (studyState === "done") setStudyState("studying");
+  }
+
+  async function toggleFlag(cardId: string) {
+    const next = !flaggedIds.has(cardId);
+    setFlaggedIds((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(cardId); else s.delete(cardId);
+      return s;
+    });
+    await fetch(`/api/cards/${cardId}/flag`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flagged: next }),
+    });
   }
 
   async function handleTypeSubmit() {
@@ -1652,6 +1691,7 @@ export default function DeckPage() {
             style={{ perspective: "1200px" }}
             onClick={() => setFlipped((f) => !f)}
           >
+            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
             {/* Sizer: drives outer container height.
                 Not flipped → min-h-72 only (front stays compact).
                 Flipped → back content shown, grows if long. */}
@@ -1746,7 +1786,8 @@ export default function DeckPage() {
       {/* Flashcard — type mode */}
       {currentCardMode === "type" && (
         <>
-          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
+            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>
@@ -1865,7 +1906,8 @@ export default function DeckPage() {
       {/* Flashcard — multiple choice mode */}
       {currentCardMode === "multiple-choice" && (
         <>
-          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
+            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>

@@ -26,6 +26,28 @@ type AnswerRecord = {
   card: Card;
 };
 
+function FlagButton({ flagged, onToggle }: { flagged: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-muted/40"
+      title={flagged ? "Remove flag" : "Flag for review"}
+    >
+      <svg
+        className="h-4 w-4 transition-colors"
+        viewBox="0 0 24 24"
+        fill={flagged ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={2}
+        style={{ color: flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.4)" }}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+      </svg>
+    </button>
+  );
+}
+
 function shuffleAnswers(correct: string, distractors: string[]): string[] {
   const ck = correct.trim().toLowerCase().replace(/\s+/g, " ");
   const seen = new Set([ck]);
@@ -92,6 +114,7 @@ export default function QuickQuizPage() {
   const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
   const [saveDeckError, setSaveDeckError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
 
   // AI grading state for type-answer mode
   const [aiGrading, setAiGrading] = useState(false);
@@ -109,6 +132,7 @@ export default function QuickQuizPage() {
         let fetched = data.cards ?? [];
         if (shouldShuffle) fetched = [...fetched].sort(() => Math.random() - 0.5);
         setCards(fetched);
+        setFlaggedIds(new Set(fetched.filter((c) => c.flagged).map((c) => c.id)));
         setLoading(false);
       })
       .catch(() => {
@@ -147,6 +171,20 @@ export default function QuickQuizPage() {
     setGradeResult(null);
     setSelectedOption(null);
     if (phase === "results") setPhase("quiz");
+  }
+
+  async function toggleFlag(cardId: string) {
+    const next = !flaggedIds.has(cardId);
+    setFlaggedIds((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(cardId); else s.delete(cardId);
+      return s;
+    });
+    await fetch(`/api/cards/${cardId}/flag`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flagged: next }),
+    });
   }
 
   async function saveStats(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {
@@ -530,7 +568,8 @@ export default function QuickQuizPage() {
       <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
         {currentCardMode === "multiple-choice" && (
           <>
-            <div className="rounded-2xl border border-border bg-card px-8 py-8 text-center">
+            <div className="relative rounded-2xl border border-border bg-card px-8 py-8 text-center">
+              <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                 Question
               </p>
@@ -582,7 +621,8 @@ export default function QuickQuizPage() {
         )}
 
         {currentCardMode === "type" && (
-          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
+            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
             <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
               Question
             </p>
@@ -764,6 +804,11 @@ export default function QuickQuizPage() {
                 <span className={answer.correct ? "text-green-500" : "text-destructive"}>
                   {answer.correct ? "✓" : "✗"}
                 </span>
+                {flaggedIds.has(answer.cardId) && (
+                  <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: "oklch(0.65 0.18 30)" }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+                  </svg>
+                )}
                 <div className="flex-1">
                   <CardText text={answer.card.front} className="font-medium text-foreground" />
                   {!answer.correct && (

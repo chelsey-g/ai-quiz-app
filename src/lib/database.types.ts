@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           deck_id: string
           ease_factor: number
+          flagged: boolean
           front: string
           id: string
           interval_days: number
@@ -40,6 +41,7 @@ export type Database = {
           created_at?: string
           deck_id: string
           ease_factor?: number
+          flagged?: boolean
           front: string
           id?: string
           interval_days?: number
@@ -59,6 +61,7 @@ export type Database = {
           created_at?: string
           deck_id?: string
           ease_factor?: number
+          flagged?: boolean
           front?: string
           id?: string
           interval_days?: number

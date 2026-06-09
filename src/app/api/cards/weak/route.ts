@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(1, rawLimit), 500);
   const deckParam = url.searchParams.get("decks");
   const deckIds = deckParam ? deckParam.split(",").filter(Boolean) : null;
+  const flaggedOnly = url.searchParams.get("flagged") === "true";
 
   // Fetch all user's cards in one query (join through decks to scope by user_id)
   let query = supabase
@@ -41,6 +42,10 @@ export async function GET(req: NextRequest) {
     query = query.in("deck_id", deckIds);
   }
 
+  if (flaggedOnly) {
+    query = query.eq("flagged", true);
+  }
+
   const { data: cards, error } = await query;
 
   if (error) {
@@ -48,6 +53,10 @@ export async function GET(req: NextRequest) {
   }
 
   const allCards = (cards ?? []) as Card[];
+
+  if (flaggedOnly) {
+    return Response.json({ cards: allCards.slice(0, limit), total: allCards.length });
+  }
 
   // Split seen vs unseen
   const seen = allCards.filter((c) => c.times_seen > 0);

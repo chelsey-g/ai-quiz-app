@@ -67,13 +67,18 @@ export default async function ProfilePage() {
 
   const displayName = (profileData as { display_name?: string | null } | null)?.display_name ?? null;
 
-  const [stats, collectionsResult] = await Promise.all([
+  const [stats, collectionsResult, flaggedResult] = await Promise.all([
     getGlobalStats(user.id),
     supabase
       .from("collections")
       .select("id, name, is_public, collection_decks(deck_id)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("cards")
+      .select("id, front, back, deck_id, decks!inner(id, title, user_id)")
+      .eq("flagged", true)
+      .eq("decks.user_id", user.id),
   ]);
 
   const collections = (collectionsResult.data ?? []).map((c) => ({
@@ -82,6 +87,15 @@ export default async function ProfilePage() {
     is_public: c.is_public,
     deck_count: c.collection_decks.length,
   }));
+
+  type FlaggedCard = { id: string; front: string; back: string; deck_id: string; decks: { id: string; title: string } };
+  const flaggedCards = (flaggedResult.data ?? []) as unknown as FlaggedCard[];
+  const flaggedByDeck = flaggedCards.reduce<Record<string, { deckId: string; deckTitle: string; cards: FlaggedCard[] }>>((acc, card) => {
+    const key = card.deck_id;
+    if (!acc[key]) acc[key] = { deckId: card.decks.id, deckTitle: card.decks.title, cards: [] };
+    acc[key].cards.push(card);
+    return acc;
+  }, {});
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
@@ -189,6 +203,66 @@ export default async function ProfilePage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Flagged cards */}
+      <div className="mb-8">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
+            Flagged for review
+            {flaggedCards.length > 0 && (
+              <span className="ml-2 font-normal normal-case tracking-normal text-muted-foreground/40">
+                {flaggedCards.length} {flaggedCards.length === 1 ? "card" : "cards"}
+              </span>
+            )}
+          </p>
+          {flaggedCards.length > 0 && (
+            <Link
+              href="/quiz/quick?flagged=true&limit=200"
+              className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                borderColor: "color-mix(in oklch, oklch(0.65 0.18 30) 45%, transparent)",
+                color: "oklch(0.65 0.18 30)",
+              }}
+            >
+              Quiz flagged →
+            </Link>
+          )}
+        </div>
+        {flaggedCards.length === 0 ? (
+          <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/40 py-8">
+            <p className="text-sm text-muted-foreground/40">
+              No flagged cards yet — tap the flag icon during a quiz to mark ones you want to revisit.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {Object.values(flaggedByDeck).map(({ deckId, deckTitle, cards }) => (
+              <div key={deckId} className="overflow-hidden rounded-2xl border border-border/40">
+                <div className="flex items-center gap-2 border-b border-border/30 bg-muted/20 px-4 py-2.5">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: "oklch(0.65 0.18 30)" }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+                  </svg>
+                  <Link
+                    href={`/decks/${deckId}`}
+                    className="text-xs font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {deckTitle}
+                  </Link>
+                  <span className="text-[10px] text-muted-foreground/50">{cards.length} flagged</span>
+                </div>
+                <div className="divide-y divide-border/20">
+                  {cards.map((card) => (
+                    <div key={card.id} className="px-4 py-3">
+                      <p className="text-sm font-medium text-foreground">{card.front}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground/60 line-clamp-2">{card.back}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <CollectionsSection initialCollections={collections} />

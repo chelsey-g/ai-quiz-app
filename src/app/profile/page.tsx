@@ -240,8 +240,9 @@ export default async function ProfilePage() {
             {Object.values(flaggedByDeck).map(({ deckId, deckTitle, cards }) => (
               <div key={deckId} className="overflow-hidden rounded-2xl border border-border/40">
                 <div className="flex items-center gap-2 border-b border-border/30 bg-muted/20 px-4 py-2.5">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: "oklch(0.65 0.18 30)" }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="oklch(0.65 0.18 30)" stroke="oklch(0.65 0.18 30)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                    <line x1="4" y1="22" x2="4" y2="15" />
                   </svg>
                   <Link
                     href={`/decks/${deckId}`}

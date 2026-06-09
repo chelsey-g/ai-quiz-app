@@ -31,18 +31,20 @@ function FlagButton({ flagged, onToggle }: { flagged: boolean; onToggle: () => v
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onToggle(); }}
-      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-muted/40"
+      className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-muted/40"
       title={flagged ? "Remove flag" : "Flag for review"}
     >
       <svg
-        className="h-4 w-4 transition-colors"
+        className="h-4 w-4"
         viewBox="0 0 24 24"
-        fill={flagged ? "currentColor" : "none"}
-        stroke="currentColor"
+        fill={flagged ? "oklch(0.65 0.18 30)" : "none"}
+        stroke={flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.7)"}
         strokeWidth={2}
-        style={{ color: flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.4)" }}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+        <line x1="4" y1="22" x2="4" y2="15" />
       </svg>
     </button>
   );
@@ -805,8 +807,9 @@ export default function QuickQuizPage() {
                   {answer.correct ? "✓" : "✗"}
                 </span>
                 {flaggedIds.has(answer.cardId) && (
-                  <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: "oklch(0.65 0.18 30)" }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+                  <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="oklch(0.65 0.18 30)" stroke="oklch(0.65 0.18 30)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                    <line x1="4" y1="22" x2="4" y2="15" />
                   </svg>
                 )}
                 <div className="flex-1">

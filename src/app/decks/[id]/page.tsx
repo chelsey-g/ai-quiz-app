@@ -70,14 +70,16 @@ function FlagButton({ flagged, onToggle }: { flagged: boolean; onToggle: () => v
       title={flagged ? "Remove flag" : "Flag for review"}
     >
       <svg
-        className="h-4 w-4 transition-colors"
+        className="h-4 w-4"
         viewBox="0 0 24 24"
-        fill={flagged ? "currentColor" : "none"}
-        stroke="currentColor"
+        fill={flagged ? "oklch(0.65 0.18 30)" : "none"}
+        stroke={flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.7)"}
         strokeWidth={2}
-        style={{ color: flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.4)" }}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 3l9 4 9-4v11l-9 4-9-4V3z" />
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+        <line x1="4" y1="22" x2="4" y2="15" />
       </svg>
     </button>
   );

@@ -32,13 +32,14 @@ function FlagButton({ flagged, onToggle }: { flagged: boolean; onToggle: () => v
       type="button"
       onClick={(e) => { e.stopPropagation(); onToggle(); }}
       className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-muted/40"
+      style={{ color: flagged ? "oklch(0.65 0.18 30)" : "oklch(0.5 0.01 250 / 0.5)" }}
       title={flagged ? "Remove flag" : "Flag for review"}
     >
       <svg
         className="h-4 w-4"
         viewBox="0 0 24 24"
-        fill={flagged ? "oklch(0.65 0.18 30)" : "none"}
-        stroke={flagged ? "oklch(0.65 0.18 30)" : "oklch(0.55 0.01 65 / 0.7)"}
+        fill={flagged ? "currentColor" : "none"}
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -807,7 +808,7 @@ export default function QuickQuizPage() {
                   {answer.correct ? "✓" : "✗"}
                 </span>
                 {flaggedIds.has(answer.cardId) && (
-                  <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="oklch(0.65 0.18 30)" stroke="oklch(0.65 0.18 30)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ color: "oklch(0.65 0.18 30)" }}>
                     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                     <line x1="4" y1="22" x2="4" y2="15" />
                   </svg>

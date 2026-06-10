@@ -556,8 +556,8 @@ export default function QuickQuizPage() {
                 onClick={() => toggleFlag(currentCard.id)}
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
                 style={flaggedIds.has(currentCard.id)
-                  ? { border: "1px solid oklch(0.65 0.18 30 / 0.6)", color: "oklch(0.65 0.18 30)" }
-                  : { border: "1px solid oklch(0.5 0.01 250 / 0.3)", color: "oklch(0.5 0.01 250 / 0.6)" }
+                  ? { border: "1px solid oklch(0.65 0.18 30 / 0.7)", color: "oklch(0.72 0.18 30)" }
+                  : { border: "1px solid oklch(0.55 0.01 250 / 0.5)", color: "oklch(0.65 0.01 250 / 0.9)" }
                 }
                 title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
               >

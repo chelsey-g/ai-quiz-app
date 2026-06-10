@@ -551,6 +551,23 @@ export default function QuickQuizPage() {
                 Undo
               </button>
             )}
+            {currentCard && (
+              <button
+                onClick={() => toggleFlag(currentCard.id)}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+                style={flaggedIds.has(currentCard.id)
+                  ? { border: "1px solid oklch(0.65 0.18 30 / 0.6)", color: "oklch(0.65 0.18 30)" }
+                  : { border: "1px solid oklch(0.5 0.01 250 / 0.3)", color: "oklch(0.5 0.01 250 / 0.6)" }
+                }
+                title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
+              >
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill={flaggedIds.has(currentCard.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                  <line x1="4" y1="22" x2="4" y2="15" />
+                </svg>
+                Flag
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">{currentIndex + 1} / {cards.length}</span>
@@ -571,8 +588,7 @@ export default function QuickQuizPage() {
       <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
         {currentCardMode === "multiple-choice" && (
           <>
-            <div className="relative rounded-2xl border border-border bg-card px-8 py-8 text-center">
-              <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
+            <div className="rounded-2xl border border-border bg-card px-8 py-8 text-center">
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                 Question
               </p>
@@ -624,8 +640,7 @@ export default function QuickQuizPage() {
         )}
 
         {currentCardMode === "type" && (
-          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
-            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
+          <div className="rounded-2xl border border-border bg-card px-8 py-8">
             <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
               Question
             </p>

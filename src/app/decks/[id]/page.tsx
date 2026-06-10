@@ -1626,6 +1626,21 @@ export default function DeckPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => toggleFlag(currentCard.id)}
+            className="flex items-center gap-1 text-xs font-medium transition-colors"
+            style={flaggedIds.has(currentCard.id)
+              ? { color: "oklch(0.65 0.18 30)" }
+              : { color: "oklch(0.5 0.01 250 / 0.5)" }
+            }
+            title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill={flaggedIds.has(currentCard.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+            Flag
+          </button>
+          <button
             onClick={() => { startEditCard(currentCard); setShowStudyEdit(true); }}
             className="flex items-center gap-1 text-xs text-muted-foreground/40 transition-colors hover:text-muted-foreground"
             title="Edit this card"
@@ -1694,7 +1709,6 @@ export default function DeckPage() {
             style={{ perspective: "1200px" }}
             onClick={() => setFlipped((f) => !f)}
           >
-            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
             {/* Sizer: drives outer container height.
                 Not flipped → min-h-72 only (front stays compact).
                 Flipped → back content shown, grows if long. */}
@@ -1789,8 +1803,7 @@ export default function DeckPage() {
       {/* Flashcard — type mode */}
       {currentCardMode === "type" && (
         <>
-          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
-            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
+          <div className="rounded-2xl border border-border bg-card px-8 py-8">
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>
@@ -1909,8 +1922,7 @@ export default function DeckPage() {
       {/* Flashcard — multiple choice mode */}
       {currentCardMode === "multiple-choice" && (
         <>
-          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
-            <FlagButton flagged={flaggedIds.has(currentCard.id)} onToggle={() => toggleFlag(currentCard.id)} />
+          <div className="rounded-2xl border border-border bg-card px-8 py-8">
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70 text-center">
               Question
             </p>

@@ -576,7 +576,7 @@ export default function QuickQuizPage() {
                 onClick={() => toggleFlag(currentCard.id)}
                 className="absolute right-3 top-3 rounded-lg p-1.5 transition-colors hover:bg-primary/10"
                 title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
-                style={{ color: flaggedIds.has(currentCard.id) ? "oklch(0.72 0.18 30)" : "oklch(0.60 0.04 50 / 0.55)" }}
+                style={{ color: flaggedIds.has(currentCard.id) ? "oklch(0.72 0.18 30)" : "rgba(255,255,255,0.45)" }}
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill={flaggedIds.has(currentCard.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
@@ -639,7 +639,7 @@ export default function QuickQuizPage() {
               onClick={() => toggleFlag(currentCard.id)}
               className="absolute right-3 top-3 rounded-lg p-1.5 transition-colors hover:bg-primary/10"
               title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
-              style={{ color: flaggedIds.has(currentCard.id) ? "oklch(0.72 0.18 30)" : "oklch(0.60 0.04 50 / 0.55)" }}
+              style={{ color: flaggedIds.has(currentCard.id) ? "oklch(0.72 0.18 30)" : "rgba(255,255,255,0.45)" }}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill={flaggedIds.has(currentCard.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />

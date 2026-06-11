@@ -104,6 +104,7 @@ export default function QuizPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
 
   const { explanations, explanationsLoading } = useWrongAnswerExplanations(
     phase === "results" ? answers : []
@@ -116,6 +117,7 @@ export default function QuizPage() {
         setDeck(data.deck);
         setAllCards(data.cards);
         setQuizCards(selectWeakCards(data.cards, 10));
+        setFlaggedIds(new Set(data.cards.filter((c: Card) => c.flagged).map((c: Card) => c.id)));
         setLoading(false);
       })
       .catch(() => {
@@ -277,6 +279,16 @@ export default function QuizPage() {
     if (timerRef.current) clearInterval(timerRef.current);
     setShowExitConfirm(false);
     router.push(`/decks/${id}`);
+  }
+
+  async function toggleFlag(cardId: string) {
+    const next = !flaggedIds.has(cardId);
+    setFlaggedIds((prev) => { const s = new Set(prev); next ? s.add(cardId) : s.delete(cardId); return s; });
+    await fetch(`/api/cards/${cardId}/flag`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flagged: next }),
+    });
   }
 
   function retryMissed() {
@@ -525,7 +537,18 @@ export default function QuizPage() {
       <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
         {currentCardMode === "multiple-choice" && (
           <>
-            <div className="rounded-2xl border border-border bg-card px-8 py-8 text-center">
+            <div className="relative rounded-2xl border border-border bg-card px-8 py-8 text-center">
+              <button
+                onClick={() => toggleFlag(currentCard.id)}
+                className="absolute right-3 top-3 rounded-lg p-1.5 transition-colors hover:bg-primary/10"
+                title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
+                style={{ color: flaggedIds.has(currentCard.id) ? "oklch(0.72 0.18 30)" : "rgba(255,255,255,0.45)" }}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill={flaggedIds.has(currentCard.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                  <line x1="4" y1="22" x2="4" y2="15" />
+                </svg>
+              </button>
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
                 Question
               </p>
@@ -587,7 +610,18 @@ export default function QuizPage() {
         )}
 
         {currentCardMode === "type" && (
-          <div className="rounded-2xl border border-border bg-card px-8 py-8">
+          <div className="relative rounded-2xl border border-border bg-card px-8 py-8">
+            <button
+              onClick={() => toggleFlag(currentCard.id)}
+              className="absolute right-3 top-3 rounded-lg p-1.5 transition-colors hover:bg-primary/10"
+              title={flaggedIds.has(currentCard.id) ? "Remove flag" : "Flag for review"}
+              style={{ color: flaggedIds.has(currentCard.id) ? "oklch(0.72 0.18 30)" : "rgba(255,255,255,0.45)" }}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill={flaggedIds.has(currentCard.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+            </button>
             <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-primary/70">
               Question
             </p>

@@ -1,6 +1,7 @@
 import { streamText } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 type WrongAnswer = {
   cardId: string;
@@ -50,6 +51,12 @@ async function explainOneCard(
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = (await req.json()) as { wrongAnswers: WrongAnswer[] };
 
   if (!body.wrongAnswers || !Array.isArray(body.wrongAnswers) || body.wrongAnswers.length === 0) {

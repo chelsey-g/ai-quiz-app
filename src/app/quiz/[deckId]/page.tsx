@@ -65,13 +65,26 @@ function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
   return shuffleAnswers(targetCard.back, fallback);
 }
 
-function gradeTypeAnswer(userAnswer: string, correct: string): boolean {
-  const norm = (s: string) => s.trim().toLowerCase();
-  return (
-    norm(userAnswer) === norm(correct) ||
-    norm(correct).includes(norm(userAnswer)) ||
-    norm(userAnswer).includes(norm(correct))
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
   );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function gradeTypeAnswer(userAnswer: string, correct: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const a = norm(userAnswer);
+  const b = norm(correct);
+  if (a === b) return true;
+  const maxLen = Math.max(a.length, b.length);
+  return maxLen > 0 && levenshtein(a, b) / maxLen <= 0.2;
 }
 
 export default function QuizPage() {
@@ -230,6 +243,7 @@ export default function QuizPage() {
           correctAnswer: currentCard.back,
         }),
       });
+      if (!res.ok) throw new Error(`Grade API error: ${res.status}`);
       const data = await res.json();
       const correct = data.correct === true;
       setGradeResult(correct);

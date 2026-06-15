@@ -198,8 +198,8 @@ export default function QuickQuizPage() {
       byDeck.get(did)!.push(a);
     }
     await Promise.all(
-      [...byDeck.entries()].map(([deckId, records]) =>
-        fetch("/api/sessions", {
+      [...byDeck.entries()].map(async ([deckId, records]) => {
+        const res = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -208,8 +208,11 @@ export default function QuickQuizPage() {
             startedAt: startedAtSnapshot,
             results: records.map((r) => ({ cardId: r.cardId, correct: r.correct })),
           }),
-        })
-      )
+        });
+        if (!res.ok) {
+          console.error(`saveStats: /api/sessions returned ${res.status} for deck ${deckId}`);
+        }
+      })
     );
   }
 
@@ -255,16 +258,18 @@ export default function QuickQuizPage() {
     setAnswers(newAnswers);
   }
 
-  function advanceToNext() {
+  async function advanceToNext() {
     const isLast = currentIndex + 1 >= cards.length;
     if (isLast) {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (startedAt) saveStats(answers, startedAt);
+      if (startedAt) await saveStats(answers, startedAt);
       setPhase("results");
     } else {
       setCurrentIndex((i) => i + 1);
       setTypedAnswer("");
       setAnswerSubmitted(false);
+      setAiGrading(false);
+      setGradeResult(null);
       setSelectedOption(null);
     }
   }

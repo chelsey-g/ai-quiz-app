@@ -142,7 +142,7 @@ export default function QuizPage() {
 
   async function saveQuizSession(answersSnapshot: AnswerRecord[], startedAtSnapshot: string) {
     const score = answersSnapshot.filter((a) => a.correct).length;
-    await fetch("/api/sessions", {
+    const res = await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -152,6 +152,9 @@ export default function QuizPage() {
         results: answersSnapshot.map((a) => ({ cardId: a.cardId, correct: a.correct })),
       }),
     });
+    if (!res.ok) {
+      console.error(`saveQuizSession: /api/sessions returned ${res.status}`);
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -239,7 +242,7 @@ export default function QuizPage() {
     }
   }
 
-  function advanceToNext(
+  async function advanceToNext(
     currentQuizCards: Card[],
     currentAnswers: AnswerRecord[],
     currentStartedAt: string | null,
@@ -247,7 +250,7 @@ export default function QuizPage() {
     const isLast = currentIndex + 1 >= currentQuizCards.length;
     if (isLast) {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (currentStartedAt) saveQuizSession(currentAnswers, currentStartedAt);
+      if (currentStartedAt) await saveQuizSession(currentAnswers, currentStartedAt);
       setPhase("results");
     } else {
       setCurrentIndex((i) => i + 1);

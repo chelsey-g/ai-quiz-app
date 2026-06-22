@@ -302,6 +302,18 @@ function CardRow({
       <div className="flex-1 min-w-0">
         <CardText text={card.front} className="text-sm font-medium text-foreground break-words" />
         <CardText text={card.back} className="mt-1.5 text-sm text-muted-foreground/80 break-words" />
+        {card.last_typed_answer && (
+          <details className="mt-2 group/answer">
+            <summary
+              className="cursor-pointer select-none text-[11px] font-medium list-none flex items-center gap-1"
+              style={{ color: "oklch(0.79 0.16 205)" }}
+            >
+              <svg className="w-3 h-3 transition-transform group-open/answer:rotate-90" fill="none" viewBox="0 0 6 10" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4-4 4" /></svg>
+              Your last answer
+            </summary>
+            <p className="mt-1 text-[11px] text-muted-foreground/70 italic pl-4 break-words">{card.last_typed_answer}</p>
+          </details>
+        )}
       </div>
       <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
         <button
@@ -616,6 +628,13 @@ export default function DeckPage() {
   async function handleTypeSubmit() {
     if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
     setAnswerSubmitted(true);
+
+    // Save answer fire-and-forget
+    fetch(`/api/cards/${currentCard.id}/typed-answer`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer: typedAnswer }),
+    }).catch(() => {});
 
     const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
     if (heuristic) {

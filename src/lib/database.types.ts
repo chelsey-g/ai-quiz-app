@@ -26,6 +26,7 @@ export type Database = {
           id: string
           interval_days: number
           last_seen_at: string | null
+          last_typed_answer: string | null
           mc_distractors: string[] | null
           mc_status: string | null
           next_review_at: string | null
@@ -46,6 +47,7 @@ export type Database = {
           id?: string
           interval_days?: number
           last_seen_at?: string | null
+          last_typed_answer?: string | null
           mc_distractors?: string[] | null
           mc_status?: string | null
           next_review_at?: string | null
@@ -66,6 +68,7 @@ export type Database = {
           id?: string
           interval_days?: number
           last_seen_at?: string | null
+          last_typed_answer?: string | null
           mc_distractors?: string[] | null
           mc_status?: string | null
           next_review_at?: string | null

@@ -326,6 +326,13 @@ export default function QuickQuizPage() {
     if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
     setAnswerSubmitted(true);
 
+    // Save answer fire-and-forget
+    fetch(`/api/cards/${currentCard.id}/typed-answer`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer: typedAnswer }),
+    }).catch(() => {});
+
     const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
     if (heuristic) {
       setGradeResult(true);

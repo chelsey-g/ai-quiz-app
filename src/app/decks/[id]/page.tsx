@@ -180,6 +180,8 @@ function CardRow({
   dragListeners,
   dragAttributes,
 }: CardRowProps) {
+  const [backPreview, setBackPreview] = useState(false);
+
   if (isEditing) {
     return (
       <div
@@ -199,13 +201,55 @@ function CardRow({
           onKeyDown={(e) => { if (e.key === "Escape") onEditCancel(); }}
           className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-        <AutoTextarea
-          value={editBack}
-          onChange={(e) => onEditBackChange(e.target.value)}
-          placeholder="Back (answer)"
-          onKeyDown={(e) => { if (e.key === "Escape") onEditCancel(); }}
-          className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
+        <div className="rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center gap-0.5 bg-muted/40 px-1.5 pt-1.5 pb-0">
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); setBackPreview(false); }}
+              className="px-3 py-1 text-[11px] font-medium rounded-t-md transition-colors"
+              style={!backPreview ? {
+                background: "var(--card)",
+                color: "oklch(0.79 0.16 205)",
+                borderBottom: "1px solid var(--card)",
+              } : {
+                color: "oklch(0.55 0.01 78)",
+              }}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); setBackPreview(true); }}
+              className="px-3 py-1 text-[11px] font-medium rounded-t-md transition-colors"
+              style={backPreview ? {
+                background: "var(--card)",
+                color: "oklch(0.79 0.16 205)",
+                borderBottom: "1px solid var(--card)",
+              } : {
+                color: "oklch(0.55 0.01 78)",
+              }}
+            >
+              Preview
+            </button>
+          </div>
+          {backPreview ? (
+            <div className="bg-card px-3 py-2.5 min-h-[4rem]">
+              {editBack.trim() ? (
+                <CardText text={editBack} className="text-sm text-muted-foreground" />
+              ) : (
+                <p className="text-sm text-muted-foreground/30 italic">Nothing to preview</p>
+              )}
+            </div>
+          ) : (
+            <AutoTextarea
+              value={editBack}
+              onChange={(e) => onEditBackChange(e.target.value)}
+              placeholder="Back (answer)"
+              onKeyDown={(e) => { if (e.key === "Escape") onEditCancel(); }}
+              className="w-full bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+            />
+          )}
+        </div>
         <p className="text-[10px] text-muted-foreground/40">Tab to switch fields · Esc to cancel · click away to save</p>
       </div>
     );

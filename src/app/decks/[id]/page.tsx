@@ -625,20 +625,22 @@ export default function DeckPage() {
     });
   }
 
+  function saveTypedAnswer(cardId: string, answer: string, correct: boolean) {
+    fetch(`/api/cards/${cardId}/typed-answer`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer, correct }),
+    }).catch(() => {});
+  }
+
   async function handleTypeSubmit() {
     if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
     setAnswerSubmitted(true);
 
-    // Save answer fire-and-forget
-    fetch(`/api/cards/${currentCard.id}/typed-answer`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answer: typedAnswer }),
-    }).catch(() => {});
-
     const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
     if (heuristic) {
       setTypeGradeResult(true);
+      saveTypedAnswer(currentCard.id, typedAnswer, true);
       return;
     }
 
@@ -655,9 +657,12 @@ export default function DeckPage() {
       });
       if (!res.ok) throw new Error(`Grade API error: ${res.status}`);
       const data = await res.json();
-      setTypeGradeResult(data.correct === true);
+      const correct = data.correct === true;
+      setTypeGradeResult(correct);
+      saveTypedAnswer(currentCard.id, typedAnswer, correct);
     } catch {
       setTypeGradeResult(false);
+      saveTypedAnswer(currentCard.id, typedAnswer, false);
     } finally {
       setTypeAiGrading(false);
     }

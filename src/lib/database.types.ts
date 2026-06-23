@@ -25,6 +25,7 @@ export type Database = {
           front: string
           id: string
           interval_days: number
+          last_answer_correct: boolean | null
           last_seen_at: string | null
           last_typed_answer: string | null
           mc_distractors: string[] | null
@@ -46,6 +47,7 @@ export type Database = {
           front: string
           id?: string
           interval_days?: number
+          last_answer_correct?: boolean | null
           last_seen_at?: string | null
           last_typed_answer?: string | null
           mc_distractors?: string[] | null
@@ -67,6 +69,7 @@ export type Database = {
           front?: string
           id?: string
           interval_days?: number
+          last_answer_correct?: boolean | null
           last_seen_at?: string | null
           last_typed_answer?: string | null
           mc_distractors?: string[] | null

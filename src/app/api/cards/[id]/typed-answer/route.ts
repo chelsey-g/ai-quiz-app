@@ -13,6 +13,7 @@ export async function PATCH(
 
   const body = await req.json().catch(() => ({}));
   const answer = typeof body.answer === "string" ? body.answer : null;
+  const correct = typeof body.correct === "boolean" ? body.correct : null;
   if (!answer) return Response.json({ error: "answer is required" }, { status: 400 });
 
   // Verify ownership via deck join
@@ -28,7 +29,7 @@ export async function PATCH(
 
   const { error } = await supabase
     .from("cards")
-    .update({ last_typed_answer: answer })
+    .update({ last_typed_answer: answer, ...(correct !== null && { last_answer_correct: correct }) })
     .eq("id", id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

@@ -322,21 +322,23 @@ export default function QuickQuizPage() {
     setPhase("quiz");
   }
 
+  function saveTypedAnswer(cardId: string, answer: string, correct: boolean) {
+    fetch(`/api/cards/${cardId}/typed-answer`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer, correct }),
+    }).catch(() => {});
+  }
+
   async function handleTypeSubmit() {
     if (answerSubmitted || !typedAnswer.trim() || !currentCard) return;
     setAnswerSubmitted(true);
-
-    // Save answer fire-and-forget
-    fetch(`/api/cards/${currentCard.id}/typed-answer`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answer: typedAnswer }),
-    }).catch(() => {});
 
     const heuristic = gradeTypeAnswer(typedAnswer, currentCard.back);
     if (heuristic) {
       setGradeResult(true);
       recordAnswer(currentCard, true, typedAnswer, answers);
+      saveTypedAnswer(currentCard.id, typedAnswer, true);
       return;
     }
 
@@ -357,9 +359,11 @@ export default function QuickQuizPage() {
       const correct = data.correct === true;
       setGradeResult(correct);
       recordAnswer(currentCard, correct, typedAnswer, answers);
+      saveTypedAnswer(currentCard.id, typedAnswer, correct);
     } catch {
       setGradeResult(false);
       recordAnswer(currentCard, false, typedAnswer, answers);
+      saveTypedAnswer(currentCard.id, typedAnswer, false);
     } finally {
       setAiGrading(false);
     }
@@ -696,7 +700,9 @@ export default function QuickQuizPage() {
                   <details className="mt-2 group/hint">
                     <summary className="cursor-pointer select-none list-none flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors w-fit">
                       <svg className="w-3 h-3 transition-transform group-open/hint:rotate-90" fill="none" viewBox="0 0 6 10" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4-4 4" /></svg>
-                      Your last answer
+                      Last time:
+                      {currentCard.last_answer_correct === true && <span className="text-green-500/80">✓ correct</span>}
+                      {currentCard.last_answer_correct === false && <span className="text-destructive/70">✗ wrong</span>}
                     </summary>
                     <p className="mt-1.5 text-xs text-muted-foreground/60 italic pl-4">{currentCard.last_typed_answer}</p>
                   </details>

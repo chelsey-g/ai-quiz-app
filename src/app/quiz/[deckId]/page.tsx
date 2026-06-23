@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CardText } from "@/components/card-text";
 import {
@@ -97,6 +97,8 @@ function gradeTypeAnswer(userAnswer: string, correct: string): boolean {
 export default function QuizPage() {
   const { deckId: id } = useParams<{ deckId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedIds = searchParams.get("cards")?.split(",").filter(Boolean) ?? [];
 
   const [deck, setDeck] = useState<Deck | null>(null);
   const [allCards, setAllCards] = useState<Card[]>([]);
@@ -142,7 +144,16 @@ export default function QuizPage() {
       .then((data) => {
         setDeck(data.deck);
         setAllCards(data.cards);
-        setQuizCards(selectWeakCards(data.cards, 10));
+        if (preselectedIds.length > 0) {
+          const order = new Map(preselectedIds.map((cid, i) => [cid, i]));
+          const pinned = (data.cards as Card[])
+            .filter((c) => order.has(c.id))
+            .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+          setQuizCards(pinned);
+          setCardLimit("all");
+        } else {
+          setQuizCards(selectWeakCards(data.cards, 10));
+        }
         setFlaggedIds(new Set(data.cards.filter((c: Card) => c.flagged).map((c: Card) => c.id)));
         setLoading(false);
       })
@@ -153,7 +164,9 @@ export default function QuizPage() {
   }, [id]);
 
   useEffect(() => {
-    if (allCards.length > 0) setQuizCards(selectWeakCards(allCards, cardLimit));
+    if (allCards.length > 0 && preselectedIds.length === 0) {
+      setQuizCards(selectWeakCards(allCards, cardLimit));
+    }
   }, [allCards, cardLimit]);
 
   // Clean up timers on unmount
@@ -486,25 +499,29 @@ export default function QuizPage() {
             How do you want to answer?
           </DialogTitle>
         </DialogHeader>
-        <div className="flex flex-wrap gap-2">
-          {([5, 10, 20, "all"] as CardLimit[])
-            .filter((n) => n === "all" || (n as number) <= allCards.length)
-            .map((n) => (
-              <button
-                key={n}
-                onClick={() => setCardLimit(n)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  cardLimit === n
-                    ? "border-primary/60 bg-primary/10 text-primary"
-                    : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                }`}
-              >
-                {n === "all" ? `All ${allCards.length}` : n}
-              </button>
-            ))}
-        </div>
+        {preselectedIds.length === 0 && (
+          <div className="flex flex-wrap gap-2">
+            {([5, 10, 20, "all"] as CardLimit[])
+              .filter((n) => n === "all" || (n as number) <= allCards.length)
+              .map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setCardLimit(n)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    cardLimit === n
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  }`}
+                >
+                  {n === "all" ? `All ${allCards.length}` : n}
+                </button>
+              ))}
+          </div>
+        )}
         <p className="text-xs text-muted-foreground/70">
-          Quizzing {quizCards.length} card{quizCards.length !== 1 ? "s" : ""} — your weakest first.
+          {preselectedIds.length > 0
+            ? `Quizzing ${quizCards.length} hand-picked card${quizCards.length !== 1 ? "s" : ""}.`
+            : `Quizzing ${quizCards.length} card${quizCards.length !== 1 ? "s" : ""} — your weakest first.`}
         </p>
         {pausedQuiz && (
           <div className="rounded-xl border p-4" style={{ borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)", background: "color-mix(in oklch, var(--dashboard-accent-teal) 8%, transparent)" }}>

@@ -158,6 +158,9 @@ interface CardRowProps {
   onDeleteCancel: () => void;
   dragListeners?: Record<string, unknown>;
   dragAttributes?: Record<string, unknown>;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 function CardRow({
@@ -177,6 +180,9 @@ function CardRow({
   onDeleteStart,
   onDeleteConfirm,
   onDeleteCancel,
+  isSelectMode = false,
+  isSelected = false,
+  onToggleSelect,
   dragListeners,
   dragAttributes,
 }: CardRowProps) {
@@ -287,22 +293,48 @@ function CardRow({
 
   return (
     <div
-      className={`group rounded-xl border bg-card px-4 py-3 flex items-start gap-3${dragListeners ? " cursor-grab active:cursor-grabbing" : ""}`}
+      role={isSelectMode ? "checkbox" : undefined}
+      aria-checked={isSelectMode ? isSelected : undefined}
+      className={`group rounded-xl border bg-card px-4 py-3 flex items-start gap-3${!isSelectMode && dragListeners ? " cursor-grab active:cursor-grabbing" : ""}${isSelectMode ? " cursor-pointer select-none" : ""}`}
       style={{
-        borderColor:
-          "color-mix(in oklch, var(--dashboard-accent-teal) 30%, transparent)",
-        boxShadow: isNew
+        borderColor: isSelected
+          ? "color-mix(in oklch, var(--dashboard-accent-teal) 60%, transparent)"
+          : "color-mix(in oklch, var(--dashboard-accent-teal) 30%, transparent)",
+        background: isSelected
+          ? "color-mix(in oklch, var(--dashboard-accent-teal) 7%, transparent)"
+          : undefined,
+        boxShadow: !isSelectMode && isNew
           ? "0 0 0 2px color-mix(in oklch, var(--dashboard-accent-teal) 65%, transparent)"
           : "none",
         transition: "box-shadow 0.8s ease-out",
       }}
-      {...(dragListeners as React.HTMLAttributes<HTMLDivElement> | undefined)}
-      {...(dragAttributes as React.HTMLAttributes<HTMLDivElement> | undefined)}
+      onClick={isSelectMode ? onToggleSelect : undefined}
+      {...(!isSelectMode ? (dragListeners as React.HTMLAttributes<HTMLDivElement> | undefined) : undefined)}
+      {...(!isSelectMode ? (dragAttributes as React.HTMLAttributes<HTMLDivElement> | undefined) : undefined)}
     >
+      {isSelectMode && (
+        <div
+          className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors"
+          style={{
+            borderColor: isSelected
+              ? "var(--dashboard-accent-teal-strong)"
+              : "oklch(0.5 0.01 250 / 0.4)",
+            background: isSelected
+              ? "var(--dashboard-accent-teal-strong)"
+              : "transparent",
+          }}
+        >
+          {isSelected && (
+            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <CardText text={card.front} className="text-sm font-medium text-foreground break-words" />
         <CardText text={card.back} className="mt-1.5 text-sm text-muted-foreground/80 break-words" />
-        {card.last_typed_answer && (
+        {!isSelectMode && card.last_typed_answer && (
           <details className="mt-2 group/answer">
             <summary
               className="cursor-pointer select-none text-[11px] font-medium list-none flex items-center gap-1"
@@ -315,38 +347,40 @@ function CardRow({
           </details>
         )}
       </div>
-      <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
-        <button
-          onClick={() => onEditStart(card)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
-          style={{
-            color:
-              "color-mix(in oklch, var(--dashboard-accent-teal-strong) 72%, var(--muted-foreground) 28%)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background =
-              "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-          }}
-          title="Edit card"
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-          </svg>
-        </button>
-        <button
-          onClick={() => onDeleteStart(card.id)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[oklch(0.55_0.2_27_/_0.12)]"
-          style={{ color: "oklch(0.55 0.2 27 / 0.7)" }}
-          title="Delete card"
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-          </svg>
-        </button>
-      </div>
+      {!isSelectMode && (
+        <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
+          <button
+            onClick={() => onEditStart(card)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+            style={{
+              color:
+                "color-mix(in oklch, var(--dashboard-accent-teal-strong) 72%, var(--muted-foreground) 28%)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background =
+                "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
+            title="Edit card"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onDeleteStart(card.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[oklch(0.55_0.2_27_/_0.12)]"
+            style={{ color: "oklch(0.55 0.2 27 / 0.7)" }}
+            title="Delete card"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -365,7 +399,11 @@ function SortableCardRow(props: CardRowProps) {
         position: "relative",
       }}
     >
-      <CardRow {...props} dragListeners={listeners as unknown as Record<string, unknown>} dragAttributes={attributes as unknown as Record<string, unknown>} />
+      <CardRow
+        {...props}
+        dragListeners={props.isSelectMode ? undefined : listeners as unknown as Record<string, unknown>}
+        dragAttributes={props.isSelectMode ? undefined : attributes as unknown as Record<string, unknown>}
+      />
     </div>
   );
 }
@@ -468,6 +506,9 @@ export default function DeckPage() {
   const [expandError, setExpandError] = useState<string | null>(null);
 
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
 
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
@@ -1537,7 +1578,7 @@ export default function DeckPage() {
         {allCards.length > 0 && (
           <div className="mt-8 rounded-xl border border-border/40 bg-card/40">
             <button
-              onClick={() => setCardsOpen((v) => !v)}
+              onClick={() => !selectMode && setCardsOpen((v) => !v)}
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
               <div className="flex items-center gap-2">
@@ -1550,7 +1591,42 @@ export default function DeckPage() {
                 >
                   {allCards.length} {allCards.length === 1 ? "card" : "cards"}
                 </span>
-                <span className="text-[10px] text-muted-foreground/40">· drag to reorder</span>
+                {!selectMode && <span className="text-[10px] text-muted-foreground/40">· drag to reorder</span>}
+                {selectMode && selectedCardIds.size > 0 && (
+                  <span className="text-[10px] text-muted-foreground/60">{selectedCardIds.size} selected</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                {selectMode && (
+                  <>
+                    <button
+                      onClick={() => setSelectedCardIds(new Set(allCards.map((c) => c.id)))}
+                      className="text-[10px] font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setSelectedCardIds(new Set())}
+                      className="text-[10px] font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
+                    >
+                      None
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => { setSelectMode((v) => !v); setSelectedCardIds(new Set()); setCardsOpen(true); }}
+                  className="rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors"
+                  style={selectMode ? {
+                    background: "color-mix(in oklch, var(--dashboard-accent-teal) 15%, transparent)",
+                    border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)",
+                    color: "var(--dashboard-accent-teal-strong)",
+                  } : {
+                    border: "1px solid oklch(0.5 0.01 250 / 0.3)",
+                    color: "oklch(0.55 0.01 250 / 0.7)",
+                  }}
+                >
+                  {selectMode ? "Done" : "Select"}
+                </button>
               </div>
               <svg
                 className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${cardsOpen ? "rotate-180" : ""}`}
@@ -1582,6 +1658,13 @@ export default function DeckPage() {
                         onDeleteStart={(cardId) => { setDeletingCardId(cardId); setEditingCardId(null); }}
                         onDeleteConfirm={handleConfirmDelete}
                         onDeleteCancel={() => setDeletingCardId(null)}
+                        isSelectMode={selectMode}
+                        isSelected={selectedCardIds.has(card.id)}
+                        onToggleSelect={() => setSelectedCardIds((prev) => {
+                          const next = new Set(prev);
+                          next.has(card.id) ? next.delete(card.id) : next.add(card.id);
+                          return next;
+                        })}
                       />
                     ))}
                   </div>
@@ -1592,6 +1675,30 @@ export default function DeckPage() {
         )}
 
         {modeModal}
+
+        {/* Selection quiz bar */}
+        {selectMode && selectedCardIds.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
+            <div
+              className="flex items-center gap-3 rounded-2xl px-5 py-3 shadow-xl"
+              style={{
+                background: "var(--card)",
+                border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)",
+                boxShadow: "0 8px 32px oklch(0 0 0 / 0.4)",
+              }}
+            >
+              <span className="text-sm font-medium text-foreground">
+                {selectedCardIds.size} card{selectedCardIds.size !== 1 ? "s" : ""} selected
+              </span>
+              <Button
+                size="sm"
+                onClick={() => router.push(`/quiz/${id}?cards=${[...selectedCardIds].join(",")}`)}
+              >
+                Quiz these →
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

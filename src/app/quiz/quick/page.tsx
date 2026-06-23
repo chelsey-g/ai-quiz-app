@@ -692,6 +692,15 @@ export default function QuickQuizPage() {
                   rows={3}
                   className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
+                {currentCard.last_typed_answer && (
+                  <details className="mt-2 group/hint">
+                    <summary className="cursor-pointer select-none list-none flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors w-fit">
+                      <svg className="w-3 h-3 transition-transform group-open/hint:rotate-90" fill="none" viewBox="0 0 6 10" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4-4 4" /></svg>
+                      Your last answer
+                    </summary>
+                    <p className="mt-1.5 text-xs text-muted-foreground/60 italic pl-4">{currentCard.last_typed_answer}</p>
+                  </details>
+                )}
                 <Button
                   className="mt-3 w-full"
                   disabled={!typedAnswer.trim()}

@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import type { Database } from "@/lib/database.types";
 import { useWrongAnswerExplanations } from "@/hooks/use-wrong-answer-explanations";
+import {
+  savePausedQuickQuiz,
+  loadPausedQuickQuiz,
+  clearPausedQuickQuiz,
+  formatPausedTime,
+  type PausedQuickQuiz,
+} from "@/lib/utils/paused-quiz";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 
@@ -131,6 +138,7 @@ export default function QuickQuizPage() {
   const [saveDeckError, setSaveDeckError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+  const [pausedQuiz, setPausedQuiz] = useState<PausedQuickQuiz | null>(null);
 
   // AI grading state for type-answer mode
   const [aiGrading, setAiGrading] = useState(false);
@@ -139,6 +147,11 @@ export default function QuickQuizPage() {
   const { explanations, explanationsLoading } = useWrongAnswerExplanations(
     phase === "results" ? answers : []
   );
+
+  useEffect(() => {
+    const paused = loadPausedQuickQuiz();
+    if (paused) setPausedQuiz(paused);
+  }, []);
 
   useEffect(() => {
     const apiUrl = `/api/cards/weak?limit=${cardLimit}${deckFilter ? `&decks=${deckFilter}` : ""}`;
@@ -174,6 +187,51 @@ export default function QuickQuizPage() {
     if (timerRef.current) clearInterval(timerRef.current);
     setShowExitConfirm(false);
     router.push("/collections");
+  }
+
+  function pauseQuiz() {
+    savePausedQuickQuiz({
+      type: "quick",
+      cards: cards as unknown[],
+      answers: answers as unknown[],
+      cardModes,
+      currentIndex,
+      quizMode,
+      cardLimit,
+      deckFilter,
+      startedAt,
+      pausedAt: new Date().toISOString(),
+    });
+    if (timerRef.current) clearInterval(timerRef.current);
+    router.push("/");
+  }
+
+  function resumeQuiz() {
+    if (!pausedQuiz) return;
+    const restoredCards = pausedQuiz.cards as Card[];
+    const resolvedMcOptions: Record<string, string[]> = {};
+    restoredCards.forEach((card) => {
+      if (pausedQuiz.cardModes[card.id] === "multiple-choice") {
+        resolvedMcOptions[card.id] = generateMcOptions(restoredCards, card);
+      }
+    });
+    setCards(restoredCards);
+    setAnswers(pausedQuiz.answers as AnswerRecord[]);
+    setCurrentIndex(pausedQuiz.currentIndex);
+    setQuizMode(pausedQuiz.quizMode as QuizMode);
+    setCardModes(pausedQuiz.cardModes as Record<string, ResolvedMode>);
+    setMcOptions(resolvedMcOptions);
+    setStartedAt(pausedQuiz.startedAt);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setSelectedOption(null);
+    setGradeResult(null);
+    setElapsed(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+    clearPausedQuickQuiz();
+    setPausedQuiz(null);
+    setPhase("quiz");
   }
 
   function goBack() {
@@ -488,6 +546,20 @@ export default function QuickQuizPage() {
         <p className="text-xs text-muted-foreground/70">
           {cards.length} card{cards.length !== 1 ? "s" : ""} — your weakest across all decks.
         </p>
+        {pausedQuiz && (
+          <div className="rounded-xl border p-4" style={{ borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)", background: "color-mix(in oklch, var(--dashboard-accent-teal) 8%, transparent)" }}>
+            <p className="text-xs font-semibold text-foreground">Paused quiz — {formatPausedTime(pausedQuiz.pausedAt)}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground/70">
+              Question {pausedQuiz.currentIndex + 1} of {(pausedQuiz.cards as unknown[]).length} · {pausedQuiz.quizMode}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button size="sm" className="flex-1" onClick={resumeQuiz}>Resume</Button>
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => { clearPausedQuickQuiz(); setPausedQuiz(null); }}>
+                Discard
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="mt-2 grid grid-cols-2 gap-3">
           {(
             [
@@ -582,6 +654,17 @@ export default function QuickQuizPage() {
                 Undo
               </button>
             )}
+            <button
+              onClick={pauseQuiz}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+              style={{ border: "1px solid color-mix(in oklch, var(--border) 60%, transparent)" }}
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+                <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+              </svg>
+              Pause
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">{currentIndex + 1} / {cards.length}</span>

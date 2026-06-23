@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import type { Database } from "@/lib/database.types";
 import { useWrongAnswerExplanations } from "@/hooks/use-wrong-answer-explanations";
+import {
+  savePausedDeckQuiz,
+  loadPausedDeckQuiz,
+  clearPausedDeckQuiz,
+  formatPausedTime,
+  type PausedDeckQuiz,
+} from "@/lib/utils/paused-quiz";
 
 type Deck = Database["public"]["Tables"]["decks"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -118,10 +125,16 @@ export default function QuizPage() {
   const [cardModes, setCardModes] = useState<Record<string, ResolvedMode>>({});
   const [mcOptions, setMcOptions] = useState<Record<string, string[]>>({});
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+  const [pausedQuiz, setPausedQuiz] = useState<PausedDeckQuiz | null>(null);
 
   const { explanations, explanationsLoading } = useWrongAnswerExplanations(
     phase === "results" ? answers : []
   );
+
+  useEffect(() => {
+    const paused = loadPausedDeckQuiz(id);
+    if (paused) setPausedQuiz(paused);
+  }, [id]);
 
   useEffect(() => {
     fetch(`/api/decks/${id}`)
@@ -310,6 +323,58 @@ export default function QuizPage() {
     router.push(`/decks/${id}`);
   }
 
+  function pauseQuiz() {
+    if (!deck) return;
+    savePausedDeckQuiz({
+      type: "deck",
+      deckId: id,
+      deckTitle: deck.title,
+      quizCards: quizCards as unknown[],
+      allCards: allCards as unknown[],
+      answers: answers as unknown[],
+      cardModes,
+      currentIndex,
+      quizMode,
+      cardLimit,
+      startedAt,
+      pausedAt: new Date().toISOString(),
+    });
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    router.push(`/decks/${id}`);
+  }
+
+  function resumeQuiz() {
+    if (!pausedQuiz) return;
+    const cards = pausedQuiz.quizCards as Card[];
+    const resolvedMcOptions: Record<string, string[]> = {};
+    cards.forEach((card) => {
+      if (pausedQuiz.cardModes[card.id] === "multiple-choice") {
+        resolvedMcOptions[card.id] = generateMcOptions(pausedQuiz.allCards as Card[], card);
+      }
+    });
+    setQuizCards(cards);
+    setAllCards(pausedQuiz.allCards as Card[]);
+    setAnswers(pausedQuiz.answers as AnswerRecord[]);
+    setCurrentIndex(pausedQuiz.currentIndex);
+    setQuizMode(pausedQuiz.quizMode as QuizMode);
+    setCardModes(pausedQuiz.cardModes as Record<string, ResolvedMode>);
+    setMcOptions(resolvedMcOptions);
+    setCardLimit(pausedQuiz.cardLimit as CardLimit);
+    setStartedAt(pausedQuiz.startedAt);
+    setTypedAnswer("");
+    setAnswerSubmitted(false);
+    setSelectedOption(null);
+    setGradeResult(null);
+    setElapsed(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+    modePickedRef.current = true;
+    clearPausedDeckQuiz(id);
+    setPausedQuiz(null);
+    setPhase("quiz");
+  }
+
   async function toggleFlag(cardId: string) {
     const next = !flaggedIds.has(cardId);
     setFlaggedIds((prev) => { const s = new Set(prev); next ? s.add(cardId) : s.delete(cardId); return s; });
@@ -441,6 +506,20 @@ export default function QuizPage() {
         <p className="text-xs text-muted-foreground/70">
           Quizzing {quizCards.length} card{quizCards.length !== 1 ? "s" : ""} — your weakest first.
         </p>
+        {pausedQuiz && (
+          <div className="rounded-xl border p-4" style={{ borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)", background: "color-mix(in oklch, var(--dashboard-accent-teal) 8%, transparent)" }}>
+            <p className="text-xs font-semibold text-foreground">Paused quiz — {formatPausedTime(pausedQuiz.pausedAt)}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground/70">
+              Question {pausedQuiz.currentIndex + 1} of {(pausedQuiz.quizCards as unknown[]).length} · {pausedQuiz.quizMode}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button size="sm" className="flex-1" onClick={resumeQuiz}>Resume</Button>
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => { clearPausedDeckQuiz(id); setPausedQuiz(null); }}>
+                Discard
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="mt-2 grid grid-cols-2 gap-3">
           {(
             [
@@ -546,6 +625,17 @@ export default function QuizPage() {
                 Undo
               </button>
             )}
+            <button
+              onClick={pauseQuiz}
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+              style={{ border: "1px solid color-mix(in oklch, var(--border) 60%, transparent)" }}
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+                <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+              </svg>
+              Pause
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">{currentIndex + 1} / {quizCards.length}</span>

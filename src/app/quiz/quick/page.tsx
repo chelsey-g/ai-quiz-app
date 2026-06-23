@@ -179,9 +179,10 @@ export default function QuickQuizPage() {
   function goBack() {
     if (answers.length === 0 && currentIndex === 0) return;
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    const prevAnswer = answers[answers.length - 1];
     setAnswers((prev) => prev.slice(0, -1));
     setCurrentIndex(prevIndex);
-    setTypedAnswer("");
+    setTypedAnswer(prevAnswer?.userAnswer ?? "");
     setAnswerSubmitted(false);
     setAiGrading(false);
     setGradeResult(null);

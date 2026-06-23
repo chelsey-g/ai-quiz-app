@@ -291,10 +291,11 @@ export default function QuizPage() {
     if (advanceTimerRef.current) { clearTimeout(advanceTimerRef.current); advanceTimerRef.current = null; }
     if (answers.length === 0 && currentIndex === 0) return;
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    const prevAnswer = answers[answers.length - 1];
     const newAnswers = answers.slice(0, -1);
     setAnswers(newAnswers);
     setCurrentIndex(prevIndex);
-    setTypedAnswer("");
+    setTypedAnswer(prevAnswer?.userAnswer ?? "");
     setAnswerSubmitted(false);
     setAiGrading(false);
     setGradeResult(null);

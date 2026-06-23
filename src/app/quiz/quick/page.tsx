@@ -749,12 +749,14 @@ export default function QuickQuizPage() {
                     </div>
                     <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
                   </div>
-                  <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
-                      Correct answer
-                    </p>
-                    <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
-                  </div>
+                  {gradeResult === false && (
+                    <div className="rounded-xl border border-primary/20 bg-card px-4 py-3">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary/70">
+                        Correct answer
+                      </p>
+                      <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
+                    </div>
+                  )}
                 </div>
                 {!aiGrading && gradeResult !== null && (
                   <div className="mt-4">

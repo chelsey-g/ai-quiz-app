@@ -1577,9 +1577,9 @@ export default function DeckPage() {
         {/* All cards list */}
         {allCards.length > 0 && (
           <div className="mt-8 rounded-xl border border-border/40 bg-card/40">
-            <button
+            <div
               onClick={() => !selectMode && setCardsOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left"
+              className="flex w-full items-center justify-between px-4 py-3 text-left cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -1634,7 +1634,7 @@ export default function DeckPage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-            </button>
+            </div>
             {cardsOpen && (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={allCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>

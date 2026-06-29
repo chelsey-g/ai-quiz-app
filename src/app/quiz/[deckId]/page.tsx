@@ -107,6 +107,7 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [cardLimit, setCardLimit] = useState<CardLimit>(10);
+  const [shuffle, setShuffle] = useState(false);
   const [phase, setPhase] = useState<QuizPhase>("mode-select");
   const [quizMode, setQuizMode] = useState<QuizMode>("multiple-choice");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -210,7 +211,10 @@ export default function QuizPage() {
     const resolvedMcOptions: Record<string, string[]> = {};
     const fixedModes: ResolvedMode[] = ["multiple-choice", "type"];
 
-    quizCards.forEach((card) => {
+    const orderedCards = shuffle ? [...quizCards].sort(() => Math.random() - 0.5) : quizCards;
+    setQuizCards(orderedCards);
+
+    orderedCards.forEach((card) => {
       const cardMode: ResolvedMode =
         mode === "random"
           ? fixedModes[Math.floor(Math.random() * fixedModes.length)]
@@ -518,11 +522,30 @@ export default function QuizPage() {
               ))}
           </div>
         )}
-        <p className="text-xs text-muted-foreground/70">
-          {preselectedIds.length > 0
-            ? `Quizzing ${quizCards.length} hand-picked card${quizCards.length !== 1 ? "s" : ""}.`
-            : `Quizzing ${quizCards.length} card${quizCards.length !== 1 ? "s" : ""} — your weakest first.`}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground/70">
+            {preselectedIds.length > 0
+              ? `Quizzing ${quizCards.length} hand-picked card${quizCards.length !== 1 ? "s" : ""}.`
+              : `Quizzing ${quizCards.length} card${quizCards.length !== 1 ? "s" : ""} — ${shuffle ? "shuffled" : "weakest first"}.`}
+          </p>
+          <button
+            onClick={() => setShuffle((v) => !v)}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors"
+            style={shuffle ? {
+              background: "color-mix(in oklch, var(--dashboard-accent-teal) 12%, transparent)",
+              border: "1px solid color-mix(in oklch, var(--dashboard-accent-teal) 50%, transparent)",
+              color: "var(--dashboard-accent-teal-strong)",
+            } : {
+              border: "1px solid oklch(0.5 0.01 250 / 0.25)",
+              color: "oklch(0.55 0.01 250 / 0.6)",
+            }}
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5m0 0v5m0-5l-6 6M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-1" />
+            </svg>
+            Shuffle
+          </button>
+        </div>
         {pausedQuiz && (
           <div className="rounded-xl border p-4" style={{ borderColor: "color-mix(in oklch, var(--dashboard-accent-teal) 40%, transparent)", background: "color-mix(in oklch, var(--dashboard-accent-teal) 8%, transparent)" }}>
             <p className="text-xs font-semibold text-foreground">Paused quiz — {formatPausedTime(pausedQuiz.pausedAt)}</p>

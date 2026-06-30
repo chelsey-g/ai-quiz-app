@@ -195,6 +195,15 @@ export default function QuizPage() {
     if (!res.ok) {
       console.error(`saveQuizSession: /api/sessions returned ${res.status}`);
     }
+
+    const wrongCardIds = answersSnapshot.filter((a) => !a.correct).map((a) => a.cardId);
+    if (wrongCardIds.length > 0) {
+      fetch(`/api/decks/${id}/sync-missed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardIds: wrongCardIds }),
+      }).catch(() => {});
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

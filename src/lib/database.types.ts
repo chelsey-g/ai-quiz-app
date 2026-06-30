@@ -218,6 +218,7 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          missed_deck_id: string | null
           name: string
           user_id: string
         }
@@ -226,6 +227,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          missed_deck_id?: string | null
           name: string
           user_id: string
         }
@@ -234,6 +236,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          missed_deck_id?: string | null
           name?: string
           user_id?: string
         }

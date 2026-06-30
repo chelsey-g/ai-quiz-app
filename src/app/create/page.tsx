@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-type Tab = "topic" | "notes" | "import";
+type Tab = "topic" | "notes" | "import" | "manual";
 type GenState = "idle" | "generating" | "done" | "error";
 type ImportState = "idle" | "processing" | "done";
 
@@ -358,19 +358,253 @@ function ImportTab() {
   );
 }
 
+// ── Manual tab ───────────────────────────────────────────────────────────────
+
+type CardEntry = { id: string; front: string; back: string; generating: boolean };
+
+function ManualTab() {
+  const [title, setTitle] = useState("");
+  const [cards, setCards] = useState<CardEntry[]>([
+    { id: crypto.randomUUID(), front: "", back: "", generating: false },
+  ]);
+  const [creating, setCreating] = useState(false);
+  const [result, setResult] = useState<DeckResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const latestFrontRef = useRef<HTMLTextAreaElement | null>(null);
+
+  function addCard() {
+    setCards((prev) => [...prev, { id: crypto.randomUUID(), front: "", back: "", generating: false }]);
+    setTimeout(() => latestFrontRef.current?.focus(), 50);
+  }
+
+  function removeCard(id: string) {
+    setCards((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function updateCard(id: string, patch: Partial<CardEntry>) {
+    setCards((prev) => prev.map((c) => c.id === id ? { ...c, ...patch } : c));
+  }
+
+  async function generateAnswer(id: string) {
+    const card = cards.find((c) => c.id === id);
+    if (!card?.front.trim()) return;
+    updateCard(id, { generating: true, back: "" });
+    try {
+      const res = await fetch("/api/cards/generate-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: card.front.trim(), deckTitle: title.trim() || "My Deck" }),
+      });
+      if (!res.ok || !res.body) { updateCard(id, { generating: false }); return; }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        updateCard(id, { back: text });
+      }
+    } finally {
+      updateCard(id, { generating: false });
+    }
+  }
+
+  async function handleCreate() {
+    const validCards = cards.filter((c) => c.front.trim() && c.back.trim());
+    if (!title.trim() || validCards.length === 0) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const deckRes = await fetch("/api/decks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      if (!deckRes.ok) throw new Error("Failed to create deck");
+      const deck = await deckRes.json();
+      const bulkRes = await fetch(`/api/decks/${deck.id}/cards/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cards: validCards.map((c) => ({ front: c.front.trim(), back: c.back.trim() })) }),
+      });
+      if (!bulkRes.ok) throw new Error("Failed to save cards");
+      const bulkData = await bulkRes.json();
+      setResult({ deckId: deck.id, title: title.trim(), cardCount: bulkData.addedCount, provider: "—", model: "manual" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/65 to-transparent" />
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-heading text-sm font-semibold text-foreground">{result.title}</p>
+            <p className="mt-1 text-xs text-muted-foreground/55">{result.cardCount} cards</p>
+            <Link href={`/decks/${result.deckId}`} className="mt-3 inline-flex items-center text-xs font-medium text-primary hover:underline">
+              Study deck →
+            </Link>
+          </div>
+          <span className="shrink-0 rounded-full bg-primary/14 px-2 py-0.5 text-[10px] font-medium text-primary">
+            {result.cardCount} cards
+          </span>
+        </div>
+        <Button variant="outline" size="sm" className="mt-5 w-full" onClick={() => {
+          setResult(null); setTitle(""); setError(null);
+          setCards([{ id: crypto.randomUUID(), front: "", back: "", generating: false }]);
+        }}>
+          Build another deck
+        </Button>
+      </div>
+    );
+  }
+
+  const validCount = cards.filter((c) => c.front.trim() && c.back.trim()).length;
+  const anyGenerating = cards.some((c) => c.generating);
+
+  return (
+    <div className="space-y-4">
+      {/* Deck title */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+        <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground/55">
+          Deck title
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. JavaScript Fundamentals"
+          maxLength={120}
+          autoFocus
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/35 focus:outline-none"
+        />
+      </div>
+
+      {/* Card rows */}
+      <div className="space-y-3">
+        {cards.map((card, idx) => (
+          <div
+            key={card.id}
+            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5"
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/40">
+                Card {idx + 1}
+              </span>
+              {cards.length > 1 && (
+                <button
+                  onClick={() => removeCard(card.id)}
+                  className="text-muted-foreground/30 hover:text-destructive/70 transition-colors"
+                  title="Remove card"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Question */}
+            <textarea
+              ref={idx === cards.length - 1 ? latestFrontRef : undefined}
+              value={card.front}
+              onChange={(e) => updateCard(card.id, { front: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && card.front.trim() && !card.back.trim()) {
+                  e.preventDefault();
+                  generateAnswer(card.id);
+                }
+              }}
+              placeholder="Question…"
+              rows={2}
+              className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/35 focus:outline-none"
+            />
+
+            {/* Divider + generate button */}
+            <div className="my-3 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border/30" />
+              <button
+                onClick={() => generateAnswer(card.id)}
+                disabled={!card.front.trim() || card.generating}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all disabled:opacity-40"
+                style={{ border: "1px solid var(--primary)", color: "var(--primary)", opacity: !card.front.trim() ? 0.3 : 1 }}
+              >
+                {card.generating ? (
+                  <>
+                    <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                    {card.back ? "Regenerate" : "Generate answer"}
+                  </>
+                )}
+              </button>
+              <div className="h-px flex-1 bg-border/30" />
+            </div>
+
+            {/* Answer */}
+            <textarea
+              value={card.back}
+              onChange={(e) => updateCard(card.id, { back: e.target.value })}
+              placeholder="Answer — or hit Generate above…"
+              rows={3}
+              className="w-full resize-none bg-transparent text-sm text-muted-foreground/80 placeholder:text-muted-foreground/30 focus:outline-none"
+            />
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={addCard}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 py-3 text-sm text-muted-foreground/50 transition-colors hover:border-primary/40 hover:text-primary/70"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Add card
+      </button>
+
+      {error && <ErrorBanner msg={error} />}
+
+      <Button
+        className="w-full"
+        disabled={!title.trim() || validCount === 0 || creating || anyGenerating}
+        onClick={handleCreate}
+      >
+        {creating ? "Creating…" : `Create deck · ${validCount} card${validCount !== 1 ? "s" : ""}`}
+      </Button>
+    </div>
+  );
+}
+
 // ── Page shell ────────────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "topic", label: "Topic" },
   { id: "notes", label: "Notes" },
   { id: "import", label: "Import" },
+  { id: "manual", label: "Manual" },
 ];
 
 function CreatePageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawTab = searchParams.get("tab") as Tab | null;
-  const activeTab: Tab = rawTab && ["topic", "notes", "import"].includes(rawTab) ? rawTab : "topic";
+  const activeTab: Tab = rawTab && ["topic", "notes", "import", "manual"].includes(rawTab) ? rawTab : "topic";
 
   function setTab(tab: Tab) {
     router.replace(`/create?tab=${tab}`, { scroll: false });
@@ -380,6 +614,7 @@ function CreatePageInner() {
     topic: "Enter any topic and Quizly will generate a study deck using AI.",
     notes: "Paste or type your notes and Quizly will generate a study deck from your material.",
     import: "Upload Markdown files to generate AI-powered study decks.",
+    manual: "Write your own questions and let AI generate the answers.",
   };
 
   return (
@@ -409,6 +644,7 @@ function CreatePageInner() {
       {activeTab === "topic" && <TopicTab />}
       {activeTab === "notes" && <NotesTab />}
       {activeTab === "import" && <ImportTab />}
+      {activeTab === "manual" && <ManualTab />}
     </div>
   );
 }

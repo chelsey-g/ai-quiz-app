@@ -1,35 +1,45 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useChatWidget, type MentionableCard } from "@/components/chat-provider";
+import { useChatWidget, type MentionableItem } from "@/components/chat-provider";
 
 const MENTION_PATTERN = /(?:^|\s)@(\w*)$/;
+const MAX_SUGGESTIONS = 8;
+
+const TYPE_LABEL: Record<MentionableItem["type"], string> = {
+  card: "Card",
+  deck: "Deck",
+  collection: "Collection",
+};
 
 function MentionSuggestions({
-  cards,
+  items,
   onSelect,
 }: {
-  cards: MentionableCard[];
-  onSelect: (card: MentionableCard) => void;
+  items: MentionableItem[];
+  onSelect: (item: MentionableItem) => void;
 }) {
-  if (cards.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="border-t border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-        No matching cards. Open a deck to reference its cards.
+        No matches. Try a deck, collection, or card title.
       </div>
     );
   }
 
   return (
     <div className="max-h-40 overflow-y-auto border-t border-border bg-card">
-      {cards.map((card) => (
+      {items.map((item) => (
         <button
-          key={card.id}
+          key={`${item.type}-${item.id}`}
           type="button"
-          onClick={() => onSelect(card)}
-          className="block w-full truncate px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
+          onClick={() => onSelect(item)}
+          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
         >
-          {card.front}
+          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+            {TYPE_LABEL[item.type]}
+          </span>
+          <span className="truncate">{item.label}</span>
         </button>
       ))}
     </div>
@@ -37,29 +47,31 @@ function MentionSuggestions({
 }
 
 export function MentionInput() {
-  const { deckId, availableCards, sendMessage, status } = useChatWidget();
+  const { deckId, mentionableItems, sendMessage, status } = useChatWidget();
   const [text, setText] = useState("");
-  const [mentions, setMentions] = useState<MentionableCard[]>([]);
+  const [mentions, setMentions] = useState<MentionableItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const mentionMatch = text.match(MENTION_PATTERN);
   const query = mentionMatch?.[1]?.toLowerCase() ?? "";
-  const filteredCards = mentionMatch
-    ? availableCards.filter(
-        (card) =>
-          !mentions.some((m) => m.id === card.id) &&
-          card.front.toLowerCase().includes(query)
-      )
+  const filteredItems = mentionMatch
+    ? mentionableItems
+        .filter(
+          (item) =>
+            !mentions.some((m) => m.type === item.type && m.id === item.id) &&
+            item.label.toLowerCase().includes(query)
+        )
+        .slice(0, MAX_SUGGESTIONS)
     : [];
 
-  function selectMention(card: MentionableCard) {
+  function selectMention(item: MentionableItem) {
     setText((current) => current.replace(MENTION_PATTERN, (match) => (match.startsWith(" ") ? " " : "")));
-    setMentions((current) => [...current, card]);
+    setMentions((current) => [...current, item]);
     inputRef.current?.focus();
   }
 
-  function removeMention(id: string) {
-    setMentions((current) => current.filter((m) => m.id !== id));
+  function removeMention(type: MentionableItem["type"], id: string) {
+    setMentions((current) => current.filter((m) => !(m.type === type && m.id === id)));
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -72,7 +84,9 @@ export function MentionInput() {
       {
         body: {
           deckId: deckId ?? undefined,
-          mentionedCardIds: mentions.map((m) => m.id),
+          mentionedCardIds: mentions.filter((m) => m.type === "card").map((m) => m.id),
+          mentionedDeckIds: mentions.filter((m) => m.type === "deck").map((m) => m.id),
+          mentionedCollectionIds: mentions.filter((m) => m.type === "collection").map((m) => m.id),
         },
       }
     );
@@ -84,13 +98,18 @@ export function MentionInput() {
     <div className="border-t border-border">
       {mentions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-3 pt-2">
-          {mentions.map((card) => (
+          {mentions.map((item) => (
             <span
-              key={card.id}
+              key={`${item.type}-${item.id}`}
               className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
             >
-              {card.front.length > 24 ? `${card.front.slice(0, 24)}…` : card.front}
-              <button type="button" onClick={() => removeMention(card.id)} aria-label="Remove reference">
+              <span className="text-[0.6rem] uppercase opacity-70">{TYPE_LABEL[item.type]}</span>
+              {item.label.length > 24 ? `${item.label.slice(0, 24)}…` : item.label}
+              <button
+                type="button"
+                onClick={() => removeMention(item.type, item.id)}
+                aria-label="Remove reference"
+              >
                 &times;
               </button>
             </span>
@@ -98,14 +117,14 @@ export function MentionInput() {
         </div>
       )}
 
-      {mentionMatch && <MentionSuggestions cards={filteredCards} onSelect={selectMention} />}
+      {mentionMatch && <MentionSuggestions items={filteredItems} onSelect={selectMention} />}
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3">
         <input
           ref={inputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask anything, or @ to reference a card…"
+          placeholder="Ask anything, or @ to reference a deck, collection, or card…"
           disabled={status !== "ready"}
           className="h-8 flex-1 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus-visible:border-ring"
         />

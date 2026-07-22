@@ -6,7 +6,10 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { matchDeckRoute } from "@/lib/utils/deck-route";
 
-export type MentionableCard = { id: string; front: string };
+export type MentionableItem =
+  | { type: "card"; id: string; label: string }
+  | { type: "deck"; id: string; label: string }
+  | { type: "collection"; id: string; label: string };
 
 function useChatController() {
   const pathname = usePathname();
@@ -14,12 +17,15 @@ function useChatController() {
 
   const [open, setOpen] = useState(false);
   const [deckTitle, setDeckTitle] = useState<string | null>(null);
-  const [availableCards, setAvailableCards] = useState<MentionableCard[]>([]);
+  const [deckCards, setDeckCards] = useState<MentionableItem[]>([]);
+  const [decks, setDecks] = useState<MentionableItem[]>([]);
+  const [collections, setCollections] = useState<MentionableItem[]>([]);
 
+  // Current deck's cards — scoped to whichever single-deck route is active.
   useEffect(() => {
     if (!deckId) {
       setDeckTitle(null);
-      setAvailableCards([]);
+      setDeckCards([]);
       return;
     }
 
@@ -30,12 +36,14 @@ function useChatController() {
       .then((data: { deck?: { title?: string }; cards?: { id: string; front: string }[] }) => {
         if (cancelled) return;
         setDeckTitle(data.deck?.title ?? null);
-        setAvailableCards((data.cards ?? []).map((c) => ({ id: c.id, front: c.front })));
+        setDeckCards(
+          (data.cards ?? []).map((c) => ({ type: "card" as const, id: c.id, label: c.front }))
+        );
       })
       .catch(() => {
         if (cancelled) return;
         setDeckTitle(null);
-        setAvailableCards([]);
+        setDeckCards([]);
       });
 
     return () => {
@@ -43,11 +51,48 @@ function useChatController() {
     };
   }, [deckId]);
 
+  // All of the user's decks and collections — fetched once, so @ can reference
+  // any of them regardless of which page the chat is opened from.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/decks")
+      .then((r) => r.json())
+      .then((data: { id: string; title: string }[]) => {
+        if (cancelled) return;
+        setDecks((data ?? []).map((d) => ({ type: "deck" as const, id: d.id, label: d.title })));
+      })
+      .catch(() => {
+        if (!cancelled) setDecks([]);
+      });
+
+    fetch("/api/collections")
+      .then((r) => r.json())
+      .then((data: { collections?: { id: string; name: string }[] }) => {
+        if (cancelled) return;
+        setCollections(
+          (data.collections ?? []).map((c) => ({ type: "collection" as const, id: c.id, label: c.name }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCollections([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const mentionableItems = useMemo(
+    () => [...deckCards, ...decks, ...collections],
+    [deckCards, decks, collections]
+  );
+
   const chat = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
-  return { open, setOpen, deckId, deckTitle, availableCards, ...chat };
+  return { open, setOpen, deckId, deckTitle, mentionableItems, ...chat };
 }
 
 type ChatContextValue = ReturnType<typeof useChatController>;

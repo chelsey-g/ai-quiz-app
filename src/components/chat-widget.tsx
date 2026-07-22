@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useChatWidget } from "@/components/chat-provider";
 import { MentionInput } from "@/components/mention-input";
 import { CardText } from "@/components/card-text";
+import { AddToDeckButton } from "@/components/add-to-deck-button";
 
 function BubbleIcon({ className }: { className?: string }) {
   return (
@@ -23,6 +24,13 @@ function CloseIcon({ className }: { className?: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
+}
+
+function getMessageText(message: { parts: { type: string; text?: string }[] }): string {
+  return message.parts
+    .filter((part): part is { type: "text"; text: string } => part.type === "text")
+    .map((part) => part.text)
+    .join("");
 }
 
 export function ChatWidget() {
@@ -74,22 +82,32 @@ export function ChatWidget() {
                 Ask me anything, or type @ to reference a specific card.
               </p>
             )}
-            {messages.map((message) => {
-              const text = message.parts
-                .filter((part) => part.type === "text")
-                .map((part) => part.text)
-                .join("");
+            {messages.map((message, index) => {
+              const text = getMessageText(message);
 
-              return (
-                <div key={message.id} className={message.role === "user" ? "text-right" : "text-left"}>
-                  {message.role === "user" ? (
+              if (message.role === "user") {
+                return (
+                  <div key={message.id} className="text-right">
                     <div className="inline-block max-w-[85%] rounded-lg rounded-br-sm bg-primary px-3 py-2 text-left text-sm text-primary-foreground shadow-sm">
                       {text}
                     </div>
-                  ) : (
-                    <div className="inline-block max-w-[85%] rounded-lg rounded-bl-sm border border-border/60 bg-muted px-3 py-2 text-left shadow-sm">
-                      <CardText text={text} className="text-sm leading-relaxed text-foreground" />
-                    </div>
+                  </div>
+                );
+              }
+
+              const previousMessage = messages[index - 1];
+              const question =
+                previousMessage && previousMessage.role === "user"
+                  ? getMessageText(previousMessage)
+                  : null;
+
+              return (
+                <div key={message.id} className="text-left">
+                  <div className="inline-block max-w-[85%] rounded-lg rounded-bl-sm border border-border/60 bg-muted px-3 py-2 text-left shadow-sm">
+                    <CardText text={text} className="text-sm leading-relaxed text-foreground" />
+                  </div>
+                  {question && text && status === "ready" && (
+                    <AddToDeckButton front={question} back={text} />
                   )}
                 </div>
               );

@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopBar } from "@/components/top-bar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ChatProvider } from "@/components/chat-provider";
+import { ChatWidget } from "@/components/chat-widget";
 
 const dmSans = DM_Sans({
   variable: "--font-body",
@@ -41,13 +43,16 @@ export default async function RootLayout({
       <body className="h-full bg-background text-foreground">
         <ThemeProvider>
           {user ? (
-            <div className="flex h-full">
-              <AppSidebar user={user} />
-              <div className="flex min-h-0 flex-1 flex-col">
-                <TopBar user={user} />
-                <main className="flex-1 overflow-y-auto">{children}</main>
+            <ChatProvider>
+              <div className="flex h-full">
+                <AppSidebar user={user} />
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <TopBar user={user} />
+                  <main className="flex-1 overflow-y-auto">{children}</main>
+                </div>
               </div>
-            </div>
+              <ChatWidget />
+            </ChatProvider>
           ) : (
             <div className="flex min-h-full flex-col">
               <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl">

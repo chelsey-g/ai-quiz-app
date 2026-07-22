@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useChatWidget } from "@/components/chat-provider";
 import { MentionInput } from "@/components/mention-input";
+import { CardText } from "@/components/card-text";
 
 function BubbleIcon({ className }: { className?: string }) {
   return (
@@ -73,21 +74,26 @@ export function ChatWidget() {
                 Ask me anything, or type @ to reference a specific card.
               </p>
             )}
-            {messages.map((message) => (
-              <div key={message.id} className={message.role === "user" ? "text-right" : "text-left"}>
-                <div
-                  className={
-                    message.role === "user"
-                      ? "inline-block max-w-[85%] rounded-lg bg-primary px-3 py-2 text-left text-sm text-primary-foreground"
-                      : "inline-block max-w-[85%] rounded-lg bg-muted px-3 py-2 text-left text-sm text-foreground"
-                  }
-                >
-                  {message.parts.map((part, index) =>
-                    part.type === "text" ? <span key={index}>{part.text}</span> : null
+            {messages.map((message) => {
+              const text = message.parts
+                .filter((part) => part.type === "text")
+                .map((part) => part.text)
+                .join("");
+
+              return (
+                <div key={message.id} className={message.role === "user" ? "text-right" : "text-left"}>
+                  {message.role === "user" ? (
+                    <div className="inline-block max-w-[85%] rounded-lg rounded-br-sm bg-primary px-3 py-2 text-left text-sm text-primary-foreground shadow-sm">
+                      {text}
+                    </div>
+                  ) : (
+                    <div className="inline-block max-w-[85%] rounded-lg rounded-bl-sm border border-border/60 bg-muted px-3 py-2 text-left shadow-sm">
+                      <CardText text={text} className="text-sm leading-relaxed text-foreground" />
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {status === "submitted" && <p className="text-sm text-muted-foreground">Thinking…</p>}
           </div>
 

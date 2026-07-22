@@ -59,3 +59,10 @@ export const KataSchema = z.object({
 });
 
 export type GeneratedKata = z.infer<typeof KataSchema>;
+
+export const SummarizedCardSchema = z.object({
+  front: z.string().describe("Short, self-contained study question — one sentence max"),
+  back: z.string().describe("Concise but complete answer — a few sentences at most"),
+});
+
+export type SummarizedCard = z.infer<typeof SummarizedCardSchema>;

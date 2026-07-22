@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useChatWidget } from "@/components/chat-provider";
 
 type AddState = "idle" | "picking" | "saving" | "done" | "error";
+type SummarizedCard = { front: string; back: string };
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -37,16 +38,32 @@ function Spinner({ className }: { className?: string }) {
 export function AddToDeckButton({ front, back }: { front: string; back: string }) {
   const { deckId, mentionableItems } = useChatWidget();
   const [state, setState] = useState<AddState>("idle");
+  const summarized = useRef<SummarizedCard | null>(null);
 
   const decks = mentionableItems.filter((item) => item.type === "deck");
+
+  async function getSummarizedCard(): Promise<SummarizedCard> {
+    if (summarized.current) return summarized.current;
+
+    const res = await fetch("/api/chat/summarize-card", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: front, answer: back }),
+    });
+    if (!res.ok) throw new Error("Failed to summarize");
+    const card = (await res.json()) as SummarizedCard;
+    summarized.current = card;
+    return card;
+  }
 
   async function addToDeck(targetDeckId: string) {
     setState("saving");
     try {
+      const card = await getSummarizedCard();
       const res = await fetch(`/api/decks/${targetDeckId}/cards`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ front, back }),
+        body: JSON.stringify(card),
       });
       if (!res.ok) throw new Error("Failed to add card");
       setState("done");

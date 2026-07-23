@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { generateCards } from "@/lib/ai/generate-cards";
+import { generateCards, type Difficulty } from "@/lib/ai/generate-cards";
 import type { Database } from "@/lib/database.types";
 import { randomUUID } from "crypto";
 import { generateAndSaveDistractorsForDeck } from "@/lib/services/distractors";
@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const topic: string = typeof body.topic === "string" ? body.topic.trim() : "";
+  const difficulty: Difficulty =
+    body.difficulty === "easy" || body.difficulty === "hard" ? body.difficulty : "medium";
 
   if (!topic) {
     return Response.json({ error: "topic is required" }, { status: 400 });
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
   const db = serviceClient();
 
   try {
-    const { deck, provider, model } = await generateCards(topic, "", "topic");
+    const { deck, provider, model } = await generateCards(topic, "", "topic", difficulty);
 
     const sourcePath = `topic-generate/${randomUUID()}`;
 

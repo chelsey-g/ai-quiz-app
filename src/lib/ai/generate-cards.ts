@@ -12,6 +12,14 @@ const TOPIC_SYSTEM_PROMPT =
   "for active recall practice covering the most important concepts, APIs, patterns, and gotchas. " +
   "Generate 10–15 cards. Every card must be self-contained — do not reference other cards.";
 
+export type Difficulty = "easy" | "medium" | "hard";
+
+const DIFFICULTY_INSTRUCTIONS: Record<Difficulty, string> = {
+  easy: "Keep every card beginner-friendly: foundational concepts, plain language, no jargon without explanation.",
+  medium: "Target a working practitioner: everyday concepts and common gotchas, assuming basic familiarity with the topic.",
+  hard: "Focus on advanced, nuanced, or edge-case concepts that would challenge an experienced practitioner.",
+};
+
 const NOTES_SYSTEM_PROMPT =
   "You are a study content generator. Given notes on any subject, extract the key concepts, " +
   "facts, and ideas and generate flashcards for active recall practice. Generate 8–15 cards " +
@@ -21,11 +29,12 @@ const NOTES_SYSTEM_PROMPT =
 export async function generateCards(
   content: string,
   filePath: string,
-  mode: "file" | "topic" | "notes" = "file"
+  mode: "file" | "topic" | "notes" = "file",
+  difficulty?: Difficulty
 ): Promise<{ deck: GeneratedDeck; provider: string; model: string }> {
   const systemPrompt =
     mode === "topic"
-      ? TOPIC_SYSTEM_PROMPT
+      ? TOPIC_SYSTEM_PROMPT + (difficulty ? ` ${DIFFICULTY_INSTRUCTIONS[difficulty]}` : "")
       : mode === "notes"
         ? NOTES_SYSTEM_PROMPT
         : FILE_SYSTEM_PROMPT;

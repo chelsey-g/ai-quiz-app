@@ -79,11 +79,51 @@ function ErrorBanner({ msg }: { msg: string }) {
 
 // ── Topic tab ─────────────────────────────────────────────────────────────────
 
+const RANDOM_TOPICS = [
+  "React hooks",
+  "CSS Grid",
+  "TypeScript generics",
+  "System design fundamentals",
+  "Big-O notation",
+  "REST API design",
+  "SQL joins",
+  "Git internals",
+  "Docker basics",
+  "Data structures: trees",
+  "Data structures: graphs",
+  "Object-oriented design patterns",
+  "Async JavaScript",
+  "Next.js App Router",
+  "Testing with Jest",
+  "Binary search",
+  "Recursion",
+  "Database indexing",
+  "HTTP caching",
+  "WebSockets",
+  "GraphQL basics",
+  "Python decorators",
+  "Concurrency vs parallelism",
+  "CI/CD pipelines",
+];
+
+type Difficulty = "easy" | "medium" | "hard";
+const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+  { id: "easy", label: "Easy" },
+  { id: "medium", label: "Medium" },
+  { id: "hard", label: "Hard" },
+];
+
 function TopicTab() {
   const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [state, setState] = useState<GenState>("idle");
   const [result, setResult] = useState<DeckResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  function randomizeTopic() {
+    const pick = RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)];
+    setTopic(pick);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,7 +136,7 @@ function TopicTab() {
       const res = await fetch("/api/generate-topic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: trimmed }),
+        body: JSON.stringify({ topic: trimmed, difficulty }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
@@ -118,9 +158,21 @@ function TopicTab() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
-        <label htmlFor="topic" className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground/55">
-          Topic
-        </label>
+        <div className="mb-2 flex items-center justify-between">
+          <label htmlFor="topic" className="block text-xs font-medium uppercase tracking-widest text-muted-foreground/55">
+            Topic
+          </label>
+          <button
+            type="button"
+            onClick={randomizeTopic}
+            className="flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5m0 0v5m0-5l-6 6M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-1" />
+            </svg>
+            Surprise me
+          </button>
+        </div>
         <input
           id="topic"
           type="text"
@@ -135,6 +187,30 @@ function TopicTab() {
           <p className="mt-2 text-right text-[10px] text-muted-foreground/45">{topic.length}/200</p>
         )}
       </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+        <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground/55">
+          Difficulty
+        </label>
+        <div className="flex gap-2">
+          {DIFFICULTIES.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setDifficulty(id)}
+              className={`flex-1 rounded-lg border py-1.5 text-xs font-medium transition-colors ${
+                difficulty === id
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {state === "error" && errorMsg && <ErrorBanner msg={errorMsg} />}
       <Button type="submit" disabled={!topic.trim()} className="w-full">
         Generate deck
@@ -611,8 +687,8 @@ function CreatePageInner() {
   }
 
   const descriptions: Record<Tab, string> = {
-    topic: "Enter any topic and Quizly will generate a study deck using AI.",
-    notes: "Paste or type your notes and Quizly will generate a study deck from your material.",
+    topic: "Enter any topic and Trove will generate a study deck using AI.",
+    notes: "Paste or type your notes and Trove will generate a study deck from your material.",
     import: "Upload Markdown files to generate AI-powered study decks.",
     manual: "Write your own questions and let AI generate the answers.",
   };

@@ -9,7 +9,7 @@ type Card = Database["public"]["Tables"]["cards"]["Row"];
 type ChallengeAttempt = Database["public"]["Tables"]["challenge_attempts"]["Row"];
 type Challenge = Database["public"]["Tables"]["challenges"]["Row"];
 
-type CardResult = { card_id: string; correct: boolean; chosen_answer: string };
+type CardResult = { card_id: string; correct: boolean; chosen_answer: string; overridden?: boolean };
 type ResolvedMode = "multiple-choice" | "type";
 type Phase = "intro" | "study" | "quiz" | "done";
 
@@ -275,6 +275,34 @@ export default function ChallengPlayPage() {
     setIndex((i) => i + 1);
   }
 
+  // Lets the user override a wrong typed-answer grade they believe is correct.
+  function overrideCurrentAnswer() {
+    const card = cards[index];
+    if (!card) return;
+    setResults((prev) => {
+      const idx = prev.length - 1;
+      if (idx < 0 || prev[idx].card_id !== card.id) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], correct: true, overridden: true };
+      return next;
+    });
+    fetch(`/api/challenges/attempts/${attemptId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        card_results: results.map((r, i) =>
+          i === results.length - 1 ? { ...r, correct: true, overridden: true } : r
+        ),
+      }),
+    }).catch(() => {});
+  }
+
+  function overrideReviewAnswer(index: number) {
+    setResults((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, correct: true, overridden: true } : r))
+    );
+  }
+
   // ── Loading / error ────────────────────────────────────────────────────────
 
   if (loading) {
@@ -450,7 +478,16 @@ export default function ChallengPlayPage() {
                         <div className="mt-1 space-y-0.5">
                           <p className="text-xs text-destructive/80">You answered: {r.chosen_answer}</p>
                           <p className="text-xs text-green-600 dark:text-green-400">Correct: {card.back}</p>
+                          <button
+                            onClick={() => overrideReviewAnswer(i)}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Actually, mark mine as correct
+                          </button>
                         </div>
+                      )}
+                      {r.correct && r.overridden && (
+                        <p className="mt-1 text-[10px] font-medium text-primary/70">✓ marked correct by you</p>
                       )}
                     </div>
                   </div>
@@ -619,18 +656,31 @@ export default function ChallengPlayPage() {
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className={`rounded-xl px-4 py-3 ${gradeTypeAnswer(typedAnswer, card?.back ?? "") ? "border border-green-500/30 bg-green-500/5" : "border border-destructive/30 bg-destructive/5"}`}>
-                  <p className={`text-[10px] font-medium uppercase tracking-[0.12em] ${gradeTypeAnswer(typedAnswer, card?.back ?? "") ? "text-green-600 dark:text-green-400" : "text-destructive/80"}`}>
-                    Your answer
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
-                </div>
-                {!gradeTypeAnswer(typedAnswer, card?.back ?? "") && (
-                  <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-green-600 dark:text-green-400">Correct answer</p>
-                    <p className="mt-1 text-sm text-foreground">{card?.back}</p>
-                  </div>
-                )}
+                {(() => {
+                  const isCorrect = results[results.length - 1]?.correct ?? gradeTypeAnswer(typedAnswer, card?.back ?? "");
+                  return (
+                    <>
+                      <div className={`rounded-xl px-4 py-3 ${isCorrect ? "border border-green-500/30 bg-green-500/5" : "border border-destructive/30 bg-destructive/5"}`}>
+                        <p className={`text-[10px] font-medium uppercase tracking-[0.12em] ${isCorrect ? "text-green-600 dark:text-green-400" : "text-destructive/80"}`}>
+                          Your answer
+                        </p>
+                        <p className="mt-1 text-sm text-foreground">{typedAnswer}</p>
+                      </div>
+                      {!isCorrect && (
+                        <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-green-600 dark:text-green-400">Correct answer</p>
+                          <p className="mt-1 text-sm text-foreground">{card?.back}</p>
+                          <button
+                            onClick={overrideCurrentAnswer}
+                            className="mt-2 text-xs font-medium text-primary hover:underline"
+                          >
+                            Actually, mark mine as correct
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 {index + 1 < cards.length ? (
                   <Button className="w-full" onClick={advance}>Continue →</Button>
                 ) : saving ? (

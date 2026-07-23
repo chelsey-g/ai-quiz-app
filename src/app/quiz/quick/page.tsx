@@ -31,6 +31,7 @@ type AnswerRecord = {
   correct: boolean;
   userAnswer: string;
   card: Card;
+  overridden?: boolean;
 };
 
 function FlagButton({ flagged, onToggle }: { flagged: boolean; onToggle: () => void }) {
@@ -387,6 +388,26 @@ export default function QuickQuizPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ answer, correct }),
     }).catch(() => {});
+  }
+
+  // Lets the user override a wrong typed-answer grade they believe is correct.
+  function overrideCurrentAnswer() {
+    if (!currentCard) return;
+    setGradeResult(true);
+    setAnswers((prev) => {
+      const idx = prev.length - 1;
+      if (idx < 0 || prev[idx].cardId !== currentCard.id) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], correct: true, overridden: true };
+      return next;
+    });
+    saveTypedAnswer(currentCard.id, typedAnswer, true);
+  }
+
+  function overrideReviewAnswer(index: number) {
+    setAnswers((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, correct: true, overridden: true } : a))
+    );
   }
 
   async function handleTypeSubmit() {
@@ -838,6 +859,12 @@ export default function QuickQuizPage() {
                         Correct answer
                       </p>
                       <CardText text={currentCard.back} className="mt-1 text-sm text-foreground" />
+                      <button
+                        onClick={overrideCurrentAnswer}
+                        className="mt-2 text-xs font-medium text-primary hover:underline"
+                      >
+                        Actually, mark mine as correct
+                      </button>
                     </div>
                   )}
                 </div>
@@ -986,7 +1013,16 @@ export default function QuickQuizPage() {
                           </div>
                         ) : null}
                       </div>
+                      <button
+                        onClick={() => overrideReviewAnswer(idx)}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        Actually, mark mine as correct
+                      </button>
                     </div>
+                  )}
+                  {answer.correct && answer.overridden && (
+                    <p className="mt-1 text-[10px] font-medium text-primary/70">✓ marked correct by you</p>
                   )}
                 </div>
               </div>

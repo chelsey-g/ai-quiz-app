@@ -76,7 +76,7 @@ export default function NotesPage() {
           Notes Editor
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground/70">
-          Paste or type your notes and Quizly will generate a study deck from
+          Paste or type your notes and Trove will generate a study deck from
           your material.
         </p>
       </div>

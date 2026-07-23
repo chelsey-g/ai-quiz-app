@@ -47,7 +47,7 @@ const DIFFICULTY_STYLE: Record<
   },
 };
 
-const PREFS_KEY = "quizly:kata:prefs";
+const PREFS_KEY = "trove:kata:prefs";
 
 type Prefs = { topics: string[]; difficulty: Difficulty };
 

@@ -26,8 +26,8 @@ export type PausedQuickQuiz = {
   pausedAt: string;
 };
 
-const DECK_KEY = (deckId: string) => `quizly:paused:deck:${deckId}`;
-const QUICK_KEY = "quizly:paused:quick";
+const DECK_KEY = (deckId: string) => `trove:paused:deck:${deckId}`;
+const QUICK_KEY = "trove:paused:quick";
 
 export function savePausedDeckQuiz(state: PausedDeckQuiz) {
   try { localStorage.setItem(DECK_KEY(state.deckId), JSON.stringify(state)); } catch {}

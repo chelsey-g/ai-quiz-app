@@ -24,7 +24,7 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "Quizly",
+  title: "Trove",
   description: "AI-powered study decks from your notes",
 };
 
@@ -69,7 +69,7 @@ export default async function RootLayout({
                         <path d="M10 1.5C10 1.5 10.9 7.2 13.8 9.5C16.4 11.6 20 11 20 11C20 11 16.4 10.4 13.8 12.5C10.9 14.8 10 20 10 20C10 20 9.1 14.8 6.2 12.5C3.6 10.4 0 11 0 11C0 11 3.6 11.6 6.2 9.5C9.1 7.2 10 1.5 10 1.5Z" />
                       </svg>
                     </div>
-                    <span className="font-heading text-sm font-bold tracking-tight text-foreground">Quizly</span>
+                    <span className="font-heading text-sm font-bold tracking-tight text-foreground">Trove</span>
                   </Link>
                   <Link href="/auth/login" className={buttonVariants({ variant: "outline", size: "sm" })}>
                     Sign in

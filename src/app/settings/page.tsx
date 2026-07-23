@@ -159,7 +159,7 @@ export default function SettingsPage() {
 
       {/* Appearance */}
       <section className="rounded-2xl border border-border/40 bg-card/60 p-5">
-        <SectionHeading title="Appearance" description="Choose how Quizly looks." />
+        <SectionHeading title="Appearance" description="Choose how Trove looks." />
         {mounted && (
           <div className="flex gap-2">
             {(["light", "dark"] as const).map((t) => (

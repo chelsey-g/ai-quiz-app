@@ -66,7 +66,7 @@ export default function GeneratePage() {
           Generate from Topic
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground/70">
-          Enter any topic and Quizly will generate a study deck using AI.
+          Enter any topic and Trove will generate a study deck using AI.
         </p>
       </div>
 

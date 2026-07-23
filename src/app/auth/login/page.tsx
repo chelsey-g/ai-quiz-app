@@ -20,7 +20,7 @@ export default async function LoginPage({
             </svg>
           </div>
           <h1 className="font-heading text-xl font-bold tracking-tight text-foreground">
-            Sign in to Quizly
+            Sign in to Trove
           </h1>
           <p className="mt-1 text-sm text-muted-foreground/70">
             Study smarter with AI-powered flashcards.

@@ -2,7 +2,7 @@
 
 # Quizly — AI Quiz App
 
-Quizly is an AI-powered study platform where users can either enter a topic to instantly generate flashcards and quizzes, or import their own material (notes, PDFs, YouTube links, or URLs) — with adaptive difficulty, wrong-answer explanations, and collaborative deck sharing for multiple users.
+Quizly is an AI-powered study platform: enter a topic or import your own notes to generate flashcards and quizzes, study them with SM-2 spaced repetition, and share decks/collections publicly for forking. Includes quiz modes with AI grading and wrong-answer explanations, coding kata practice with in-browser execution, challenges between users, streaks, and stats.
 
 ## Tech Stack
 
@@ -10,88 +10,102 @@ Quizly is an AI-powered study platform where users can either enter a topic to i
 |---|---|
 | Frontend | Next.js 16 (App Router), Tailwind v4, ShadCN |
 | Database | Supabase (Postgres + Auth) — project ref: `wlghyvhrzdhfnkykhcoj` |
-| Backend | Supabase Edge Functions (Deno) |
-| AI | Vercel AI SDK — `@ai-sdk/anthropic` + `@ai-sdk/openai` |
+| AI | Vercel AI SDK v6 via AI Gateway (`@ai-sdk/gateway`) |
+| Code execution | Vercel Sandbox (kata test runs) |
 | Hosting | Vercel |
 
-## Project Structure
+## Project Structure (route map, not exhaustive)
 
 ```
-src/
-  app/
-    page.tsx                  # Dashboard — deck grid
-    layout.tsx                # App shell with nav
-    import/page.tsx           # Drag-and-drop .md file importer
-    decks/[id]/page.tsx       # Deck detail + flashcard study mode
-    api/
-      import/route.ts         # POST — accepts .md files, runs AI pipeline
-      decks/route.ts          # GET — all decks (service role, no auth yet)
-      decks/[id]/route.ts     # GET — single deck + cards
-  components/
-    deck-card.tsx             # Deck grid card component
-    ui/                       # ShadCN components
-  lib/
-    ai/
-      generate-cards.ts       # Cost-based model router + generateObject call
-      schema.ts               # Zod schema for Claude/OpenAI response
-    supabase/
-      client.ts               # Browser client
-      server.ts               # Server client (cookie-based)
-    database.types.ts         # Generated Supabase types
+src/app/
+  page.tsx                # Dashboard
+  import/                 # .md file importer
+  notes/                  # Notes editor → generate cards
+  create/, generate/      # Topic-based deck generation
+  decks/[id]/             # Deck detail + flashcard study (SM-2)
+  quiz/[deckId]/          # Quiz mode (MC + typed, AI grading/explanations)
+  quiz/quick/             # Quick quiz (multi-deck)
+  collections/, tags/     # Deck organization
+  community/              # Public deck/collection browsing
+  p/[id]/, c/[id]/        # Public deck / public collection pages (fork support)
+  u/[username]/           # Public user profiles
+  profile/, settings/     # Own profile (incl. flagged cards), preferences
+  challenges/             # User-vs-user quiz challenges + notifications
+  kata/                   # Coding kata: topic/skill picker, CodeMirror editor, sandbox runs
+  stats/                  # Study stats (accuracy weighted by card count)
+  auth/                   # Supabase Auth: login, signup, callback
+  api/                    # Route handlers mirror the above (decks, cards, sessions,
+                          # quiz/grade, quiz/explain, kata/*, community/*, challenges/*, …)
 
-supabase/
-  functions/ingest/index.ts   # Edge function — GitHub webhook handler
-  migrations/                 # SQL migrations
+src/lib/
+  ai/generate-cards.ts    # generateObject via AI Gateway, three prompt modes (file/topic/notes)
+  ai/schema.ts            # Zod DeckSchema
+  sm2.ts, streak.ts       # Spaced repetition + streak logic (unit-tested)
+  services/               # decks, sessions, card-stats, stats, distractors, dashboard
+  supabase/client.ts      # Browser client (anon key)
+  supabase/server.ts      # Server client (cookie-based, user-scoped, RLS applies)
+  supabase/admin.ts       # Service-role client — bypasses RLS, server-only
+
+supabase/migrations/      # Source of truth for schema
 ```
 
 ## AI Pipeline
 
+All generation goes through the Vercel AI Gateway with `generateObject` + Zod schema — raw AI text is never parsed directly. Primary model `openai/gpt-4o-mini`, with gateway fallbacks `anthropic/claude-haiku-4.5` → `anthropic/claude-sonnet-4-6` → `openai/gpt-4o` (see `src/lib/ai/generate-cards.ts`).
 
-Cards and quizzes are generated via src/lib/ai/generate-cards.ts using a cost-optimized pipeline — free models are tried first, falling back to paid only when needed.
+AI features: card generation (file/topic/notes modes), deck expansion (AI-expanded cards), MC distractor generation, typed-answer grading, wrong-answer explanations, kata generation + hints, code-deck classification.
 
-gemini-2.0-flash (free) → llama-3.3-70b via Groq (free) → gpt-4o-mini ($0.15) → claude-haiku ($0.80) → claude-sonnet ($3.00) → gpt-4o ($2.50)
+Caveat: schema-valid ≠ good cards. The fallback chain can mask prompt regressions (e.g. gpt-4o-mini once returned string-serialized arrays for kata test cases).
 
-`generateObject` + Zod schema validates all responses — raw JSON is never parsed directly. Pipeline applies to all generation types: topic-based, note imports, PDFs, YouTube transcripts, and URLs.
-
-## Database Schema
+## Database Schema (high level — migrations are authoritative)
 
 ```
-notes      — raw source content (title, source_path, raw_content, github_sha)
-decks      — generated study deck per note (title, topic_tags, card_count)
-cards      — individual flashcards (front, back, card_type, times_seen, times_correct)
-sessions   — study sessions (deck_id, started_at, completed_at, score)
+notes               — raw source content
+decks               — title, topic_tags, card_count, is_public, source_deck_id (forks), is_code_deck
+cards               — front/back, tags, sort_order, flagged, mc_distractors/mc_status,
+                      SM-2 fields (repetitions, ease_factor, interval_days, next_review_at),
+                      times_seen/times_correct
+sessions            — completed study sessions (user_id, deck_id, score, total)
+profiles            — username (unique), avatar_url, study prefs, notification_prefs
+collections         — deck groupings (+ collection_decks join), is_public
+challenges          — user-vs-user quizzes (+ challenge_attempts)
+notifications       — in-app notifications
+kata_attempts       — kata history (deck_id nullable — kata is topic-based)
 ```
 
-RLS is enabled on all tables. Currently `user_id` is null (no auth yet) — API routes use the service role key to bypass RLS.
+RLS is enabled on all tables; queries are scoped by `user_id` via the cookie-based server client. The service-role client (`supabase/admin.ts` and `services/sessions.ts`) is used only where RLS must be bypassed (e.g. session inserts + cross-user card stat updates). **Admin vs user client misuse is a recurring review item — always justify service-role usage.**
 
 ## Current State
 
-- ✅ Import page — upload .md files → AI generates flashcards → saved to Supabase
-- ✅ Dashboard — deck grid with title, tags, card count
-- ✅ Flashcard study mode — flip cards, knew it / still learning, session summary
-- ✅ Cost-based model routing — cheapest model tried first, fallback on failure
-- ✅ GitHub webhook edge function — deployed but webhook not wired up yet
-- ❌ Auth — not implemented yet, all data is anonymous (user_id = null)
-- ❌ Notes editor page — planned: textarea in app, write notes → generate cards + AI-expanded cards
-- ❌ AI-expanded cards — after generating from user notes, Claude should also generate extra cards on the same topics
+Shipped: auth, dashboard, import, notes editor, topic generation, flashcard study, quiz mode (MC + typed with AI grading and explanations), quick quiz, multi-deck quiz, AI-expanded cards, collections, community decks/collections with forking, public profiles, challenges + notifications, kata practice (CodeMirror + Vercel Sandbox), streaks, stats, settings, card flagging.
+
+Unit tests exist for sm2, streak, stats, distractors, kata parsing, shuffle, username (`*.test.ts` in src/lib).
+
+**Known gap: SM-2 is scaffolded but UNWIRED** — `lib/sm2.ts` (tested) and the cards scheduling columns exist, but nothing calls the algorithm; all cards carry default values. See plan `2026-06-12-wire-sm2.md`.
 
 ## What's Next
 
-1. **Auth** — Supabase Auth so each user has their own decks
-2. **Notes editor page** — write/paste notes in the app, hit Generate, cards appear
-3. **AI-expanded cards** — Claude generates additional cards beyond what the user wrote
-4. **Study session tracking** — persist knew it/still learning results to the `sessions` table
+Audit plans from 2026-06-12 (in `docs/superpowers/plans/`, ordered by priority):
+
+1. **fix-card-stats-ownership** — HIGH: authed users can mutate other users' card stats via `/api/sessions`
+2. **fork-field-parity** — community forks drop `mc_distractors`/`mc_status`/`sort_order`
+3. **wire-sm2** — wire the dormant SM-2 implementation into reviews + study order (depends on 1)
+4. **ai-rate-limiting** — per-user limits on the nine AI/sandbox routes
+5. **eval-harness** — card-generation quality evals with drift detection
+
+Then: **durable generation jobs** — long-running generation, spec in `docs/superpowers/plans/` (a179b24)
 
 ## Key Decisions
 
-- **No GitHub webhook for MVP** — using direct import instead. Webhook edge function exists but isn't the primary flow.
-- **Service role key in API routes** — intentional until auth is added. Once auth lands, scope queries by `user_id` and drop the service role usage.
-- **No OpenRouter** — direct `@ai-sdk/anthropic` + `@ai-sdk/openai` with cost-based priority list. User owns both API keys.
-- **Separate API routes for all Supabase reads** — browser client + anon key blocked by RLS, so server-side routes use service role key.
+- **AI Gateway over direct provider SDKs** (May 2026) — replaced the original hand-rolled free→paid cascade (`@ai-sdk/anthropic`/`@ai-sdk/openai` + Gemini/Groq) with `@ai-sdk/gateway` model fallbacks. Old packages still in package.json but `generate-cards.ts` is gateway-only.
+- **Service role only where RLS can't work** — auth shipped; user-scoped server client is the default, admin client is the exception and must be justified.
+- **Kata is topic-based, not deck-based** (May 2026) — deck-based kata routes were removed; `kata_attempts.deck_id` is nullable.
+- **Plans live in `docs/superpowers/plans/`** — dated implementation plans; shipped plans get an "## Outcome" note (maintained by the daily review routine).
+- **No GitHub webhook** — direct import won; the old ingest edge function is not the flow.
 
 ## Principles
 
-- Never expose `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `SUPABASE_SERVICE_ROLE_KEY` to the frontend
+- Never expose API keys or `SUPABASE_SERVICE_ROLE_KEY` to the frontend
 - Always use `generateObject` + Zod schema — never parse raw AI text
 - Handle AI errors gracefully — model fallback, never silent failure
-- Keep edge functions single-purpose
+- Default to the user-scoped server client; treat service-role usage as exceptional

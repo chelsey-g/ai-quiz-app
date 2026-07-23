@@ -57,6 +57,18 @@ function MinimizeIcon({ className }: { className?: string }) {
   );
 }
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.166L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+      />
+    </svg>
+  );
+}
+
 function getMessageText(message: { parts: { type: string; text?: string }[] }): string {
   return message.parts
     .filter((part): part is { type: "text"; text: string } => part.type === "text")
@@ -65,7 +77,7 @@ function getMessageText(message: { parts: { type: string; text?: string }[] }): 
 }
 
 export function ChatWidget() {
-  const { open, setOpen, deckTitle, messages, status } = useChatWidget();
+  const { open, setOpen, deckTitle, messages, setMessages, status } = useChatWidget();
   const panelRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -159,14 +171,27 @@ export function ChatWidget() {
             <p className="truncate font-heading text-sm font-semibold text-foreground">
               {deckTitle ? `Asking about: ${deckTitle}` : "Quizly Assistant"}
             </p>
-            <button
-              type="button"
-              onClick={toggleMaximize}
-              aria-label={maximized ? "Restore chat size" : "Maximize chat"}
-              className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              {maximized ? <MinimizeIcon className="h-4 w-4" /> : <MaximizeIcon className="h-4 w-4" />}
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMessages([])}
+                  aria-label="Clear conversation"
+                  title="Clear conversation"
+                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleMaximize}
+                aria-label={maximized ? "Restore chat size" : "Maximize chat"}
+                className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                {maximized ? <MinimizeIcon className="h-4 w-4" /> : <MaximizeIcon className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">

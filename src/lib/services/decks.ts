@@ -149,3 +149,34 @@ export async function getDecksByCollection(
     } as DeckWithStats;
   });
 }
+
+const CHAT_NOTES_DECK_TITLE = "Chat Notes";
+
+/**
+ * Returns the user's "Chat Notes" deck — the default destination for cards
+ * saved from the chat assistant when no specific deck is in view — creating
+ * it on first use.
+ */
+export async function getOrCreateChatNotesDeck(userId: string): Promise<Deck> {
+  const supabase = await createClient();
+
+  const { data: existing, error: findError } = await supabase
+    .from("decks")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("title", CHAT_NOTES_DECK_TITLE)
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+  if (existing) return existing;
+
+  const { data: created, error: createError } = await supabase
+    .from("decks")
+    .insert({ title: CHAT_NOTES_DECK_TITLE, user_id: userId, topic_tags: [], card_count: 0 })
+    .select()
+    .single();
+
+  if (createError || !created) throw new Error(createError?.message ?? "Failed to create deck");
+  return created;
+}

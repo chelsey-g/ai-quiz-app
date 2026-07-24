@@ -40,6 +40,11 @@ function MentionSuggestions({
             {TYPE_LABEL[item.type]}
           </span>
           <span className="truncate">{item.label}</span>
+          {item.type === "card" && item.sourceDeckTitle && (
+            <span className="ml-auto shrink-0 truncate text-xs text-muted-foreground">
+              {item.sourceDeckTitle}
+            </span>
+          )}
         </button>
       ))}
     </div>
@@ -50,12 +55,43 @@ export function MentionInput() {
   const { deckId, mentionableItems, sendMessage, status } = useChatWidget();
   const [text, setText] = useState("");
   const [mentions, setMentions] = useState<MentionableItem[]>([]);
+  const [deckCardCache, setDeckCardCache] = useState<Record<string, MentionableItem[]>>({});
   const inputRef = useRef<HTMLInputElement>(null);
+
+  async function ensureDeckCardsLoaded(referencedDeckId: string) {
+    if (deckCardCache[referencedDeckId]) return;
+    try {
+      const res = await fetch(`/api/decks/${referencedDeckId}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        deck?: { title?: string };
+        cards?: { id: string; front: string }[];
+      };
+      const cards: MentionableItem[] = (data.cards ?? []).map((c) => ({
+        type: "card" as const,
+        id: c.id,
+        label: c.front,
+        sourceDeckTitle: data.deck?.title,
+      }));
+      setDeckCardCache((prev) => ({ ...prev, [referencedDeckId]: cards }));
+    } catch {
+      // Cards from this deck just won't be searchable — not fatal.
+    }
+  }
+
+  // Cards from any deck the user has @ mentioned in this message become
+  // searchable too, so you can drill into a specific question inside it.
+  const referencedDeckCards = mentions
+    .filter((m): m is Extract<MentionableItem, { type: "deck" }> => m.type === "deck")
+    .flatMap((m) => deckCardCache[m.id] ?? [])
+    .filter((card) => !mentionableItems.some((mi) => mi.type === "card" && mi.id === card.id));
+
+  const searchableItems = [...mentionableItems, ...referencedDeckCards];
 
   const mentionMatch = text.match(MENTION_PATTERN);
   const query = mentionMatch?.[1]?.toLowerCase() ?? "";
   const filteredItems = mentionMatch
-    ? mentionableItems
+    ? searchableItems
         .filter(
           (item) =>
             !mentions.some((m) => m.type === item.type && m.id === item.id) &&
@@ -67,6 +103,9 @@ export function MentionInput() {
   function selectMention(item: MentionableItem) {
     setText((current) => current.replace(MENTION_PATTERN, (match) => (match.startsWith(" ") ? " " : "")));
     setMentions((current) => [...current, item]);
+    if (item.type === "deck") {
+      ensureDeckCardsLoaded(item.id);
+    }
     inputRef.current?.focus();
   }
 

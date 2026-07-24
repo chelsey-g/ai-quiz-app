@@ -180,3 +180,23 @@ export async function getOrCreateChatNotesDeck(userId: string): Promise<Deck> {
   if (createError || !created) throw new Error(createError?.message ?? "Failed to create deck");
   return created;
 }
+
+/**
+ * Returns cards by id, scoped to decks the given user owns — regardless of
+ * which deck each card belongs to. Used to resolve @-mentioned cards in chat,
+ * which may come from a deck other than the one currently being viewed.
+ */
+export async function getCardsByIds(cardIds: string[], userId: string): Promise<Card[]> {
+  if (cardIds.length === 0) return [];
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("cards")
+    .select("*, decks!inner(user_id)")
+    .in("id", cardIds)
+    .eq("decks.user_id", userId);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map(({ decks: _decks, ...card }) => card as unknown as Card);
+}

@@ -7,7 +7,7 @@ import { DefaultChatTransport } from "ai";
 import { matchDeckRoute } from "@/lib/utils/deck-route";
 
 export type MentionableItem =
-  | { type: "card"; id: string; label: string }
+  | { type: "card"; id: string; label: string; sourceDeckTitle?: string }
   | { type: "deck"; id: string; label: string }
   | { type: "collection"; id: string; label: string };
 

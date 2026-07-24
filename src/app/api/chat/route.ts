@@ -2,7 +2,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getDeckById, getDecksByCollection } from "@/lib/services/decks";
+import { getDeckById, getDecksByCollection, getCardsByIds } from "@/lib/services/decks";
 
 const BASE_SYSTEM_PROMPT =
   "You are Quizly's study assistant. Help the user study, understand concepts, " +
@@ -32,20 +32,22 @@ export async function POST(req: NextRequest) {
 
   if (body.deckId) {
     try {
-      const { deck, cards } = await getDeckById(body.deckId, user.id);
+      const { deck } = await getDeckById(body.deckId, user.id);
       systemPrompt += `\n\nThe user is currently viewing the deck "${deck.title}".`;
-
-      if (body.mentionedCardIds && body.mentionedCardIds.length > 0) {
-        const mentioned = cards.filter((c) => body.mentionedCardIds!.includes(c.id));
-        if (mentioned.length > 0) {
-          const cardBlocks = mentioned
-            .map((c) => `- Front: ${c.front}\n  Back: ${c.back}`)
-            .join("\n");
-          systemPrompt += `\n\nThe user is asking specifically about these flashcards:\n${cardBlocks}`;
-        }
-      }
     } catch {
       // Deck not found, or not owned by this user — fall back to general context.
+    }
+  }
+
+  // Mentioned cards are resolved independently of the currently-viewed deck —
+  // a card can be @-mentioned from any deck the user owns, not just this one.
+  if (body.mentionedCardIds && body.mentionedCardIds.length > 0) {
+    const mentionedCards = await getCardsByIds(body.mentionedCardIds, user.id);
+    if (mentionedCards.length > 0) {
+      const cardBlocks = mentionedCards
+        .map((c) => `- Front: ${c.front}\n  Back: ${c.back}`)
+        .join("\n");
+      systemPrompt += `\n\nThe user is asking specifically about these flashcards:\n${cardBlocks}`;
     }
   }
 

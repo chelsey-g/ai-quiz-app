@@ -86,7 +86,12 @@ export function MentionInput() {
     .flatMap((m) => deckCardCache[m.id] ?? [])
     .filter((card) => !mentionableItems.some((mi) => mi.type === "card" && mi.id === card.id));
 
-  const searchableItems = [...mentionableItems, ...referencedDeckCards];
+  // Cards are sorted ahead of decks/collections so that, once a deck's cards
+  // are loaded, they aren't crowded out of the MAX_SUGGESTIONS cap by an
+  // account with many decks/collections.
+  const cardItems = mentionableItems.filter((item) => item.type === "card");
+  const otherItems = mentionableItems.filter((item) => item.type !== "card");
+  const searchableItems = [...cardItems, ...referencedDeckCards, ...otherItems];
 
   const mentionMatch = text.match(MENTION_PATTERN);
   const query = mentionMatch?.[1]?.toLowerCase() ?? "";

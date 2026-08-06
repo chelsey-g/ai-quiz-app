@@ -28,6 +28,7 @@ export type Database = {
           last_answer_correct: boolean | null
           last_seen_at: string | null
           last_typed_answer: string | null
+          mc_condensed_answer: string | null
           mc_distractors: string[] | null
           mc_status: string | null
           next_review_at: string | null
@@ -50,6 +51,7 @@ export type Database = {
           last_answer_correct?: boolean | null
           last_seen_at?: string | null
           last_typed_answer?: string | null
+          mc_condensed_answer?: string | null
           mc_distractors?: string[] | null
           mc_status?: string | null
           next_review_at?: string | null
@@ -72,6 +74,7 @@ export type Database = {
           last_answer_correct?: boolean | null
           last_seen_at?: string | null
           last_typed_answer?: string | null
+          mc_condensed_answer?: string | null
           mc_distractors?: string[] | null
           mc_status?: string | null
           next_review_at?: string | null

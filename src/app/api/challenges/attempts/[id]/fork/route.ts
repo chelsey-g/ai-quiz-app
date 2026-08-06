@@ -66,6 +66,7 @@ export async function POST(
       sort_order: c.sort_order,
       mc_distractors: c.mc_distractors,
       mc_status: c.mc_status,
+      mc_condensed_answer: c.mc_condensed_answer,
       times_seen: 0,
       times_correct: 0,
       ease_factor: 2.5,

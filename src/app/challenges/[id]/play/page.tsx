@@ -29,15 +29,19 @@ function shuffleAnswers(correct: string, distractors: string[]): string[] {
   return [...deduped, correct.trim()].sort(() => Math.random() - 0.5);
 }
 
+function mcCorrectAnswer(c: Card): string {
+  return c.mc_condensed_answer ?? c.back;
+}
+
 function buildOptions(allCards: Card[], target: Card): string[] {
   if (target.mc_status === "ready" && target.mc_distractors && target.mc_distractors.length >= 3) {
-    return shuffleAnswers(target.back, target.mc_distractors);
+    return shuffleAnswers(mcCorrectAnswer(target), target.mc_distractors);
   }
   const fallback = allCards
     .filter((c) => c.id !== target.id)
     .map((c) => c.back)
     .sort(() => Math.random() - 0.5);
-  return shuffleAnswers(target.back, fallback);
+  return shuffleAnswers(mcCorrectAnswer(target), fallback);
 }
 
 function levenshtein(a: string, b: string): number {
@@ -219,7 +223,7 @@ export default function ChallengPlayPage() {
   async function pickMC(option: string) {
     if (selected || !cards[index]) return;
     const card = cards[index];
-    const correct = option === card.back;
+    const correct = option === mcCorrectAnswer(card);
     setSelected(option);
     await submitAnswer(card, correct, option);
   }
@@ -601,7 +605,7 @@ export default function ChallengPlayPage() {
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               {options.map((option, idx) => {
-                const isCorrect = option === card?.back;
+                const isCorrect = option === (card ? mcCorrectAnswer(card) : undefined);
                 const isSelected = selected === option;
                 const revealed = selected !== null;
                 let cls = "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors focus:outline-none";

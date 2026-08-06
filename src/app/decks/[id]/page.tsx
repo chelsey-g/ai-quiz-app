@@ -102,15 +102,19 @@ function shuffleAnswers(correct: string, distractors: string[]): string[] {
   return [...deduped, correct.trim()].sort(() => Math.random() - 0.5);
 }
 
+function mcCorrectAnswer(c: Card): string {
+  return c.mc_condensed_answer ?? c.back;
+}
+
 function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
   if (targetCard.mc_status === "ready" && targetCard.mc_distractors && targetCard.mc_distractors.length >= 3) {
-    return shuffleAnswers(targetCard.back, targetCard.mc_distractors);
+    return shuffleAnswers(mcCorrectAnswer(targetCard), targetCard.mc_distractors);
   }
   const fallback = allCards
     .filter((c) => c.id !== targetCard.id)
     .map((c) => c.back)
     .sort(() => Math.random() - 0.5);
-  return shuffleAnswers(targetCard.back, fallback);
+  return shuffleAnswers(mcCorrectAnswer(targetCard), fallback);
 }
 
 function isFresh(card: Card): boolean {
@@ -1036,7 +1040,7 @@ export default function DeckPage() {
           }
         } else {
           if (e.key === "Enter" || e.key === "ArrowRight") {
-            selectedMcOption === currentCard.back ? markKnown() : markUnknown();
+            selectedMcOption === mcCorrectAnswer(currentCard) ? markKnown() : markUnknown();
           }
         }
       }
@@ -2120,7 +2124,7 @@ export default function DeckPage() {
 
           <div className="mt-4 grid grid-cols-1 gap-2">
             {(mcOptions[currentCard.id] ?? []).map((option, idx) => {
-              const isCorrect = option === currentCard.back;
+              const isCorrect = option === mcCorrectAnswer(currentCard);
               const isSelected = selectedMcOption === option;
               const revealed = selectedMcOption !== null;
 
@@ -2161,7 +2165,7 @@ export default function DeckPage() {
             <div className="mt-5 flex gap-3">
               <Button
                 className="flex-1"
-                onClick={() => selectedMcOption === currentCard.back ? markKnown() : markUnknown()}
+                onClick={() => selectedMcOption === mcCorrectAnswer(currentCard) ? markKnown() : markUnknown()}
               >
                 Continue
                 <span className="ml-1.5 text-[10px] opacity-60">→</span>

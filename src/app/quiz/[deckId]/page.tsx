@@ -62,15 +62,19 @@ function shuffleAnswers(correct: string, distractors: string[]): string[] {
   return [...deduped, correct.trim()].sort(() => Math.random() - 0.5);
 }
 
+function mcCorrectAnswer(c: Card): string {
+  return c.mc_condensed_answer ?? c.back;
+}
+
 function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
   if (targetCard.mc_status === "ready" && targetCard.mc_distractors && targetCard.mc_distractors.length >= 3) {
-    return shuffleAnswers(targetCard.back, targetCard.mc_distractors);
+    return shuffleAnswers(mcCorrectAnswer(targetCard), targetCard.mc_distractors);
   }
   const fallback = allCards
     .filter((c) => c.id !== targetCard.id)
     .map((c) => c.back)
     .sort(() => Math.random() - 0.5);
-  return shuffleAnswers(targetCard.back, fallback);
+  return shuffleAnswers(mcCorrectAnswer(targetCard), fallback);
 }
 
 function levenshtein(a: string, b: string): number {
@@ -745,7 +749,7 @@ export default function QuizPage() {
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               {(mcOptions[currentCard.id] ?? []).map((option, idx) => {
-                const isCorrect = option === currentCard.back;
+                const isCorrect = option === mcCorrectAnswer(currentCard);
                 const isSelected = selectedOption === option;
                 const revealed = selectedOption !== null;
                 let cls =

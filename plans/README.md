@@ -30,7 +30,7 @@ when all done-criteria are confirmed.
 | 006 | [Wire SM-2 spaced repetition](006-wire-sm2.md) | tech-debt | P2 | M | MED | 003, 004 | TODO |
 | 007 | [Extract duplicated quiz utils](007-extract-quiz-utils.md) | tech-debt | P3 | L | LOW | — | TODO |
 | 008 | [Condense MC correct answer](008-condense-mc-correct-answer.md) | quality/UX | P2 | M | LOW | — | DONE |
-| 009 | [Regenerate deck MC answers button](009-regenerate-deck-mc-answers.md) | feature | P2 | S | LOW | 008 | TODO |
+| 009 | [Regenerate deck MC answers button](009-regenerate-deck-mc-answers.md) | feature | P2 | S | LOW | 008 | DONE |
 
 ## Recommended first batch
 

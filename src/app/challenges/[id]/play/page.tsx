@@ -34,7 +34,7 @@ function mcCorrectAnswer(c: Card): string {
 }
 
 function buildOptions(allCards: Card[], target: Card): string[] {
-  if (target.mc_status === "ready" && target.mc_distractors && target.mc_distractors.length >= 3) {
+  if (target.mc_distractors && target.mc_distractors.length >= 3) {
     return shuffleAnswers(mcCorrectAnswer(target), target.mc_distractors);
   }
   const fallback = allCards

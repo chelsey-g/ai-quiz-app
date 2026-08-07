@@ -80,7 +80,7 @@ function mcCorrectAnswer(c: Card): string {
 }
 
 function generateMcOptions(allCards: Card[], targetCard: Card): string[] {
-  if (targetCard.mc_status === "ready" && targetCard.mc_distractors && targetCard.mc_distractors.length >= 3) {
+  if (targetCard.mc_distractors && targetCard.mc_distractors.length >= 3) {
     return shuffleAnswers(mcCorrectAnswer(targetCard), targetCard.mc_distractors);
   }
   const fallback = allCards

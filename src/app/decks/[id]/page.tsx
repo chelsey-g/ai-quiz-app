@@ -517,6 +517,8 @@ export default function DeckPage() {
   const [isPublic, setIsPublic] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
 
+  const [triggeringRegenerate, setTriggeringRegenerate] = useState(false);
+
   const [showDeleteDeck, setShowDeleteDeck] = useState(false);
 
   const [editingTitle, setEditingTitle] = useState(false);
@@ -985,6 +987,26 @@ export default function DeckPage() {
     setTogglingPublic(false);
   }
 
+  async function handleRegenerateAnswers() {
+    if (!deck || triggeringRegenerate || generatingMc) return;
+    setTriggeringRegenerate(true);
+    try {
+      const res = await fetch(`/api/decks/${deck.id}/regenerate-mc`, { method: "POST" });
+      if (res.ok) {
+        // Reflect the reset immediately and hand off to the existing
+        // pending-poll effect (triggered by generatingMc) to refresh the
+        // UI once regeneration finishes — no second polling path here.
+        setAllCards((prev) => prev.map((c) => ({ ...c, mc_status: "pending" })));
+        setGeneratingMc(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error ?? "Failed to regenerate answers");
+      }
+    } finally {
+      setTriggeringRegenerate(false);
+    }
+  }
+
   function addTag(tag: string) {
     const t = tag.trim();
     if (t && !cardTags.includes(t)) setCardTags((prev) => [...prev, t]);
@@ -1180,7 +1202,7 @@ export default function DeckPage() {
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-10 py-8 shadow-xl">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
           <p className="text-sm font-medium text-foreground">Generating multiple choice questions…</p>
-          <p className="text-xs text-muted-foreground">This only happens once per deck</p>
+          <p className="text-xs text-muted-foreground">This won&apos;t take long</p>
         </div>
       </div>
     );
@@ -1261,6 +1283,17 @@ export default function DeckPage() {
                 )}
               </svg>
               {isPublic ? "Public" : "Private"}
+            </button>
+            <button
+              onClick={handleRegenerateAnswers}
+              disabled={triggeringRegenerate || generatingMc || allCards.length === 0 || allCards.some((c) => c.mc_status === "pending")}
+              title="Regenerate multiple-choice answers for every card in this deck"
+              className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/30 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Regenerate answers
             </button>
             {showDeleteDeck ? (
               <div className="flex items-center gap-2">

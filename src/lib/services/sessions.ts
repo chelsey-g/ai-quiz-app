@@ -42,6 +42,6 @@ export async function saveSession(data: SaveSessionData): Promise<void> {
   }
 
   if (results.length > 0) {
-    await updateCardStats(results);
+    await updateCardStats(userId, results);
   }
 }

@@ -5,7 +5,7 @@ async function getCardAndVerifyOwner(cardId: string, userId: string) {
   const supabase = await createClient();
   const { data: card, error } = await supabase
     .from("cards")
-    .select("id, deck_id, decks!inner(user_id)")
+    .select("id, deck_id, back, decks!inner(user_id)")
     .eq("id", cardId)
     .single();
 
@@ -41,9 +41,18 @@ export async function PATCH(
     return Response.json({ error: "front and back are required" }, { status: 400 });
   }
 
+  // If the answer text changed, any previously-generated MC data (distractors
+  // sized/worded against the old answer) is stale — clear it and mark the
+  // card pending so it regenerates against the new answer on next deck load.
+  const backChanged = back !== card.back;
+
   const { error } = await supabase
     .from("cards")
-    .update({ front, back })
+    .update(
+      backChanged
+        ? { front, back, mc_status: "pending", mc_distractors: null, mc_condensed_answer: null }
+        : { front, back }
+    )
     .eq("id", id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

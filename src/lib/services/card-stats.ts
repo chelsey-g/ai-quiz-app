@@ -12,7 +12,7 @@ function serviceClient() {
 
 export type CardResult = { cardId: string; correct: boolean };
 
-export async function updateCardStats(results: CardResult[]): Promise<void> {
+export async function updateCardStats(userId: string, results: CardResult[]): Promise<void> {
   if (results.length === 0) return;
   const db = serviceClient();
   const cardIds = results.map((r) => r.cardId);
@@ -20,8 +20,9 @@ export async function updateCardStats(results: CardResult[]): Promise<void> {
 
   const { data: existingCards, error: fetchError } = await db
     .from("cards")
-    .select("id, times_seen, times_correct")
-    .in("id", cardIds);
+    .select("id, times_seen, times_correct, decks!inner(user_id)")
+    .in("id", cardIds)
+    .eq("decks.user_id", userId);
 
   if (fetchError || !existingCards) return;
 

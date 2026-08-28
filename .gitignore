@@ -24,7 +24,12 @@
 .DS_Store
 .worktrees/
 .superpowers/
+.codex/
 *.pem
+
+# supabase (local CLI state — never commit)
+supabase/.temp/
+supabase/.branches/
 
 # debug
 npm-debug.log*

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build output in nested locations (e.g. git worktrees) and local-only dirs:
+    "**/.next/**",
+    ".worktrees/**",
   ]),
 ]);
 

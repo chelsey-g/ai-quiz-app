@@ -55,8 +55,10 @@ npm run dev            # http://localhost:3001
 
 ## Database
 
-Schema lives in `supabase/migrations/` and is the single source of truth. Two ways
-to stand it up:
+Schema lives in `supabase/migrations/` and is the single source of truth. History
+was consolidated into one baseline (`20260421120000_baseline_schema.sql`) on
+2026-08-28; the pre-consolidation migrations are kept for reference in
+`supabase/migrations/_archive/` and are not applied. Two ways to stand it up:
 
 **Against your own hosted Supabase project:**
 

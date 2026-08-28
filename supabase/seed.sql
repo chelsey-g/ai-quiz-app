@@ -1,0 +1,2 @@
+-- Seed data for local development (npx supabase start / db reset).
+-- Keep this idempotent. Empty for now.

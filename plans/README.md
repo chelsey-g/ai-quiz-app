@@ -24,7 +24,7 @@ when all done-criteria are confirmed.
 |---|------|----------|----------|--------|------|------------|--------|
 | 001 | [Require auth on /api/quiz/explain](001-auth-explain-endpoint.md) | security | P1 | S | LOW | — | DONE |
 | 002 | [Fix unawaited quiz session saves](002-fix-unawaited-saves.md) | bug | P1 | S | LOW | — | TODO |
-| 003 | [Add user ownership filter to updateCardStats](003-card-stats-ownership.md) | security | P1 | S | LOW | — | TODO |
+| 003 | [Add user ownership filter to updateCardStats](003-card-stats-ownership.md) | security | P1 | S | LOW | — | DONE |
 | 004 | [Replace N+1 updates with batch upsert](004-batch-card-stat-updates.md) | perf | P2 | S | MED | 003 | TODO |
 | 005 | [Upgrade Next.js 16.2.4 → 16.2.9](005-upgrade-nextjs.md) | security | P1 | M | MED | — | TODO |
 | 006 | [Wire SM-2 spaced repetition](006-wire-sm2.md) | tech-debt | P2 | M | MED | 003, 004 | TODO |

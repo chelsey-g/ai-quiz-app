@@ -6,7 +6,7 @@
 
 ## Goal
 
-Convert Quizly's card generation from synchronous request-handler work into durable background jobs that checkpoint progress, survive crashes/timeouts, verify their own output with a separate judge model, and leave an auditable event log. Add ambient regeneration so decks stay in sync with edited notes.
+Convert Trove's card generation from synchronous request-handler work into durable background jobs that checkpoint progress, survive crashes/timeouts, verify their own output with a separate judge model, and leave an auditable event log. Add ambient regeneration so decks stay in sync with edited notes.
 
 This is project 1 of 2 from the article. Project 2 (long-running dev-workflow agent) is a separate spec.
 
@@ -107,7 +107,7 @@ New module: `src/lib/ai/judge-cards.ts` (schema + judge call + regenerate-failed
 - `POST /api/import`: validates, enqueues, kicks worker, returns `202 {jobId}`. Same for topic/notes generation routes.
 - `GET /api/jobs?limit=` — recent jobs for the user. `GET /api/jobs/[id]` — status + checkpoint. `GET /api/jobs/[id]/events` — timeline.
 - Import page: polls job status, shows per-file progress (pending / generating / judging / done / failed) instead of one long await.
-- New `/jobs` page: recent jobs list; detail view renders the event timeline (model calls, fallbacks, judge verdicts, checkpoints). Follow the Quizly colour scheme memory.
+- New `/jobs` page: recent jobs list; detail view renders the event timeline (model calls, fallbacks, judge verdicts, checkpoints). Follow the Trove colour scheme memory.
 - `vercel.ts`/`vercel.json` cron entry for `/api/jobs/sweep` every minute.
 
 ## Error handling

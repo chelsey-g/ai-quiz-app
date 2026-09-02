@@ -1,4 +1,4 @@
--- Consolidated baseline schema for Quizly.
+-- Consolidated baseline schema for Trove.
 -- Generated 2026-08-28 from the live database (`supabase db dump --linked`),
 -- replacing 23 incrementally-authored migrations whose ledger had drifted.
 -- This file is the single source of truth for the schema. Do not edit it;

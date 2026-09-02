@@ -5,7 +5,7 @@
 
 ## Overview
 
-Add a `/profile` page to Quizly that shows the authenticated user's identity (avatar + display name) and a minimal stats snapshot (streak, sessions, accuracy). The page is accessible from a new sidebar nav link and from the clickable email in the sidebar footer.
+Add a `/profile` page to Trove that shows the authenticated user's identity (avatar + display name) and a minimal stats snapshot (streak, sessions, accuracy). The page is accessible from a new sidebar nav link and from the clickable email in the sidebar footer.
 
 ## Architecture
 

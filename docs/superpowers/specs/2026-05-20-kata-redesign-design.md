@@ -89,7 +89,7 @@ Rendered at the bottom of the page. Same visual treatment as the current impleme
 
 ## Preference Persistence
 
-- localStorage key: `quizly:kata:prefs`
+- localStorage key: `trove:kata:prefs`
 - Shape: `{ topics: string[], difficulty: "easy" | "medium" | "hard" }`
 - Defaults (when key is absent): `{ topics: ["JavaScript"], difficulty: "easy" }`
 - Written on every topic toggle or level change.

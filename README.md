@@ -1,4 +1,4 @@
-# Quizly
+# Trove
 
 An AI-powered study platform. Enter a topic or import your own notes to generate
 flashcards and quizzes, study them with SM-2 spaced repetition, and share decks

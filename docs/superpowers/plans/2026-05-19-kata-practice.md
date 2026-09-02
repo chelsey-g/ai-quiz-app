@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a code practice mode to Quizly — AI generates a JavaScript kata from the deck's content, the user solves it in a split-pane browser editor, and Vercel Sandbox executes it against hidden test cases saved server-side.
+**Goal:** Add a code practice mode to Trove — AI generates a JavaScript kata from the deck's content, the user solves it in a split-pane browser editor, and Vercel Sandbox executes it against hidden test cases saved server-side.
 
 **Architecture:** Three API routes handle the lifecycle: `classify-code` (fire-and-forget after deck creation to set `is_code_deck`), `generate` (creates a `kata_attempts` row and returns problem sans test cases), and `run` (executes user code in an isolated Vercel Sandbox Node.js instance). The `/kata/[deckId]` page is a server component that renders a `KataWorkspace` client component which auto-generates on mount. A Code button on deck cards links there when `is_code_deck = true`.
 

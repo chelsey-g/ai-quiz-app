@@ -5,7 +5,7 @@
 
 ## Overview
 
-One user creates a quiz challenge from an existing deck (full deck or custom card subset), sends it to one or more other Quizly users, recipients are notified in-app, they take the quiz, and results (score + per-card breakdown) are sent back to the challenger.
+One user creates a quiz challenge from an existing deck (full deck or custom card subset), sends it to one or more other Trove users, recipients are notified in-app, they take the quiz, and results (score + per-card breakdown) are sent back to the challenger.
 
 ---
 
@@ -65,7 +65,7 @@ Entry point: "Challenge" button on `/decks/[id]` page.
 Multi-step sheet:
 
 1. **Pick cards** — full deck selected by default; user can deselect individual cards. Card fronts shown in a checklist.
-2. **Pick recipients** — search Quizly users by display name. Multi-select. Minimum 1.
+2. **Pick recipients** — search Trove users by display name. Multi-select. Minimum 1.
 3. **Confirm + send** — summary of deck/cards and recipient list. On submit:
    - Insert 1 `challenges` row
    - Insert 1 `challenge_attempts` row per recipient (status: `pending`)

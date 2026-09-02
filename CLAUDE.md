@@ -1,8 +1,8 @@
 @AGENTS.md
 
-# Quizly — AI Quiz App
+# Trove — AI Quiz App
 
-Quizly is an AI-powered study platform: enter a topic or import your own notes to generate flashcards and quizzes, study them with SM-2 spaced repetition, and share decks/collections publicly for forking. Includes quiz modes with AI grading and wrong-answer explanations, coding kata practice with in-browser execution, challenges between users, streaks, and stats.
+Trove is an AI-powered study platform: enter a topic or import your own notes to generate flashcards and quizzes, study them with SM-2 spaced repetition, and share decks/collections publicly for forking. Includes quiz modes with AI grading and wrong-answer explanations, coding kata practice with in-browser execution, challenges between users, streaks, and stats.
 
 ## Tech Stack
 
@@ -85,13 +85,12 @@ Unit tests exist for sm2, streak, stats, distractors, kata parsing, shuffle, use
 
 ## What's Next
 
-Audit plans from 2026-06-12 (in `docs/superpowers/plans/`, ordered by priority):
+Audit plans from 2026-06-12 (in `docs/superpowers/plans/`, ordered by priority). `fix-card-stats-ownership` shipped 2026-08-10 (commit `c0a652b`) — `updateCardStats` now takes `userId` and enforces ownership in the service layer.
 
-1. **fix-card-stats-ownership** — HIGH: authed users can mutate other users' card stats via `/api/sessions`
-2. **fork-field-parity** — community forks drop `mc_distractors`/`mc_status`/`sort_order`
-3. **wire-sm2** — wire the dormant SM-2 implementation into reviews + study order (depends on 1)
-4. **ai-rate-limiting** — per-user limits on the nine AI/sandbox routes
-5. **eval-harness** — card-generation quality evals with drift detection
+1. **fork-field-parity** — community forks drop `mc_distractors`/`mc_status`/`sort_order`
+2. **wire-sm2** — wire the dormant SM-2 implementation into reviews + study order
+3. **ai-rate-limiting** — per-user limits on the nine AI/sandbox routes
+4. **eval-harness** — card-generation quality evals with drift detection
 
 Then: **durable generation jobs** — long-running generation, spec in `docs/superpowers/plans/` (a179b24)
 

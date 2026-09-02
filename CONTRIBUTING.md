@@ -1,4 +1,4 @@
-# Contributing to Quizly
+# Contributing to Trove
 
 Thanks for your interest. This is a small project — the process is light, but a
 few things matter.

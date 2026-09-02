@@ -5,7 +5,7 @@
 
 ## Overview
 
-Four Claude Code project agents form a self-contained development pipeline for the Quizly app. The user kicks off the Product Manager with loose direction; it decides what to build, notifies the user, then hands off automatically through Architect → Engineer/UI Designer. No further user involvement is needed after the initial kick-off.
+Four Claude Code project agents form a self-contained development pipeline for the Trove app. The user kicks off the Product Manager with loose direction; it decides what to build, notifies the user, then hands off automatically through Architect → Engineer/UI Designer. No further user involvement is needed after the initial kick-off.
 
 ```
 User kicks off Product Manager with loose direction (e.g. "focus on engagement")
@@ -54,7 +54,7 @@ Owns: API routes, Supabase queries, AI pipeline, auth, data processing, server c
 **File:** `.claude/agents/ui-designer.md`
 **Role:** Frontend and visual implementation.
 
-Same execution loop as Engineer but uses the frontend-design skill. Understands Quizly's design language (dark theme, amber primary, Syne headings, Tailwind v4, ShadCN). Starts the dev server and visually verifies before committing.
+Same execution loop as Engineer but uses the frontend-design skill. Understands Trove's design language (dark theme, amber primary, Syne headings, Tailwind v4, ShadCN). Starts the dev server and visually verifies before committing.
 
 Owns: React components, pages, layouts, CSS, animations, ShadCN usage, responsive design.
 

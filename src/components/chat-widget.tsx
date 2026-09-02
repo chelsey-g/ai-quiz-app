@@ -169,7 +169,7 @@ export function ChatWidget() {
 
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="truncate font-heading text-sm font-semibold text-foreground">
-              {deckTitle ? `Asking about: ${deckTitle}` : "Quizly Assistant"}
+              {deckTitle ? `Asking about: ${deckTitle}` : "Trove Assistant"}
             </p>
             <div className="flex shrink-0 items-center gap-1">
               {messages.length > 0 && (

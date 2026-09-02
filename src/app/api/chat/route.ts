@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getDeckById, getDecksByCollection, getCardsByIds } from "@/lib/services/decks";
 
 const BASE_SYSTEM_PROMPT =
-  "You are Quizly's study assistant. Help the user study, understand concepts, " +
+  "You are Trove's study assistant. Help the user study, understand concepts, " +
   "and use the app. Be concise and direct. No markdown tables.";
 
 const MAX_CARDS_PER_MENTIONED_DECK = 40;

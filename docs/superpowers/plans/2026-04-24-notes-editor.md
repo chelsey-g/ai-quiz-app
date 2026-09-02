@@ -243,7 +243,7 @@ Start the dev server (`npm run dev`) and — while signed in — run in a separa
 ```bash
 curl -s -X POST http://localhost:3001/api/notes \
   -H "Content-Type: application/json" \
-  -H "Cookie: $(cat /tmp/quizly-cookie 2>/dev/null || echo '')" \
+  -H "Cookie: $(cat /tmp/trove-cookie 2>/dev/null || echo '')" \
   -d '{"content":"Photosynthesis converts light energy into chemical energy stored in glucose. Chlorophyll absorbs red and blue light. The light-dependent reactions occur in the thylakoid membrane. The Calvin cycle occurs in the stroma.","title":"Biology Notes"}' \
   | jq .
 ```
@@ -351,7 +351,7 @@ export default function NotesPage() {
           Notes Editor
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground/70">
-          Paste or type your notes and Quizly will generate a study deck from
+          Paste or type your notes and Trove will generate a study deck from
           your material.
         </p>
       </div>

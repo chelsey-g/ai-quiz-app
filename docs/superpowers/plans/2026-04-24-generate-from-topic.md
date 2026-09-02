@@ -13,7 +13,7 @@ context: >
 
 ---
 
-**Goal:** Add a "Generate from Topic" flow — a page where the user types a topic (e.g. "React hooks") and Quizly generates a full flashcard deck about it using AI, saving it the same way the file-import flow does.
+**Goal:** Add a "Generate from Topic" flow — a page where the user types a topic (e.g. "React hooks") and Trove generates a full flashcard deck about it using AI, saving it the same way the file-import flow does.
 
 **Architecture:** A new page at `/generate` renders a form. On submit it calls a new API route `POST /api/generate-topic` which calls the existing `generateCards` function with a synthetic prompt, then saves a `notes` row (`source_path = topic-generate/<uuid>`) and a `decks`+`cards` row — identical shape to what the import route produces. The nav gets a "Generate" link alongside "Import".
 
@@ -330,7 +330,7 @@ A focused client component: a text input for the topic, a Submit button, a loadi
             Generate from Topic
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground/70">
-            Enter any topic and Quizly will generate a study deck using AI.
+            Enter any topic and Trove will generate a study deck using AI.
           </p>
         </div>
 

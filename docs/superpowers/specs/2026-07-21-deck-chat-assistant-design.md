@@ -41,7 +41,7 @@ The server never trusts client-supplied card *text* — only ids. If `mentionedC
 
 **System prompt is layered:**
 
-1. Base: "You are Quizly's study assistant, a general helper for studying and using the app."
+1. Base: "You are Trove's study assistant, a general helper for studying and using the app."
 2. If `deckId` present: light ambient note only — e.g. "The user is currently viewing the deck '`<title>`'." No card dump.
 3. If `mentionedCardIds` resolved to cards: explicit blocks per card ("front: ... / back: ..."), framed as "the user is asking specifically about these flashcards."
 
@@ -55,7 +55,7 @@ Follow-up questions don't require re-mentioning a card — the full conversation
 
 A floating bubble button, fixed bottom-right, present on every authenticated page. Clicking opens a panel (shadcn-styled, consistent with existing dialog/sheet visual language) containing:
 
-- A header showing "Quizly Assistant", or "Asking about: `<deck title>`" when a deck is currently active.
+- A header showing "Trove Assistant", or "Asking about: `<deck title>`" when a deck is currently active.
 - A scrollable message list.
 - The mention-aware input (with chip rendering for attached cards).
 

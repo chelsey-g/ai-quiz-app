@@ -163,7 +163,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getDeckById } from "@/lib/services/decks";
 
 const BASE_SYSTEM_PROMPT =
-  "You are Quizly's study assistant. Help the user study, understand concepts, " +
+  "You are Trove's study assistant. Help the user study, understand concepts, " +
   "and use the app. Be concise and direct. No markdown tables.";
 
 export async function POST(req: NextRequest) {
@@ -595,7 +595,7 @@ export function ChatWidget() {
         >
           <div className="border-b border-border px-4 py-3">
             <p className="font-heading text-sm font-semibold text-foreground">
-              {deckTitle ? `Asking about: ${deckTitle}` : "Quizly Assistant"}
+              {deckTitle ? `Asking about: ${deckTitle}` : "Trove Assistant"}
             </p>
           </div>
 
@@ -693,13 +693,13 @@ Expected: all tests pass, including the new `deck-route.test.ts`.
 
 Start the dev server (`npm run dev`) and sign in.
 
-1. From the dashboard (no deck open), click the bottom-right bubble. Header should read "Quizly Assistant". Ask a general question (e.g. "What is spaced repetition?") and confirm a streamed reply appears.
+1. From the dashboard (no deck open), click the bottom-right bubble. Header should read "Trove Assistant". Ask a general question (e.g. "What is spaced repetition?") and confirm a streamed reply appears.
 2. Navigate to any deck at `/decks/[id]`. Confirm the widget stays open with prior messages intact, and the header now reads "Asking about: `<deck title>`".
 3. In the input, type `@` followed by a few letters from one of that deck's card fronts. Confirm the autocomplete list appears filtered to matching cards.
 4. Select a card. Confirm a chip appears above the input showing the card's front text, and it's removable via its `×` button.
 5. Send a follow-up like "explain this card in simpler terms" with the chip attached. Confirm the assistant's reply is clearly grounded in that specific card's content (not a generic answer).
 6. Send a second follow-up with no new mention. Confirm the assistant still has the earlier card's content in context (conversation history carries it).
-7. Navigate to a non-deck page (e.g. `/settings`). Confirm the bubble is present, the header reverts to "Quizly Assistant", and typing `@` shows "No matching cards. Open a deck to reference its cards."
+7. Navigate to a non-deck page (e.g. `/settings`). Confirm the bubble is present, the header reverts to "Trove Assistant", and typing `@` shows "No matching cards. Open a deck to reference its cards."
 8. Refresh the browser tab entirely. Confirm the conversation is cleared (in-memory only, as designed).
 
 - [ ] **Step 5: Commit**

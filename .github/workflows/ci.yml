@@ -25,9 +25,8 @@ jobs:
       - run: npm ci
 
       - name: Lint
-        # Non-blocking for now: the repo has ~23 pre-existing source lint errors.
-        # Surfaced on every PR so the debt is visible; flip to blocking once cleared.
-        continue-on-error: true
+        # Blocking: zero eslint errors. Some React Compiler hook rules are set
+        # to "warn" in eslint.config.mjs (a tracked refactor) and don't fail CI.
         run: npm run lint
 
       - name: Unit tests

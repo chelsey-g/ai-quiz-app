@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useId } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, useId } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -591,7 +591,7 @@ export default function DeckPage() {
       } else {
         const { deck, cards, deckStats } = await deckRes.json() as { deck: Deck; cards: Card[]; deckStats: DeckStatsResult };
         setDeck(deck);
-        setIsPublic((deck as any).is_public ?? false);
+        setIsPublic(deck.is_public ?? false);
         setAllCards(cards);
         setFlaggedIds(new Set(cards.filter((c: Card) => c.flagged).map((c: Card) => c.id)));
         setDeckStats(deckStats ?? null);
@@ -611,6 +611,11 @@ export default function DeckPage() {
   const allTags = [...new Set(deck?.topic_tags ?? [])];
   const freshCards = allCards.filter(isFresh);
   const practicedCards = allCards.filter((c) => !isFresh(c));
+  // Shuffle once per card set, not on every render.
+  const shuffledCards = useMemo(
+    () => [...allCards].sort(() => Math.random() - 0.5),
+    [allCards],
+  );
   const studyQueue =
     contentFilter === "fresh" ? freshCards
     : contentFilter === "practiced" ? [...practicedCards].sort((a, b) => {
@@ -618,7 +623,7 @@ export default function DeckPage() {
         const accB = b.times_seen > 0 ? b.times_correct / b.times_seen : 0;
         return accA - accB;
       })
-    : [...allCards].sort(() => Math.random() - 0.5);
+    : shuffledCards;
   const currentCard = studyState === "studying" ? activeQueue[currentIndex] : studyQueue[currentIndex];
   const currentCardMode: ResolvedMode =
     studyState === "studying" && currentCard

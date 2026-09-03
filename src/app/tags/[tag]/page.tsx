@@ -55,7 +55,7 @@ export default function TagPage() {
         </div>
       ) : decks.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-20 text-center">
-          <p className="text-sm font-medium text-foreground">No decks tagged "{decoded}"</p>
+          <p className="text-sm font-medium text-foreground">No decks tagged &ldquo;{decoded}&rdquo;</p>
           <p className="mt-1.5 text-sm text-muted-foreground/60">Tags are added automatically when you generate or import a deck.</p>
         </div>
       ) : (

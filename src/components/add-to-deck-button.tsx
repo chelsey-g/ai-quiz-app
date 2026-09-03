@@ -106,7 +106,7 @@ export function AddToDeckButton({ front, back }: { front: string; back: string }
         {state === "saving" ? <Spinner className="h-3.5 w-3.5" /> : <PlusIcon className="h-3.5 w-3.5" />}
         {state === "saving" ? "Adding…" : "Add to deck"}
       </button>
-      {state === "error" && <span className="text-xs text-destructive">Couldn't add — try again.</span>}
+      {state === "error" && <span className="text-xs text-destructive">Couldn&apos;t add — try again.</span>}
     </div>
   );
 }

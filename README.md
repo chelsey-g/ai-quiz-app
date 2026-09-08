@@ -58,7 +58,9 @@ npm run dev            # http://localhost:3001
 Schema lives in `supabase/migrations/` and is the single source of truth. History
 was consolidated into one baseline (`20260421120000_baseline_schema.sql`) on
 2026-08-28; the pre-consolidation migrations are kept for reference in
-`supabase/migrations/_archive/` and are not applied. Two ways to stand it up:
+`supabase/migrations/_archive/` and are not applied. See
+[Environments](#environments) for how the schema reaches staging (automatic,
+per-PR) versus production (manual). Two ways to stand it up locally:
 
 **Against your own hosted Supabase project:**
 
@@ -83,6 +85,23 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts   # hoste
 
 Never edit the database by hand — every change goes through a new migration file.
 See [CONTRIBUTING.md](./CONTRIBUTING.md#database-changes).
+
+## Environments
+
+| Environment | Runs on | Database |
+|---|---|---|
+| Local dev | `npm run dev` | your own Supabase project, or the local stack (`npx supabase start`) |
+| Preview | every PR to `main` (Vercel) | `trove-staging` — a persistent non-prod Supabase project, no real user data |
+| Production | `main` after merge (Vercel) | the production Supabase project |
+
+**Migrations.** On every PR, CI's `staging-migrations` job runs
+`supabase db push` against `trove-staging`, so the Preview deploy exercises your
+schema change before review. Production migrations are applied **manually** by a
+maintainer running `supabase db push` after merge — CI never writes the
+production schema.
+
+There is no data sync from production. `trove-staging` starts empty; sign up
+test accounts and generate test decks against it.
 
 ## Scripts
 

@@ -70,3 +70,27 @@ jobs:
             echo "$DIFF"
             exit 1
           fi
+
+  staging-migrations:
+    name: staging-migrations
+    # Applies any migrations in this PR to the persistent staging Supabase
+    # project, so the Preview deploy exercises the change against staging —
+    # never production. Prod migrations are still applied manually.
+    runs-on: ubuntu-latest
+    # Fork PRs cannot read secrets; skip cleanly there rather than fail red.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push migrations to staging
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref "${{ secrets.SUPABASE_STAGING_PROJECT_REF }}" \
+            --password "${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}"
+          supabase db push --linked --include-all \
+            --password "${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}"

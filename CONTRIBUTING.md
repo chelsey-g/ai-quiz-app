@@ -62,6 +62,11 @@ Rules:
   `npx supabase gen types typescript --linked > src/lib/database.types.ts`
 - Apply locally / to your own project with `npx supabase db push` and verify
   before opening the PR.
+- When your PR opens, CI applies the migration to the shared **staging**
+  database automatically (the `staging-migrations` job) and the Vercel Preview
+  deploy runs against it. If that job is red, your migration failed to apply —
+  fix it before requesting review. Production migrations are applied manually
+  by a maintainer after merge; CI never touches the production schema.
 
 ## Code style
 

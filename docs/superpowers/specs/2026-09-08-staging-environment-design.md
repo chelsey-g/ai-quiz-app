@@ -53,7 +53,7 @@ Non-goals:
 
 | Component | What it is | Depends on |
 |---|---|---|
-| `trove-staging` Supabase project | New free-tier project, Postgres 17 (matches prod `major_version = 17`). Region us-east-2 to match prod. Holds `auth` + `storage` + `public` schema, seeded from the migration baseline. | — |
+| `trove-staging` Supabase project | New free-tier project under the Vercel-linked org (`vercel_icfg_KJMNNSsyrjSebOT2us2jHITA`, plan `free`, new-project cost $0/mo). Postgres 17 (matches prod `major_version = 17`). Region us-east-2 to match prod. Holds `auth` + `storage` + `public` schema, seeded from the migration baseline. | — |
 | GitHub Actions secrets | `SUPABASE_ACCESS_TOKEN` (personal access token, staging-capable), `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_STAGING_DB_PASSWORD`. Repo-level secrets. | `trove-staging` created |
 | `staging-migrations` CI job | New job in `.github/workflows/ci.yml`, runs on `pull_request` to `main`. Links to `trove-staging` and runs `supabase db push` so any migration in the PR is live on staging before the preview build reads it. | secrets, `trove-staging` |
 | Vercel env var split | The three `NEXT_PUBLIC_SUPABASE_*` + `SUPABASE_SERVICE_ROLE_KEY` vars: narrow the marketplace-synced values to **Production only**; add **Preview-only** overrides pointing at `trove-staging`. | `trove-staging` keys known |
@@ -136,10 +136,9 @@ Mechanics to confirm during implementation:
   are longer, a scheduled `supabase projects restore` or a trivial weekly
   keep-alive workflow. Start without the keep-alive; add it only if pausing
   actually bites.
-- **Two free projects per org.** Prod is under the Vercel-linked org
-  (`vercel_icfg_...`); staging can go under the personal org
-  (`iprvijpqgcuavtybptsv`, currently has `portfolio` + `fitness-app` +
-  `bookapp2026`). Confirm free-project quota on that org before creating.
+- **Free-project count per org.** Staging goes under the Vercel-linked org
+  alongside prod (see Resolved decisions). If creation hits a count limit,
+  pause/delete the `INACTIVE` `weight-app` project in that org first.
 - 500 MB DB / 1 GB file storage — ample for test data.
 
 ## Testing / verification
@@ -181,17 +180,19 @@ Manual, since this is infra:
    `quality` + `migrations`).
 8. Verification steps 4–5.
 
-## Open questions for review
+## Resolved decisions
 
-- **Personal-org free-project quota** — does `iprvijpqgcuavtybptsv` have room
-  for a third free project, or does one of `portfolio` / `fitness-app` (both
-  `INACTIVE`) need cleanup first? If no room, staging under the Vercel-linked
-  org instead.
-- **Marketplace integration clobber** — acceptable to detach the Supabase
-  integration's Preview scope if it fights the manual override? (Alternative:
-  drop the marketplace integration entirely and manage all env vars by hand —
-  more control, loses auto-rotation on prod.)
-- **`--include-all` vs default `db push`** — default push errors if staging's
-  ledger has entries not in the repo. Since staging is created *from* the repo
-  baseline, they should never diverge, but `--include-all` is a safety net.
-  Keep it or drop it?
+- **Org** — `trove-staging` goes under the **Vercel-linked org**
+  (`vercel_icfg_KJMNNSsyrjSebOT2us2jHITA`, "chelseyg's projects", plan `free`),
+  same org as prod. `get_cost` for a new project there returns **$0/month**.
+  (Org also holds `weight-app`, currently `INACTIVE` — if project creation hits
+  a free-tier count limit, pause/delete `weight-app` first. Not expected given
+  the $0 cost quote.)
+- **Marketplace integration clobber** — apply the Preview-scoped override
+  first. If the Supabase↔Vercel integration re-adds Preview values on its next
+  sync, detach **only** the integration's Preview scope (Supabase dashboard →
+  Integrations → Vercel → configure), keeping Production auto-rotation. Do
+  **not** drop the whole integration.
+- **`--include-all`** — keep it. Harmless safety net; staging is created from
+  the repo baseline so ledgers should never diverge, but the flag costs
+  nothing.
